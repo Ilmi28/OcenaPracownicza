@@ -16,7 +16,7 @@ namespace OcenaPracownicza
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.sdfsdf
+            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
