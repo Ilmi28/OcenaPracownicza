@@ -1,0 +1,23 @@
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using OcenaPracownicza.API.Interfaces.Services;
+
+namespace OcenaPracownicza.Controllers;
+
+
+// W kontrolerze dajemy odwolanie do serwisu poprzez wstrzykiwanie zależności w konstruktorze
+// Jak zwracamy jakies dane to zwracamy Ok(data) z danymi jak nie to zwracamy NoContent() analogicznie z innymi kodami statusu HTTP
+// Nie implementujemy logiki biznesowej w kontrolerze, tylko w serwisach
+// Wyrzucone wyjatki z serwisów sa obsługiwane globalnie w middleware w Program.cs wiec tutaj nic nie trzeba robic jedynie zwrocic odpowiedni rezultat
+[ApiController]
+[Route("example")]
+public class ExampleController(IExampleService exampleService) : ControllerBase
+{
+    [HttpGet]
+    public async Task<IActionResult> Get()
+    {
+        var response = await exampleService.ExampleOperation();
+
+        return Ok(response);
+    }
+}
