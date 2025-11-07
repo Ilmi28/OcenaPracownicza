@@ -1,84 +1,49 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using OcenaPracownicza.API.Interfaces.Services;
+using OcenaPracownicza.API.Requests;
+using OcenaPracownicza.API.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace OcenaPracownicza.API.Controllers
+namespace OcenaPracownicza.API.Controllers;
+
+[Authorize]  
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController(IAuthService authService) : ControllerBase
 {
-    [Authorize]  // Wszystko w tym kontrolerze wymaga logowania
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+
+    [AllowAnonymous]
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] Requests.LoginRequest request)
     {
-        private readonly IConfiguration _configuration;
+        var token = await authService.Login(request);
 
-        public AuthController(IConfiguration configuration)
+        Response.Cookies.Append("jwt", token.ToString(), new CookieOptions
         {
-            _configuration = configuration;
-        }
+            HttpOnly = true,
+            Secure = true, 
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddHours(1)
+        });
 
-        // 🔓 Login — dostępny bez tokenu
-        [AllowAnonymous]
-        [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
-        {
-            if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
-            {
-                return BadRequest("Username i Password nie mogą być puste.");
-            }
-
-            if (request.Username != "admin" || request.Password != "admin123")
-            {
-                return Unauthorized("Nieprawidłowe dane logowania");
-            }
-
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["Secret"];
-            var issuer = jwtSettings["Issuer"];
-            var audience = jwtSettings["Audience"];
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, request.Username),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Role, "Administrator")
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                expires: DateTime.Now.AddHours(1),
-                signingCredentials: credentials
-            );
-
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-            return Ok(new { Token = tokenString });
-        }
-
-        [HttpGet("secure")]
-        public IActionResult Secure()
-        {
-            return Ok("Dostęp tylko dla zalogowanych użytkowników");
-        }
-
-        [HttpGet("admin")]
-        [Authorize(Roles = "Administrator")]
-        public IActionResult Admin()
-        {
-            return Ok("Dostęp tylko dla administratorów");
-        }
+        return Ok(new { Token = token });
     }
 
-    public class LoginRequest
+    [HttpGet("secure")]
+    public IActionResult Secure()
     {
-        public string Username { get; set; }
-        public string Password { get; set; }
+        return Ok("Dostęp tylko dla zalogowanych użytkowników");
+    }
+
+    [HttpGet("admin")]
+    [Authorize(Roles = "Administrator")]
+    public IActionResult Admin()
+    {
+        return Ok("Dostęp tylko dla administratorów");
     }
 }
