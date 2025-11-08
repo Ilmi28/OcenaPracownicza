@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using OcenaPracownicza.API.Interfaces.Services;
+using OcenaPracownicza.API.Requests;
 
 namespace OcenaPracownicza.Controllers;
 
@@ -18,6 +19,14 @@ public class ExampleController(IExampleService exampleService) : ControllerBase
     {
         var response = await exampleService.ExampleOperation();
 
+        return Ok(response);
+    }
+
+
+    [HttpPost]
+    public async Task<IActionResult> Post(ExampleRequest request)
+    {
+        var response = await exampleService.ExampleOperation();
         return Ok(response);
     }
 }

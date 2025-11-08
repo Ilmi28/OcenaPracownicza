@@ -6,9 +6,9 @@ public class BadRequestProblemDetails : ProblemDetails
 {
     public BadRequestProblemDetails(string? detail)
     {
-        Title = "Conflict";
-        Type = "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.10";
-        Status = StatusCodes.Status409Conflict;
+        Title = "Bad Request";
+        Type = "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.1";
+        Status = StatusCodes.Status400BadRequest;
         Detail = detail;
     }
 }

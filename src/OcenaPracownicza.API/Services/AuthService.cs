@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.IdentityModel.Tokens;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,21 +15,14 @@ public class AuthService : IAuthService
     {
         _configuration = configuration;
     }
-    public async Task<string> Login(LoginRequest request)
+
+    public string Login(LoginRequest request)
     {
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
             throw new ArgumentException("Username i Password nie mogą być puste.");
 
         if (request.Username != "admin" || request.Password != "admin123")
             throw new UnauthorizedAccessException("Nieprawidłowa nazwa użytkownika lub hasło.");
-
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["Secret"];
-        var issuer = jwtSettings["Issuer"];
-        var audience = jwtSettings["Audience"];
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
         {
@@ -37,6 +31,36 @@ public class AuthService : IAuthService
             new Claim(ClaimTypes.Role, "Administrator")
         };
 
+        var token = GenerateJwtToken(claims);
+
+        return token;
+    }
+
+    public string LoginWithGoogle(AuthenticateResult result)
+    {
+        var email = result.Principal!.FindFirst(ClaimTypes.Email)?.Value;
+        var name = result.Principal!.FindFirst(ClaimTypes.Name)?.Value;
+        var nameIdentifier = result.Principal!.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var picture = result.Principal!.FindFirst("picture")?.Value;
+
+        return GenerateJwtToken(new[]
+        {
+            new Claim(ClaimTypes.Email, email ?? ""),
+            new Claim(ClaimTypes.Name, name ?? ""),
+            new Claim(ClaimTypes.NameIdentifier, nameIdentifier ?? ""),
+            new Claim("picture", picture ?? ""),
+            new Claim(ClaimTypes.Role, "User")
+        });
+    }
+
+    private string GenerateJwtToken(IEnumerable<Claim> claims)
+    {
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["Secret"];
+        var issuer = jwtSettings["Issuer"];
+        var audience = jwtSettings["Audience"];
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var token = new JwtSecurityToken(
             issuer: issuer,
             audience: audience,
@@ -44,9 +68,6 @@ public class AuthService : IAuthService
             expires: DateTime.Now.AddHours(1),
             signingCredentials: credentials
         );
-
-        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-        return tokenString;
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
@@ -27,7 +26,6 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
 
-        // Swagger
         builder.Services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo
@@ -62,14 +60,12 @@ public class Program
             });
         });
 
-        // JWT config
         var jwtSection = builder.Configuration.GetSection("JwtSettings");
         var issuer = jwtSection["Issuer"];
         var audience = jwtSection["Audience"];
         var secret = jwtSection["Secret"];
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret!));
 
-        // Authentication (JWT + Cookie + Google)
         builder.Services
             .AddAuthentication(options =>
             {
@@ -77,13 +73,11 @@ public class Program
                 options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
             })
-            // Cookie - MUSI BYĆ PRZED Google
             .AddCookie(options =>
             {
                 options.LoginPath = "/login-google";
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
             })
-            // Google OAuth
             .AddGoogle(options =>
             {
                 var clientId = builder.Configuration["Authentication:Google:ClientId"];
@@ -98,7 +92,6 @@ public class Program
                 options.ClientSecret = clientSecret;
                 options.CallbackPath = "/signin-google";
 
-                // Scope - WAŻNA KOLEJNOŚĆ
                 options.Scope.Clear();
                 options.Scope.Add("openid");
                 options.Scope.Add("profile");
@@ -106,12 +99,10 @@ public class Program
 
                 options.SaveTokens = true;
 
-                // Event do pobrania danych użytkownika
                 options.Events.OnCreatingTicket = async context =>
                 {
                     try
                     {
-                        // Pobierz dane z Google UserInfo endpoint
                         var request = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v2/userinfo");
                         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
 
@@ -128,7 +119,6 @@ public class Program
                         var user = await response.Content.ReadFromJsonAsync<JsonElement>();
                         Console.WriteLine($"[Google OAuth] Dane użytkownika: {user}");
 
-                        // Dodaj claims
                         if (user.TryGetProperty("email", out var emailElement) && emailElement.ValueKind == JsonValueKind.String)
                         {
                             var email = emailElement.GetString();
@@ -174,7 +164,6 @@ public class Program
                     }
                 };
             })
-            // JWT Bearer - dla API endpoints
             .AddJwtBearer(options =>
             {
                 options.RequireHttpsMetadata = false;
@@ -219,15 +208,12 @@ public class Program
                 };
             });
 
-        // DI
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IExampleRepository, ExampleRepository>();
         builder.Services.AddScoped<IExampleService, ExampleService>();
 
-        // Authorization
         builder.Services.AddAuthorization();
 
-        // CORS
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowFrontend", policy =>
@@ -241,7 +227,6 @@ public class Program
 
         var app = builder.Build();
 
-        // Global error handler
         app.UseExceptionHandler(errorApp =>
         {
             errorApp.Run(async context =>
@@ -265,7 +250,6 @@ public class Program
             });
         });
 
-        // Swagger
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -283,123 +267,6 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
-
-        // ===== GOOGLE OAUTH ENDPOINTS =====
-
-        // Endpoint inicjujący logowanie przez Google
-        app.MapGet("/login-google", async (HttpContext context) =>
-        {
-            var props = new AuthenticationProperties
-            {
-                RedirectUri = "/google-success",
-                IsPersistent = true
-            };
-            await context.ChallengeAsync(GoogleDefaults.AuthenticationScheme, props);
-        });
-
-        // Endpoint debugowania (USUŃ W PRODUKCJI)
-        app.MapGet("/google-debug", async (HttpContext ctx) =>
-        {
-            Console.WriteLine($"[Debug] IsAuthenticated: {ctx.User.Identity?.IsAuthenticated}");
-
-            if (!ctx.User.Identity?.IsAuthenticated ?? true)
-            {
-                return Results.Json(new
-                {
-                    Error = "Not authenticated",
-                    Message = "Użytkownik nie jest zalogowany"
-                });
-            }
-
-            var accessToken = await ctx.GetTokenAsync("access_token");
-            var idToken = await ctx.GetTokenAsync("id_token");
-            var refreshToken = await ctx.GetTokenAsync("refresh_token");
-
-            var claims = ctx.User.Claims.Select(c => new
-            {
-                Type = c.Type,
-                Value = c.Value
-            }).ToList();
-
-            Console.WriteLine($"[Debug] Claims count: {claims.Count}");
-            foreach (var claim in claims)
-            {
-                Console.WriteLine($"[Debug] Claim: {claim.Type} = {claim.Value}");
-            }
-
-            return Results.Json(new
-            {
-                IsAuthenticated = ctx.User.Identity.IsAuthenticated,
-                AuthenticationType = ctx.User.Identity.AuthenticationType,
-                HasAccessToken = !string.IsNullOrEmpty(accessToken),
-                HasIdToken = !string.IsNullOrEmpty(idToken),
-                HasRefreshToken = !string.IsNullOrEmpty(refreshToken),
-                ClaimsCount = claims.Count,
-                Claims = claims,
-                AccessTokenPreview = accessToken?.Substring(0, Math.Min(30, accessToken.Length)) + "..."
-            });
-        });
-
-        // Endpoint po udanym logowaniu
-        app.MapGet("/google-success", async (HttpContext ctx) =>
-        {
-            Console.WriteLine($"[Google Success] IsAuthenticated: {ctx.User.Identity?.IsAuthenticated}");
-
-            if (!ctx.User.Identity?.IsAuthenticated ?? true)
-            {
-                Console.WriteLine("[Google Success] Użytkownik NIE jest uwierzytelniony");
-                return Results.Unauthorized();
-            }
-
-            // Pobierz claims
-            var email = ctx.User.FindFirst(ClaimTypes.Email)?.Value;
-            var name = ctx.User.FindFirst(ClaimTypes.Name)?.Value;
-            var picture = ctx.User.FindFirst("picture")?.Value;
-
-            Console.WriteLine($"[Google Success] Email z claims: {email}");
-            Console.WriteLine($"[Google Success] Name z claims: {name}");
-            Console.WriteLine($"[Google Success] Picture z claims: {picture}");
-
-            // Fallback: Jeśli claims są puste, pobierz z API
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
-            {
-                Console.WriteLine("[Google Success] Claims są puste - próba pobrania z API");
-
-                var accessToken = await ctx.GetTokenAsync("access_token");
-                Console.WriteLine($"[Google Success] AccessToken exists: {!string.IsNullOrEmpty(accessToken)}");
-
-                if (!string.IsNullOrEmpty(accessToken))
-                {
-                    using var httpClient = new HttpClient();
-                    httpClient.DefaultRequestHeaders.Authorization =
-                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-
-                    try
-                    {
-                        var response = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo");
-                        response.EnsureSuccessStatusCode();
-
-                        var user = await response.Content.ReadFromJsonAsync<JsonElement>();
-                        Console.WriteLine($"[Google Success] User info z API: {user}");
-
-                        email ??= user.TryGetProperty("email", out var e) ? e.GetString() : null;
-                        name ??= user.TryGetProperty("name", out var n) ? n.GetString() : null;
-                        picture ??= user.TryGetProperty("picture", out var p) ? p.GetString() : null;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[Google Success] Błąd pobierania z API: {ex.Message}");
-                    }
-                }
-            }
-
-            return Results.Ok(new
-            {
-                Email = email,
-                Name = name,
-                Picture = picture
-            });
-        });
 
         app.MapControllers();
 
