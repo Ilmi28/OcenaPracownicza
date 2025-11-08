@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
@@ -60,6 +61,8 @@ public class Program
             });
         });
 
+        Env.Load();
+
         var jwtSection = builder.Configuration.GetSection("JwtSettings");
         var issuer = jwtSection["Issuer"];
         var audience = jwtSection["Audience"];
@@ -80,8 +83,8 @@ public class Program
             })
             .AddGoogle(options =>
             {
-                var clientId = builder.Configuration["Authentication:Google:ClientId"];
-                var clientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+                var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
                 if (string.IsNullOrEmpty(clientId))
                     throw new ArgumentNullException(nameof(clientId), "Google ClientId is missing in configuration");
