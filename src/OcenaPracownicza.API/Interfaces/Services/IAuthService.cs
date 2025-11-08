@@ -1,8 +1,10 @@
-﻿using OcenaPracownicza.API.Requests;
+﻿using Microsoft.AspNetCore.Authentication;
+using OcenaPracownicza.API.Requests;
 
 namespace OcenaPracownicza.API.Interfaces.Services;
 
 public interface IAuthService
 {
-    Task<string> Login(LoginRequest request);
+    string Login(LoginRequest request);
+    string LoginWithGoogle(AuthenticateResult result);
 }

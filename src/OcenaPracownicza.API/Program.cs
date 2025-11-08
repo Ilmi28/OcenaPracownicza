@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -9,7 +12,9 @@ using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Repositories;
 using OcenaPracownicza.API.Services;
+using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 namespace OcenaPracownicza;
 
@@ -56,67 +61,162 @@ public class Program
             });
         });
 
+        Env.Load();
+
         var jwtSection = builder.Configuration.GetSection("JwtSettings");
         var issuer = jwtSection["Issuer"];
         var audience = jwtSection["Audience"];
         var secret = jwtSection["Secret"];
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret!));
 
-        builder.Services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.RequireHttpsMetadata = false;
-            options.SaveToken = true;
-            options.TokenValidationParameters = new TokenValidationParameters
+        builder.Services
+            .AddAuthentication(options =>
             {
-                ValidateIssuer = true,
-                ValidIssuer = issuer,
-                ValidateAudience = true,
-                ValidAudience = audience,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = key,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromMinutes(1)
-            };
-
-            options.Events = new JwtBearerEvents
+                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+            })
+            .AddCookie(options =>
             {
-                OnChallenge = async context =>
-                {
-                    context.HandleResponse();
+                options.LoginPath = "/login-google";
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+            })
+            .AddGoogle(options =>
+            {
+                var clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    context.Response.ContentType = "application/json";
+                if (string.IsNullOrEmpty(clientId))
+                    throw new ArgumentNullException(nameof(clientId), "Google ClientId is missing in configuration");
+                if (string.IsNullOrEmpty(clientSecret))
+                    throw new ArgumentNullException(nameof(clientSecret), "Google ClientSecret is missing in configuration");
 
-                    await context.Response.WriteAsJsonAsync(new UnauthorizedProblemDetails("Musisz być zalogowany."));
-                },
-                OnForbidden = async context =>
-                {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    context.Response.ContentType = "application/json";
+                options.ClientId = clientId;
+                options.ClientSecret = clientSecret;
+                options.CallbackPath = "/signin-google";
 
-                    await context.Response.WriteAsJsonAsync(new ForbiddenProblemDetails("Nie masz dostępu do zasobu."));
-                },
-                OnMessageReceived = context =>
+                options.Scope.Clear();
+                options.Scope.Add("openid");
+                options.Scope.Add("profile");
+                options.Scope.Add("email");
+
+                options.SaveTokens = true;
+
+                options.Events.OnCreatingTicket = async context =>
                 {
-                    if (context.Request.Cookies.ContainsKey("jwt"))
+                    try
                     {
-                        context.Token = context.Request.Cookies["jwt"];
+                        var request = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v2/userinfo");
+                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+
+                        var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            var errorContent = await response.Content.ReadAsStringAsync();
+                            Console.WriteLine($"[Google OAuth] Błąd pobierania danych: {response.StatusCode}");
+                            Console.WriteLine($"[Google OAuth] Treść błędu: {errorContent}");
+                            return;
+                        }
+
+                        var user = await response.Content.ReadFromJsonAsync<JsonElement>();
+                        Console.WriteLine($"[Google OAuth] Dane użytkownika: {user}");
+
+                        if (user.TryGetProperty("email", out var emailElement) && emailElement.ValueKind == JsonValueKind.String)
+                        {
+                            var email = emailElement.GetString();
+                            if (!string.IsNullOrEmpty(email))
+                            {
+                                context.Identity?.AddClaim(new Claim(ClaimTypes.Email, email));
+                                Console.WriteLine($"[Google OAuth] Email claim dodany: {email}");
+                            }
+                        }
+
+                        if (user.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String)
+                        {
+                            var name = nameElement.GetString();
+                            if (!string.IsNullOrEmpty(name))
+                            {
+                                context.Identity?.AddClaim(new Claim(ClaimTypes.Name, name));
+                                Console.WriteLine($"[Google OAuth] Name claim dodany: {name}");
+                            }
+                        }
+
+                        if (user.TryGetProperty("picture", out var pictureElement) && pictureElement.ValueKind == JsonValueKind.String)
+                        {
+                            var picture = pictureElement.GetString();
+                            if (!string.IsNullOrEmpty(picture))
+                            {
+                                context.Identity?.AddClaim(new Claim("picture", picture));
+                            }
+                        }
+
+                        if (user.TryGetProperty("sub", out var subElement) && subElement.ValueKind == JsonValueKind.String)
+                        {
+                            var sub = subElement.GetString();
+                            if (!string.IsNullOrEmpty(sub))
+                            {
+                                context.Identity?.AddClaim(new Claim(ClaimTypes.NameIdentifier, sub));
+                            }
+                        }
                     }
-                    return Task.CompletedTask;
-                }
-            };
-        });
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Google OAuth] Wyjątek w OnCreatingTicket: {ex.Message}");
+                        Console.WriteLine($"[Google OAuth] Stack trace: {ex.StackTrace}");
+                    }
+                };
+            })
+            .AddJwtBearer(options =>
+            {
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = audience,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = key,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(1)
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnChallenge = async context =>
+                    {
+                        context.HandleResponse();
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        context.Response.ContentType = "application/json";
+                        await context.Response.WriteAsJsonAsync(
+                            new UnauthorizedProblemDetails("Musisz być zalogowany.")
+                        );
+                    },
+                    OnForbidden = async context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        context.Response.ContentType = "application/json";
+                        await context.Response.WriteAsJsonAsync(
+                            new ForbiddenProblemDetails("Nie masz dostępu do zasobu.")
+                        );
+                    },
+                    OnMessageReceived = context =>
+                    {
+                        if (context.Request.Cookies.ContainsKey("jwt"))
+                            context.Token = context.Request.Cookies["jwt"];
+                        return Task.CompletedTask;
+                    }
+                };
+            });
 
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IExampleRepository, ExampleRepository>();
         builder.Services.AddScoped<IExampleService, ExampleService>();
 
         builder.Services.AddAuthorization();
+
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowFrontend", policy =>
@@ -137,7 +237,6 @@ public class Program
                 context.Response.ContentType = "application/json";
                 var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
 
-
                 ProblemDetails problemDetails = exception switch
                 {
                     ConflictException => new ConflictProblemDetails(exception.Message),
@@ -148,6 +247,7 @@ public class Program
                     ForbiddenException => new ForbiddenProblemDetails(exception.Message),
                     _ => new InternalServerErrorProblemDetails(exception!.Message)
                 };
+
                 context.Response.StatusCode = problemDetails.Status!.Value;
                 await context.Response.WriteAsJsonAsync(problemDetails);
             });
@@ -166,8 +266,8 @@ public class Program
         });
 
         app.UseHttpsRedirection();
-
         app.UseCors("AllowFrontend");
+
         app.UseAuthentication();
         app.UseAuthorization();
 

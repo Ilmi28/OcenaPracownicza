@@ -9,6 +9,7 @@ public class ExampleRepository : IExampleRepository
 {
     public async Task<ExampleModel?> DatabaseOperation()
     {
+        await Task.Delay(100); // Symulacja operacji asynchronicznej.
         // Tutaj można dodać logikę operacji bazodanowej, np. pobieranie danych z bazy danych.
         return new ExampleModel
         {
