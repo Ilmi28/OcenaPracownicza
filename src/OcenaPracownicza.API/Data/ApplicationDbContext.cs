@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OcenaPracownicza.API.Entities;
 
 namespace OcenaPracownicza.API.Data;
 
@@ -8,6 +9,8 @@ public class ApplicationDbContext : DbContext
         : base(options)
     {
     }
+
+    public DbSet<ExampleEntity> ExampleEntities { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

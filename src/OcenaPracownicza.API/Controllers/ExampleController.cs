@@ -14,19 +14,39 @@ namespace OcenaPracownicza.Controllers;
 [Route("example")]
 public class ExampleController(IExampleService exampleService) : ControllerBase
 {
-    [HttpGet]
-    public async Task<IActionResult> Get()
+    [HttpGet("{id}")]
+    public async Task<IActionResult> Get(int id)
     {
-        var response = await exampleService.ExampleOperation();
+        var response = await exampleService.GetById(id);
 
         return Ok(response);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var response = await exampleService.GetAll();
+        return Ok(response);
+    }
 
     [HttpPost]
     public async Task<IActionResult> Post(ExampleRequest request)
     {
-        var response = await exampleService.ExampleOperation();
+        var response = await exampleService.Add(request);
+        return Ok(response);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Put(int id, ExampleRequest request)
+    {
+        var response = await exampleService.Update(id, request);
+        return Ok(response);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var response = await exampleService.Delete(id);
         return Ok(response);
     }
 }

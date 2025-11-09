@@ -59,7 +59,7 @@ public class AuthService : IAuthService
         var secretKey = jwtSettings["Secret"];
         var issuer = jwtSettings["Issuer"];
         var audience = jwtSettings["Audience"];
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var token = new JwtSecurityToken(
             issuer: issuer,
