@@ -6,15 +6,19 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.EntityFrameworkCore;
 using OcenaPracownicza.API.AppProblemDetails;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Repositories;
 using OcenaPracownicza.API.Services;
+using OcenaPracownicza.API.Data;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+
+
 
 namespace OcenaPracownicza;
 
@@ -23,7 +27,10 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-
+        
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
 
