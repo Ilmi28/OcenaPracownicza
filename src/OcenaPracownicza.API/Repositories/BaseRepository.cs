@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using OcenaPracownicza.API.Data;
+using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Interfaces.Repositories;
 
 namespace OcenaPracownicza.API.Repositories;
 
-public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : class
+public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : BaseEntity
 {
     protected readonly ApplicationDbContext _context;
     protected readonly DbSet<TEntity> _dbSet;
@@ -17,6 +18,8 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
     
     public virtual async Task<TEntity> Create(TEntity entity)
     {
+        entity.CreatedAt = DateTime.UtcNow;
+        entity.UpdatedAt = DateTime.UtcNow;
         await _dbSet.AddAsync(entity);
         await _context.SaveChangesAsync();
         return entity;
@@ -34,6 +37,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
     
     public virtual async Task<TEntity> Update(TEntity entity)
     {
+        entity.UpdatedAt = DateTime.UtcNow;
         _dbSet.Update(entity);
         await _context.SaveChangesAsync();
         return entity;

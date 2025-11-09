@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using OcenaPracownicza.API.Dtos;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
@@ -33,7 +34,15 @@ public class AuthController(IAuthService authService) : ControllerBase
             Expires = DateTime.UtcNow.AddHours(1)
         });
 
-        return Ok(new LoginResponse(token));
+        var dto = new LoginDto
+        {
+            Token = token
+        };
+
+        return Ok(new LoginResponse
+        {
+            Data = dto
+        });
     }
 
     [HttpGet("google-login")]
@@ -58,7 +67,15 @@ public class AuthController(IAuthService authService) : ControllerBase
             Expires = DateTime.UtcNow.AddHours(1)
         });
 
-        return Ok(new LoginResponse(token));
+        var dto = new LoginDto
+        {
+            Token = token
+        };
+
+        return Ok(new LoginResponse
+        {
+            Data = dto
+        });
     }
 
     [HttpGet("secure")]

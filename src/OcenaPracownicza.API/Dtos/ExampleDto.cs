@@ -1,6 +1,6 @@
-﻿namespace OcenaPracownicza.API.Requests
+﻿namespace OcenaPracownicza.API.Dtos
 {
-    public class ExampleRequest
+    public class ExampleDto
     {
         public required string Name { get; set; }
         public required string Description { get; set; }

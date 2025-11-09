@@ -1,14 +1,9 @@
 ﻿namespace OcenaPracownicza.API.Responses
 {
-    public class BaseResponse
+    public class BaseResponse<TData> where TData : class
     {
-        public bool Success { get; set; }
-        public string Message { get; set; }
-
-        public BaseResponse(string message, bool success = true)
-        {
-            Success = success;
-            Message = message;
-        }
+        public bool Success { get; set; } = true;
+        public string Message { get; set; } = "Operacja zakończona sukcesem.";
+        public TData Data { get; set; } = default!;
     }
 }

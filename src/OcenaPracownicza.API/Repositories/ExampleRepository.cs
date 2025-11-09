@@ -1,21 +1,14 @@
-﻿using OcenaPracownicza.API.Interfaces.Repositories;
-using OcenaPracownicza.API.Models;
+﻿using OcenaPracownicza.API.Data;
+using OcenaPracownicza.API.Interfaces.Repositories;
+using OcenaPracownicza.API.Entities;
 
 namespace OcenaPracownicza.API.Repositories;
 
 // Repozytorium sluzy do pobierania danych z bazy danych. Powinno zwracac dane albo null, nie wyrzucac wyjatkow.
 // Kazde repozytorium powinno miec swoj interfejs w folderze Interfaces/Repositories.
-public class ExampleRepository : IExampleRepository
+public class ExampleRepository : BaseRepository<ExampleEntity>, IExampleRepository
 {
-    public async Task<ExampleModel?> DatabaseOperation()
+    public ExampleRepository(ApplicationDbContext context) : base(context)
     {
-        await Task.Delay(100); // Symulacja operacji asynchronicznej.
-        // Tutaj można dodać logikę operacji bazodanowej, np. pobieranie danych z bazy danych.
-        return new ExampleModel
-        {
-            Id = 1,
-            Name = "Przykładowa nazwa",
-            Description = "To jest przykładowy opis z operacji bazodanowej."
-        };
     }
 }

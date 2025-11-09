@@ -2,7 +2,7 @@
 
 namespace OcenaPracownicza.API.Responses
 {
-    public class ExampleResponse : BaseResponse<ExampleDto>
+    public class ExampleListResponse : BaseResponse<List<ExampleDto>>
     {
     }
 }
