@@ -1,4 +1,5 @@
 ﻿using OcenaPracownicza.API.Entities;
+using OcenaPracownicza.API.Interfaces.Services;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;

@@ -5,6 +5,8 @@
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
         public required string Position { get; set; }
-        public required string Department { get; set; }
+        public required string Period { get; set; }
+        public required string FinalScore { get; set; }
+        public required string AchievementsSummary { get; set; }
     }
 }

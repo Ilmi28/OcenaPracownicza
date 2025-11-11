@@ -1,6 +1,6 @@
 ﻿using OcenaPracownicza.API.Entities;
 
-namespace Ocenapracownicza.API.Services
+namespace OcenaPracownicza.API.Interfaces.Services
 {
     public interface IDocumentGeneratorService
     {
