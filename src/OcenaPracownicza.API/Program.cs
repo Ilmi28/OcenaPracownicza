@@ -17,6 +17,7 @@ using OcenaPracownicza.API.Data;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using Ocenapracownicza.API.Services;
 
 
 
@@ -33,6 +34,7 @@ public class Program
         
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddScoped<IDocumentGeneratorService, DocumentGeneratorService>();
 
         builder.Services.AddSwaggerGen(options =>
         {
