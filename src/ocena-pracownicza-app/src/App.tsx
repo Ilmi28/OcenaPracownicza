@@ -4,8 +4,32 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import Button from '@mui/material/Button';
 
+import axiosClient from "./services/axiosClient";
+
 function App() {
   const [count, setCount] = useState(0)
+
+
+  const testLogin = async () => {
+    try {
+      await axiosClient.post("/auth/login", {
+        username: "admin",
+        password: "admin123"
+      });
+      console.log("LOGIN OK");
+    } catch (e) {
+      console.log("LOGIN ERROR", e);
+    }
+  };
+
+  const testSecure = async () => {
+    try {
+      const res = await axiosClient.get("/auth/secure");
+      console.log("SECURE OK:", res.data);
+    } catch (e) {
+      console.log("SECURE ERROR:", e);
+    }
+  };
 
   return (
     <>
@@ -33,6 +57,10 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <div style={{ padding: 20 }}>
+        <button onClick={testLogin}>Test Login</button>
+        <button onClick={testSecure}>Test Secure</button>
+    </div>
     </>
   )
 }
