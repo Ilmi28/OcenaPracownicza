@@ -1,14 +1,13 @@
 {
-   
     "compilerOptions": {
-
+        "outDir": "./dist",
         "target": "ESNext",
         "useDefineForClassFields": true,
         "module": "ESNext",
         "moduleResolution": "bundler",
         "jsx": "react-jsx",
 
-        "types": [ "vitest/globals", "vite/client" ],
+        "types": ["vitest/globals", "vite/client"],
 
         "strict": true,
         "noUnusedLocals": true,
@@ -16,5 +15,5 @@
         "noImplicitReturns": true,
         "skipLibCheck": true
     },
-    "include": ["tests" ]
+    "include": ["tests"]
 }
