@@ -1,76 +1,123 @@
-﻿using System.Net;
+﻿using OcenaPracownicza.API.Requests;
+using OcenaPracownicza.API.Responses;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
-using OcenaPracownicza.API.Requests;
 using Xunit;
 
 namespace OcenaPracownicza.IntegrationTests
 {
-    public class ExampleControllerTests : IClassFixture<WebApplicationFactory<Program>>
+    public class ExampleControllerTests : IClassFixture<CustomWebApplicationFactory<Program>>
     {
-        private readonly HttpClient _client;
+        private readonly HttpClient _httpClient;
 
-        public ExampleControllerTests(WebApplicationFactory<Program> factory)
+        public ExampleControllerTests(CustomWebApplicationFactory<Program> factory)
         {
-            _client = factory.CreateClient();
+            Environment.SetEnvironmentVariable("GOOGLE_CLIENT_ID", "test-client-id");
+            Environment.SetEnvironmentVariable("GOOGLE_CLIENT_SECRET", "test-client-secret");
+
+            _httpClient = factory.CreateClient();
         }
 
         [Fact]
-        public async Task GetAll_ShouldReturnOk()
+        public async Task Post_AddsEntity_ThenGetReturnsIt()
         {
-            var response = await _client.GetAsync("/example");
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-        }
-
-        [Fact]
-        public async Task GetById_ShouldReturnOk()
-        {
-            var response = await _client.GetAsync("/example/1");
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-        }
-
-        [Fact]
-        public async Task Post_ShouldReturnOk_AndCreateItem()
-        {
-            var newItem = new ExampleRequest
+            var newRequest = new ExampleRequest
             {
-                Name = "Test Example",
-                Description = "Element testowy",
-                SomeDetail = "Szczegóły testowe"
-
+                Name = "Test Name",
+                Description = "Test Description",
+                SomeDetail = "Test Detail"
             };
 
-            var response = await _client.PostAsJsonAsync("/example", newItem);
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var postResponse = await _httpClient.PostAsJsonAsync("/example", newRequest);
+            postResponse.EnsureSuccessStatusCode();
 
-            var content = await response.Content.ReadAsStringAsync();
-            content.Should().Contain("Test Example");
+            var getResponse = await _httpClient.GetAsync("/example");
+            getResponse.EnsureSuccessStatusCode();
+
+            var result = await getResponse.Content.ReadFromJsonAsync<ExampleListResponse>();
+
+            Assert.NotNull(result);
+            Assert.Single(result.Data);
+            Assert.Equal("Test Name", result.Data[0].Name);
         }
 
         [Fact]
-        public async Task Put_ShouldReturnOk_AndUpdateItem()
+        public async Task GetById_ReturnsSingleEntity()
         {
-            var updateItem = new ExampleRequest
+            // Arrange – dodaj encję
+            var newRequest = new ExampleRequest
             {
-                Name = "Zaktualizowany Example",
-                Description = "Nowy opis",
-                SomeDetail = "Szczegóły testowe"
+                Name = "Entity1",
+                Description = "Desc1",
+                SomeDetail = "Detail1"
             };
+            var postResponse = await _httpClient.PostAsJsonAsync("/example", newRequest);
+            postResponse.EnsureSuccessStatusCode();
 
-            var response = await _client.PutAsJsonAsync("/example/1", updateItem);
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            // Act – pobierz po ID (zakładamy ID=1 w InMemory)
+            var getResponse = await _httpClient.GetAsync("/example/1");
+            getResponse.EnsureSuccessStatusCode();
 
-            var content = await response.Content.ReadAsStringAsync();
-            content.Should().Contain("Zaktualizowany");
+            var result = await getResponse.Content.ReadFromJsonAsync<ExampleResponse>();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Entity1", result.Data.Name);
         }
 
         [Fact]
-        public async Task Delete_ShouldReturnOk()
+        public async Task Put_UpdatesEntity()
         {
-            var response = await _client.DeleteAsync("/example/1");
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            // Arrange – dodaj encję
+            var newRequest = new ExampleRequest
+            {
+                Name = "Old Name",
+                Description = "Old Desc",
+                SomeDetail = "Old Detail"
+            };
+            var postResponse = await _httpClient.PostAsJsonAsync("/example", newRequest);
+            postResponse.EnsureSuccessStatusCode();
+
+            // Act – zaktualizuj encję
+            var updateRequest = new ExampleRequest
+            {
+                Name = "New Name",
+                Description = "New Desc",
+                SomeDetail = "New Detail"
+            };
+            var putResponse = await _httpClient.PutAsJsonAsync("/example/1", updateRequest);
+            putResponse.EnsureSuccessStatusCode();
+
+            var updated = await putResponse.Content.ReadFromJsonAsync<ExampleResponse>();
+
+            // Assert
+            Assert.NotNull(updated);
+            Assert.Equal("New Name", updated.Data.Name);
+        }
+
+        [Fact]
+        public async Task Delete_RemovesEntity()
+        {
+            // Arrange – dodaj encję
+            var newRequest = new ExampleRequest
+            {
+                Name = "Delete Me",
+                Description = "Desc",
+                SomeDetail = "Detail"
+            };
+            var postResponse = await _httpClient.PostAsJsonAsync("/example", newRequest);
+            postResponse.EnsureSuccessStatusCode();
+
+            // Act – usuń encję
+            var deleteResponse = await _httpClient.DeleteAsync("/example/1");
+            deleteResponse.EnsureSuccessStatusCode();
+
+            // Assert – sprawdź, że GET zwraca pustą listę
+            var getResponse = await _httpClient.GetAsync("/example");
+            getResponse.EnsureSuccessStatusCode();
+
+            var result = await getResponse.Content.ReadFromJsonAsync<ExampleListResponse>();
+            Assert.NotNull(result);
+            Assert.Empty(result.Data);
         }
     }
 }
