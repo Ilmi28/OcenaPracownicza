@@ -1,4 +1,6 @@
-﻿using QuestPDF.Fluent;
+﻿using OcenaPracownicza.API.Entities;
+using OcenaPracownicza.API.Interfaces.Services;
+using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System;
@@ -7,7 +9,7 @@ namespace Ocenapracownicza.API.Services
 {
     public class DocumentGeneratorService : IDocumentGeneratorService
     {
-        public byte[] GenerateReport(string employeeName, string position, string period, string finalScore, string achievementsSummary)
+        public byte[] GenerateReport(Employee employee)
         {
             QuestPDF.Settings.License = LicenseType.Community;
 
@@ -28,15 +30,15 @@ namespace Ocenapracownicza.API.Services
 
                     page.Content().Column(column =>
                     {
-                        column.Item().Text($"Imię i nazwisko: {employeeName}");
-                        column.Item().Text($"Stanowisko: {position}");
-                        column.Item().Text($"Okres oceny: {period}");
-                        column.Item().Text($"Ocena końcowa: {finalScore}");
+                        column.Item().Text($"Imię i nazwisko: {employee.FirstName} {employee.LastName}");
+                        column.Item().Text($"Stanowisko: {employee.Position}");
+                        column.Item().Text($"Okres oceny: {employee.Period}");
+                        column.Item().Text($"Ocena końcowa: {employee.FinalScore}");
 
                         column.Item().LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
 
                         column.Item().Text("Podsumowanie osiągnięć:");
-                        column.Item().Text(achievementsSummary);
+                        column.Item().Text(employee.AchievementsSummary);
                     });
 
                     page.Footer()

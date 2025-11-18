@@ -30,7 +30,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         {
             HttpOnly = true,
             Secure = true, 
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Expires = DateTime.UtcNow.AddHours(1)
         });
 
