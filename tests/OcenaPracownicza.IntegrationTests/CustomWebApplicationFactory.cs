@@ -16,13 +16,10 @@ namespace OcenaPracownicza.IntegrationTests
 
             builder.ConfigureServices(services =>
             {
-                var dbContextDescriptors = services
-                    .Where(d => d.ServiceType == typeof(ApplicationDbContext) ||
-                                d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>))
-                    .ToList();
-
-                foreach (var d in dbContextDescriptors)
-                    services.Remove(d);
+                var dbContextDescriptor = services
+                    .SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+                if (dbContextDescriptor != null)
+                    services.Remove(dbContextDescriptor);
 
                 services.AddDbContext<ApplicationDbContext>(options =>
                 {
@@ -32,9 +29,9 @@ namespace OcenaPracownicza.IntegrationTests
                 var sp = services.BuildServiceProvider();
                 using var scope = sp.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                db.Database.EnsureDeleted();
                 db.Database.EnsureCreated();
             });
         }
-
     }
 }

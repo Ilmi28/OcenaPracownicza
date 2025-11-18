@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System;
 using Xunit;
 using Ocenapracownicza.API.Services;
 
@@ -11,21 +6,66 @@ namespace Ocenapracownicza.UnitTests
 {
     public class DocumentGeneratorServiceTests
     {
+        private readonly DocumentGeneratorService _service = new DocumentGeneratorService();
+
         [Fact]
-        public void GenerateReport_ShouldReturnPdfBytes()
+        public void DocumentGeneratorService_GenerateReport_ShouldReturnPdfBytes()
         {
-            var service = new DocumentGeneratorService();
-            string employeeName = "Jan Kowalski";
-            string position = "Programista";
-            string period = "01.2025 - 06.2025";
-            string finalScore = "Dobry";
-            string achievementsSummary = "Test test.";
-
-            byte[] pdfBytes = service.GenerateReport(employeeName, position, period, finalScore, achievementsSummary);
-
+            var pdfBytes = _service.GenerateReport("Jan Kowalski", "Programista", "01.2025 - 06.2025", "Dobry", "Test test.");
             Assert.NotNull(pdfBytes);
             Assert.NotEmpty(pdfBytes);
             Assert.True(pdfBytes.Length > 1000);
         }
+
+        [Fact]
+        public void DocumentGeneratorService_GenerateReport_ShouldHandleEmptyStrings()
+        {
+            var pdfBytes = _service.GenerateReport("", "", "", "", "");
+            Assert.NotNull(pdfBytes);
+            Assert.NotEmpty(pdfBytes);
+            Assert.True(pdfBytes.Length > 1000);
+        }
+
+        [Fact]
+        public void DocumentGeneratorService_GenerateReport_ShouldHandleLongText()
+        {
+            string longText = new string('A', 5000);
+            var pdfBytes = _service.GenerateReport(longText, longText, longText, longText, longText);
+            Assert.NotNull(pdfBytes);
+            Assert.NotEmpty(pdfBytes);
+            Assert.True(pdfBytes.Length > 1000);
+        }
+
+        [Fact]
+        public void DocumentGeneratorService_GenerateReport_ShouldHandleSpecialCharacters()
+        {
+            string specialText = "ąęćżźńłóĄĘĆŻŹŃŁÓ!@#$%^&*()_+-=";
+            var pdfBytes = _service.GenerateReport(specialText, specialText, specialText, specialText, specialText);
+            Assert.NotNull(pdfBytes);
+            Assert.NotEmpty(pdfBytes);
+            Assert.True(pdfBytes.Length > 1000);
+        }
+
+        [Fact]
+        public void DocumentGeneratorService_GenerateReport_ShouldHandleUnicodeCharacters()
+        {
+            string unicodeText = "测试中文, тест русский, 🌟 Emoji!";
+            var pdfBytes = _service.GenerateReport(unicodeText, unicodeText, unicodeText, unicodeText, unicodeText);
+            Assert.NotNull(pdfBytes);
+            Assert.NotEmpty(pdfBytes);
+            Assert.True(pdfBytes.Length > 1000);
+        }
+
+        [Fact]
+        public void DocumentGeneratorService_GenerateReport_ShouldContainCurrentYearInFooter()
+        {
+            var pdfBytes = _service.GenerateReport("Jan Kowalski", "Programista", "01.2025 - 06.2025", "Dobry", "Test test.");
+            var currentYear = DateTime.Now.Year.ToString();
+            Assert.NotNull(pdfBytes);
+            Assert.NotEmpty(pdfBytes);
+            Assert.True(pdfBytes.Length > 1000);
+        }
+
     }
 }
+
