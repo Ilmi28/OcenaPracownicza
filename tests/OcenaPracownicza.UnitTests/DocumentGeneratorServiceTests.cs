@@ -1,5 +1,6 @@
 ﻿using System;
 using Xunit;
+using OcenaPracownicza.API.Entities;
 using Ocenapracownicza.API.Services;
 
 namespace Ocenapracownicza.UnitTests
@@ -8,10 +9,31 @@ namespace Ocenapracownicza.UnitTests
     {
         private readonly DocumentGeneratorService _service = new DocumentGeneratorService();
 
+        private Employee CreateEmployee(
+            string firstName = "Jan",
+            string lastName = "Kowalski",
+            string position = "Programista",
+            string period = "01.2025 - 06.2025",
+            string finalScore = "Dobry",
+            string summary = "Test test.")
+        {
+            return new Employee
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                Position = position,
+                Period = period,
+                FinalScore = finalScore,
+                AchievementsSummary = summary
+            };
+        }
+
         [Fact]
         public void DocumentGeneratorService_GenerateReport_ShouldReturnPdfBytes()
         {
-            var pdfBytes = _service.GenerateReport("Jan Kowalski", "Programista", "01.2025 - 06.2025", "Dobry", "Test test.");
+            var employee = CreateEmployee();
+            var pdfBytes = _service.GenerateReport(employee);
+
             Assert.NotNull(pdfBytes);
             Assert.NotEmpty(pdfBytes);
             Assert.True(pdfBytes.Length > 1000);
@@ -20,7 +42,17 @@ namespace Ocenapracownicza.UnitTests
         [Fact]
         public void DocumentGeneratorService_GenerateReport_ShouldHandleEmptyStrings()
         {
-            var pdfBytes = _service.GenerateReport("", "", "", "", "");
+            var employee = CreateEmployee(
+                firstName: "",
+                lastName: "",
+                position: "",
+                period: "",
+                finalScore: "",
+                summary: ""
+            );
+
+            var pdfBytes = _service.GenerateReport(employee);
+
             Assert.NotNull(pdfBytes);
             Assert.NotEmpty(pdfBytes);
             Assert.True(pdfBytes.Length > 1000);
@@ -30,7 +62,18 @@ namespace Ocenapracownicza.UnitTests
         public void DocumentGeneratorService_GenerateReport_ShouldHandleLongText()
         {
             string longText = new string('A', 5000);
-            var pdfBytes = _service.GenerateReport(longText, longText, longText, longText, longText);
+
+            var employee = CreateEmployee(
+                firstName: longText,
+                lastName: longText,
+                position: longText,
+                period: longText,
+                finalScore: longText,
+                summary: longText
+            );
+
+            var pdfBytes = _service.GenerateReport(employee);
+
             Assert.NotNull(pdfBytes);
             Assert.NotEmpty(pdfBytes);
             Assert.True(pdfBytes.Length > 1000);
@@ -39,8 +82,19 @@ namespace Ocenapracownicza.UnitTests
         [Fact]
         public void DocumentGeneratorService_GenerateReport_ShouldHandleSpecialCharacters()
         {
-            string specialText = "ąęćżźńłóĄĘĆŻŹŃŁÓ!@#$%^&*()_+-=";
-            var pdfBytes = _service.GenerateReport(specialText, specialText, specialText, specialText, specialText);
+            string special = "ąęćżźńłóĄĘĆŻŹŃŁÓ!@#$%^&*()_+-=";
+
+            var employee = CreateEmployee(
+                firstName: special,
+                lastName: special,
+                position: special,
+                period: special,
+                finalScore: special,
+                summary: special
+            );
+
+            var pdfBytes = _service.GenerateReport(employee);
+
             Assert.NotNull(pdfBytes);
             Assert.NotEmpty(pdfBytes);
             Assert.True(pdfBytes.Length > 1000);
@@ -49,8 +103,19 @@ namespace Ocenapracownicza.UnitTests
         [Fact]
         public void DocumentGeneratorService_GenerateReport_ShouldHandleUnicodeCharacters()
         {
-            string unicodeText = "测试中文, тест русский, 🌟 Emoji!";
-            var pdfBytes = _service.GenerateReport(unicodeText, unicodeText, unicodeText, unicodeText, unicodeText);
+            string unicode = "测试中文, тест русский, 🌟 Emoji!";
+
+            var employee = CreateEmployee(
+                firstName: unicode,
+                lastName: unicode,
+                position: unicode,
+                period: unicode,
+                finalScore: unicode,
+                summary: unicode
+            );
+
+            var pdfBytes = _service.GenerateReport(employee);
+
             Assert.NotNull(pdfBytes);
             Assert.NotEmpty(pdfBytes);
             Assert.True(pdfBytes.Length > 1000);
@@ -59,13 +124,12 @@ namespace Ocenapracownicza.UnitTests
         [Fact]
         public void DocumentGeneratorService_GenerateReport_ShouldContainCurrentYearInFooter()
         {
-            var pdfBytes = _service.GenerateReport("Jan Kowalski", "Programista", "01.2025 - 06.2025", "Dobry", "Test test.");
-            var currentYear = DateTime.Now.Year.ToString();
+            var employee = CreateEmployee();
+            var pdfBytes = _service.GenerateReport(employee);
+
             Assert.NotNull(pdfBytes);
             Assert.NotEmpty(pdfBytes);
             Assert.True(pdfBytes.Length > 1000);
         }
-
     }
 }
-
