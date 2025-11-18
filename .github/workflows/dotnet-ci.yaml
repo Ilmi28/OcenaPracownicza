@@ -1,4 +1,4 @@
-name: .NET Build & Test
+name: Build & Test
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: .NET Build & Test
+  backend:
+    name: .NET
     runs-on: ubuntu-latest
 
     steps:
@@ -28,3 +28,22 @@ jobs:
 
     - name: Test
       run: dotnet test OcenaPracownicza.sln
+  frontend:
+    name: React
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.x'
+
+    - name: Install dependencies
+      run: npm install
+      working-directory: ./src/ocena-pracownicza-app
+
+    - name: Test
+      run: npm test
+      working-directory: ./src/ocena-pracownicza-app
