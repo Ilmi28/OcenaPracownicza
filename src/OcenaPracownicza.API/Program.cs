@@ -18,6 +18,8 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Ocenapracownicza.API.Services;
+using Microsoft.AspNetCore.Authentication;
+using OcenaPracownicza.API;
 
 
 
@@ -28,10 +30,14 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-        
-        builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-        
+
+        if (!builder.Environment.IsEnvironment("Testing"))
+        {
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        }
+
+
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddScoped<IDocumentGeneratorService, DocumentGeneratorService>();
@@ -236,6 +242,18 @@ public class Program
                       .AllowAnyMethod();
             });
         });
+
+        if (!builder.Environment.IsEnvironment("Testing"))
+        {
+            builder.Services.Configure<AuthenticationOptions>(options =>
+            {
+                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            });
+        }
+
+
 
         var app = builder.Build();
 
