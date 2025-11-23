@@ -34,7 +34,6 @@ public class Program
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddScoped<IDocumentGeneratorService, DocumentGeneratorService>();
@@ -240,15 +239,6 @@ public class Program
             });
         });
 
-        if (!builder.Environment.IsEnvironment("Testing"))
-        {
-            builder.Services.Configure<AuthenticationOptions>(options =>
-            {
-                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            });
-        }
 
 
 
