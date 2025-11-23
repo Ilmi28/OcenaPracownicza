@@ -3,7 +3,7 @@ using OcenaPracownicza.API.Data;
 
 public class TestDbContext : ApplicationDbContext
 {
-    public TestDbContext(DbContextOptions<ApplicationDbContext> options)
+    public TestDbContext(DbContextOptions options)
         : base(options)
     {
     }

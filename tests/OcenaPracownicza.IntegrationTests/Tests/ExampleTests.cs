@@ -17,13 +17,13 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         protected override void SeedData()
         {
             context.ExampleEntities.AddRange(
-                new ExampleEntity { Name = "Entity1", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Name = "Old Name", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Name = "To Delete", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Name = "A", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Name = "B", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Name = "First", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Name = "Second", Description = "Desc", SomeDetail = "Detail" }
+                new ExampleEntity { Id = 1, Name = "Entity1", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = 2, Name = "Old Name", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = 3, Name = "To Delete", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = 4, Name = "A", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = 5, Name = "B", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = 6, Name = "First", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = 7, Name = "Second", Description = "Desc", SomeDetail = "Detail" }
             );
         }
 
