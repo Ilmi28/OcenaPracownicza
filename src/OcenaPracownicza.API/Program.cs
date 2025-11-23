@@ -31,11 +31,8 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        if (!builder.Environment.IsEnvironment("Testing"))
-        {
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-        }
 
 
         builder.Services.AddControllers();

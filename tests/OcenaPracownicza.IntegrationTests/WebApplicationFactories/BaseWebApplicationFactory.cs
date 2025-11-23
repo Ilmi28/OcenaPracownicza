@@ -11,6 +11,7 @@ namespace OcenaPracownicza.IntegrationTests.WebApplicationFactories
 {
     public class BaseWebApplicationFactory(string dbName) : WebApplicationFactory<Program>
     {
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureServices(services =>
