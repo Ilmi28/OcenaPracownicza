@@ -1,26 +1,13 @@
 ﻿using DotNetEnv;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
-using OcenaPracownicza.API.AppProblemDetails;
-using OcenaPracownicza.API.Exceptions.BaseExceptions;
+using Microsoft.IdentityModel.Tokens;
+using OcenaPracownicza.API.Data;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Repositories;
 using OcenaPracownicza.API.Services;
-using OcenaPracownicza.API.Data;
-using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
-using Ocenapracownicza.API.Services;
-using OcenaPracownicza.API.Extensions;
-
-
 
 namespace OcenaPracownicza;
 
@@ -33,31 +20,106 @@ public class Program
         Env.Load();
 
         ConfigureServices(builder);
-
         var app = builder.Build();
-
         ConfigureMiddleware(app);
 
         app.Run();
     }
 
-    public static void ConfigureServices(WebApplicationBuilder builder)
+    private static void ConfigureServices(WebApplicationBuilder builder)
     {
-        builder.Services.AddAppDbContext(builder.Configuration);
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwagger();
-        builder.Services.AddAuthenticationWithGoogle(builder.Configuration);
-        builder.Services.AddServices();
-        builder.Services.AddRepositories();
+
+        // ============================================================
+        // SWAGGER + SECURITY (PRZYWRACA KŁÓDKĘ!)
+        // ============================================================
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+            {
+                Title = "Ocena Pracownicza API",
+                Version = "v1"
+            });
+
+            c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                Description = "Wpisz: Bearer {token}"
+            });
+
+            c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+            {
+                {
+                    new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                    {
+                        Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                        {
+                            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
+
+        // ============================================================
+        // DATABASE (poprawna nazwa ApplicationDbContext)
+        // ============================================================
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        {
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+        });
+
+        // ============================================================
+        // CORS
+        // ============================================================
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                policy.AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowAnyOrigin();
+            });
+        });
+
+        // ============================================================
+        // JWT AUTH
+        // ============================================================
+        var jwtKey = builder.Configuration["JwtSettings:Secret"] ?? "dev_secret_key_123";
+        var key = Encoding.UTF8.GetBytes(jwtKey);
+
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key)
+                };
+            });
+
         builder.Services.AddAuthorization();
-        builder.Services.AddCorsWithPolicies();
+
+        // ============================================================
+        // SERVICES + REPOSITORIES
+        // ============================================================
+        builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+        builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+
+        builder.Services.AddScoped<IAuthService, AuthService>();
     }
 
-    public static void ConfigureMiddleware(WebApplication app)
+    private static void ConfigureMiddleware(WebApplication app)
     {
-        app.UseProblemDetailsExceptionHandler();
-
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -65,6 +127,7 @@ public class Program
         }
 
         app.UseHttpsRedirection();
+
         app.UseCors("AllowFrontend");
 
         app.UseAuthentication();
@@ -72,5 +135,4 @@ public class Program
 
         app.MapControllers();
     }
-
 }

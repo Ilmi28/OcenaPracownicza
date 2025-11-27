@@ -1,40 +1,48 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using OcenaPracownicza.API.Dtos;
+﻿using Microsoft.AspNetCore.Mvc;
 using OcenaPracownicza.API.Interfaces.Services;
-using System.Security.Claims;
+using OcenaPracownicza.API.Requests;
+using OcenaPracownicza.API.Responses;
 
-namespace OcenaPracownicza.API.Controllers
+namespace OcenaPracownicza.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class EmployeeController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    [Authorize] // wymaga autoryzacji
-    public class EmployeeController : ControllerBase
+    private readonly IEmployeeService employeeService;
+
+    public EmployeeController(IEmployeeService employeeService)
     {
-        private readonly IEmployeeService _employeeService;
+        this.employeeService = employeeService;
+    }
 
-        public EmployeeController(IEmployeeService employeeService)
-        {
-            _employeeService = employeeService;
-        }
+    [HttpGet]
+    public async Task<IEnumerable<EmployeeResponse>> GetAll()
+    {
+        return await employeeService.GetAll();
+    }
 
-        [HttpGet("profile")]
-        public ActionResult<EmployeeProfileDto> GetProfile()
-        {
-            // Pobierz ID pracownika z tokena JWT
-            var employeeIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (employeeIdClaim == null)
-                return Unauthorized();
+    [HttpGet("{id}")]
+    public async Task<EmployeeResponse> GetById(int id)
+    {
+        return await employeeService.GetById(id);
+    }
 
-            if (!int.TryParse(employeeIdClaim.Value, out int employeeId))
-                return BadRequest("Nieprawidłowy identyfikator użytkownika.");
+    [HttpPost]
+    public async Task<EmployeeResponse> Create(CreateEmployeeRequest request)
+    {
+        return await employeeService.Create(request);
+    }
 
-            var profile = _employeeService.GetProfile(employeeId);
+    [HttpPut("{id}")]
+    public async Task<EmployeeResponse> Update(int id, UpdateEmployeeRequest request)
+    {
+        return await employeeService.Update(id, request);
+    }
 
-            if (profile == null)
-                return NotFound();
-
-            return Ok(profile);
-        }
+    [HttpDelete("{id}")]
+    public async Task<DeleteEmployeeResponse> Delete(int id)
+    {
+        return await employeeService.Delete(id);
     }
 }
