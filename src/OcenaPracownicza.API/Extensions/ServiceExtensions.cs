@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Ocenapracownicza.API.Services;
@@ -25,6 +24,7 @@ namespace OcenaPracownicza.API.Extensions
             services.AddScoped<IDocumentGeneratorService, DocumentGeneratorService>();
             services.AddScoped<IExampleService, ExampleService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IEmployeeService, EmployeeService>();
         }
 
         public static void AddRepositories(this IServiceCollection services)
@@ -44,10 +44,13 @@ namespace OcenaPracownicza.API.Extensions
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173")
-                          .AllowCredentials()
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
+                    policy.WithOrigins(
+                        "http://localhost:5173",
+                        "https://localhost:56517" // Dodano obsługę Swaggera
+                    )
+                    .AllowCredentials()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
                 });
             });
         }
@@ -55,38 +58,38 @@ namespace OcenaPracownicza.API.Extensions
         public static void AddSwagger(this IServiceCollection services)
         {
             services.AddSwaggerGen(options =>
-             {
-                 options.SwaggerDoc("v1", new OpenApiInfo
-                 {
-                     Title = "OcenaPracownicza.API",
-                     Version = "v1"
-                 });
-
-                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                 {
-                     Description = "Podaj token JWT bez prefiksu 'Bearer', np.: eyJhbGciOi...",
-                     Name = "Authorization",
-                     In = ParameterLocation.Header,
-                     Type = SecuritySchemeType.Http,
-                     Scheme = "bearer",
-                     BearerFormat = "JWT"
-                 });
-
-                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
+                options.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    new OpenApiSecurityScheme
+                    Title = "OcenaPracownicza.API",
+                    Version = "v1"
+                });
+
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = "Podaj token JWT bez prefiksu 'Bearer', np.: eyJhbGciOi...",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT"
+                });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
                     {
-                        Reference = new OpenApiReference
+                        new OpenApiSecurityScheme
                         {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    },
-                    Array.Empty<string>()
-                }
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
             });
-             });
         }
 
         public static void AddAuthenticationWithGoogle(this IServiceCollection services, IConfiguration config)

@@ -11,6 +11,7 @@ namespace OcenaPracownicza.API.Services;
 public class AuthService : IAuthService
 {
     public IConfiguration _configuration;
+
     public AuthService(IConfiguration configuration)
     {
         _configuration = configuration;
@@ -21,19 +22,35 @@ public class AuthService : IAuthService
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
             throw new ArgumentException("Username i Password nie mogą być puste.");
 
-        if (request.Username != "admin" || request.Password != "admin123")
-            throw new UnauthorizedAccessException("Nieprawidłowa nazwa użytkownika lub hasło.");
 
-        var claims = new[]
+        if (request.Username == "admin" && request.Password == "admin123")
         {
-            new Claim(JwtRegisteredClaimNames.Sub, request.Username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Role, "Administrator")
-        };
+            var adminClaims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, request.Username),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.Role, "Administrator"),
+                new Claim(ClaimTypes.NameIdentifier, "1")
+            };
 
-        var token = GenerateJwtToken(claims);
+            return GenerateJwtToken(adminClaims);
+        }
 
-        return token;
+
+        if (request.Username == "employee" && request.Password == "employee123")
+        {
+            var employeeClaims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, request.Username),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.Role, "Employee"),
+                new Claim(ClaimTypes.NameIdentifier, "10")  
+            };
+
+            return GenerateJwtToken(employeeClaims);
+        }
+
+        throw new UnauthorizedAccessException("Nieprawidłowa nazwa użytkownika lub hasło.");
     }
 
     public string LoginWithGoogle(AuthenticateResult result)
@@ -59,8 +76,10 @@ public class AuthService : IAuthService
         var secretKey = jwtSettings["Secret"];
         var issuer = jwtSettings["Issuer"];
         var audience = jwtSettings["Audience"];
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
         var token = new JwtSecurityToken(
             issuer: issuer,
             audience: audience,
@@ -68,6 +87,7 @@ public class AuthService : IAuthService
             expires: DateTime.Now.AddHours(1),
             signingCredentials: credentials
         );
+
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

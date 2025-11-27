@@ -10,10 +10,12 @@ public class ApplicationDbContext : DbContext
     {
     }
 
+    public DbSet<Employee> Employees { get; set; } 
     public DbSet<ExampleEntity> ExampleEntities { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
     }
 }
