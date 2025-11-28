@@ -21,11 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Xunit" />
+    <ProjectReference Include="..\..\src\OcenaPracownicza.API\OcenaPracownicza.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\OcenaPracownicza.API\OcenaPracownicza.API.csproj" />
+    <Using Include="Xunit" />
   </ItemGroup>
 
 

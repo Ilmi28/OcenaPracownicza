@@ -52,6 +52,9 @@ public class Program
         builder.Services.AddRepositories();
         builder.Services.AddAuthorization();
         builder.Services.AddCorsWithPolicies();
+        builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+        builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+
     }
 
     public static void ConfigureMiddleware(WebApplication app)
