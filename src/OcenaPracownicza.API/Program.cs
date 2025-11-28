@@ -1,23 +1,4 @@
 ﻿using DotNetEnv;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using Microsoft.EntityFrameworkCore;
-using OcenaPracownicza.API.AppProblemDetails;
-using OcenaPracownicza.API.Exceptions.BaseExceptions;
-using OcenaPracownicza.API.Interfaces.Repositories;
-using OcenaPracownicza.API.Interfaces.Services;
-using OcenaPracownicza.API.Repositories;
-using OcenaPracownicza.API.Services;
-using OcenaPracownicza.API.Data;
-using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
-using Ocenapracownicza.API.Services;
 using OcenaPracownicza.API.Extensions;
 
 
@@ -52,8 +33,6 @@ public class Program
         builder.Services.AddRepositories();
         builder.Services.AddAuthorization();
         builder.Services.AddCorsWithPolicies();
-        builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-        builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
     }
 

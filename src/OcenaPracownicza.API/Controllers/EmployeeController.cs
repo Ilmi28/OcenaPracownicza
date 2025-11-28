@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
-using OcenaPracownicza.API.Requests;
-using OcenaPracownicza.API.Responses;
 
 
 namespace OcenaPracownicza.Controllers;

@@ -25,11 +25,13 @@ namespace OcenaPracownicza.API.Extensions
             services.AddScoped<IDocumentGeneratorService, DocumentGeneratorService>();
             services.AddScoped<IExampleService, ExampleService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IEmployeeService, EmployeeService>();
         }
 
         public static void AddRepositories(this IServiceCollection services)
         {
             services.AddScoped<IExampleRepository, ExampleRepository>();
+            services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         }
 
         public static void AddAppDbContext(this IServiceCollection services, IConfiguration config)

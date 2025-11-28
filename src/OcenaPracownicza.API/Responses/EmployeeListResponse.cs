@@ -1,6 +1,8 @@
-﻿namespace OcenaPracownicza.API.Responses;
+﻿using OcenaPracownicza.API.Dtos;
 
-public class EmployeeListResponse
+namespace OcenaPracownicza.API.Responses;
+
+public class EmployeeListResponse : BaseResponse<List<EmployeeDto>>
 {
-    public List<EmployeeResponse> Employees { get; set; } = new();
+
 }

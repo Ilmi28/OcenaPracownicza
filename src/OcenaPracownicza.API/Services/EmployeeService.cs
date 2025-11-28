@@ -1,4 +1,6 @@
-﻿using OcenaPracownicza.API.Entities;
+﻿using OcenaPracownicza.API.Dtos;
+using OcenaPracownicza.API.Entities;
+using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
@@ -19,7 +21,7 @@ public class EmployeeService : IEmployeeService
     {
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
-            throw new Exception("Employee not found");
+            throw new DirectoryNotFoundException("Employee not found");
 
         return MapToResponse(entity);
     }
@@ -29,7 +31,19 @@ public class EmployeeService : IEmployeeService
         var entities = await _employeeRepository.GetAll();
         var response = new EmployeeListResponse
         {
-            Employees = entities.Select(MapToResponse).ToList()
+            Data = entities.Select(x =>
+            {
+                return new EmployeeDto
+                {
+                    Id = x.Id,
+                    FirstName = x.FirstName,
+                    LastName = x.LastName,
+                    Position = x.Position,
+                    Period = x.Period,
+                    FinalScore = x.FinalScore,
+                    AchievementsSummary = x.AchievementsSummary
+                };
+            }).ToList()
         };
         return response;
     }
@@ -54,7 +68,7 @@ public class EmployeeService : IEmployeeService
     {
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
-            throw new Exception("Employee not found");
+            throw new NotFoundException("Employee not found");
 
         entity.FirstName = request.FirstName;
         entity.LastName = request.LastName;
@@ -71,7 +85,7 @@ public class EmployeeService : IEmployeeService
     {
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
-            throw new Exception("Employee not found");
+            throw new NotFoundException("Employee not found");
 
         await _employeeRepository.Delete(id);
         return MapToResponse(entity);
@@ -81,13 +95,16 @@ public class EmployeeService : IEmployeeService
     {
         return new EmployeeResponse
         {
-            Id = entity.Id,
-            FirstName = entity.FirstName,
-            LastName = entity.LastName,
-            Position = entity.Position,
-            Period = entity.Period,
-            FinalScore = entity.FinalScore,
-            AchievementsSummary = entity.AchievementsSummary
+            Data = new EmployeeDto
+            {
+                Id = entity.Id,
+                FirstName = entity.FirstName,
+                LastName = entity.LastName,
+                Position = entity.Position,
+                Period = entity.Period,
+                FinalScore = entity.FinalScore,
+                AchievementsSummary = entity.AchievementsSummary
+            }
         };
     }
 }
