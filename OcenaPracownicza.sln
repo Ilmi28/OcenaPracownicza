@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36414.22
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11222.15 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OcenaPracownicza.API", "src\OcenaPracownicza.API\OcenaPracownicza.API.csproj", "{66F1B1F9-3631-29AE-46DC-1CF4954EAC81}"
 EndProject
@@ -23,7 +23,6 @@ Global
 		{66F1B1F9-3631-29AE-46DC-1CF4954EAC81}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B03876F1-EF4E-649E-5657-E34B589791F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B03876F1-EF4E-649E-5657-E34B589791F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B03876F1-EF4E-649E-5657-E34B589791F1}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{B03876F1-EF4E-649E-5657-E34B589791F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B03876F1-EF4E-649E-5657-E34B589791F1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B03876F1-EF4E-649E-5657-E34B589791F1}.Release|Any CPU.Deploy.0 = Release|Any CPU

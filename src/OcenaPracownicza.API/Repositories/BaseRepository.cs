@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OcenaPracownicza.API.Data;
 using OcenaPracownicza.API.Entities;

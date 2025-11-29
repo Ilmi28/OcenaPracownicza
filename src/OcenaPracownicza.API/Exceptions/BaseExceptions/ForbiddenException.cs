@@ -2,6 +2,9 @@
 
 public class ForbiddenException : Exception
 {
+    public ForbiddenException() : base("Nie masz odpowiednich uprawnień.")
+    {
+    }
     public ForbiddenException(string message) : base(message)
     {
     }

@@ -2,6 +2,9 @@
 
 public class ConflictException : Exception
 {
+    public ConflictException() : base("Wystąpił konflikt w bazie danych.")
+    {
+    }
     public ConflictException(string message) : base(message)
     {
     }

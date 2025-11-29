@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
@@ -8,6 +9,8 @@ using Microsoft.OpenApi.Models;
 using Ocenapracownicza.API.Services;
 using OcenaPracownicza.API.AppProblemDetails;
 using OcenaPracownicza.API.Data;
+using OcenaPracownicza.API.Data.Identity;
+using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Repositories;
@@ -26,18 +29,22 @@ namespace OcenaPracownicza.API.Extensions
             services.AddScoped<IExampleService, ExampleService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IEmployeeService, EmployeeService>();
+            services.AddScoped<ITokenService, TokenService>();
         }
 
         public static void AddRepositories(this IServiceCollection services)
         {
             services.AddScoped<IExampleRepository, ExampleRepository>();
             services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            services.AddScoped<IUserManager, UserManager>();
         }
 
-        public static void AddAppDbContext(this IServiceCollection services, IConfiguration config)
+        public static void AddAppDbContextWithIdentity(this IServiceCollection services, IConfiguration config)
         {
+            Console.WriteLine(config.GetConnectionString("DefaultConnection"));
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
+            services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
         }
 
         public static void AddCorsWithPolicies(this IServiceCollection services)
@@ -101,9 +108,9 @@ namespace OcenaPracownicza.API.Extensions
 
             services.AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
             })
             .AddCookie(options =>
             {

@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 
@@ -24,14 +27,14 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post(EmployeeRequest request)
+    public async Task<IActionResult> Post(CreateEmployeeRequest request)
     {
         var response = await employeeService.Add(request);
         return Ok(response);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, EmployeeRequest request)
+    public async Task<IActionResult> Put(int id, UpdateEmployeeRequest request)
     {
         var response = await employeeService.Update(id, request);
         return Ok(response);

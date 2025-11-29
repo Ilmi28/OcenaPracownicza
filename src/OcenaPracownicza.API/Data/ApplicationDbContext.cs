@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using OcenaPracownicza.API.Data.Identity;
 using OcenaPracownicza.API.Entities;
 
 namespace OcenaPracownicza.API.Data;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : IdentityDbContext<IdentityUser>
 {
     public ApplicationDbContext(DbContextOptions options)
         : base(options)
@@ -12,10 +15,4 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<ExampleEntity> ExampleEntities { get; set; }
     public DbSet<Employee> Employees { get; set; }
-
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-    }
 }

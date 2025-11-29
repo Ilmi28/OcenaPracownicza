@@ -24,7 +24,8 @@ namespace Ocenapracownicza.UnitTests
                 Position = position,
                 Period = period,
                 FinalScore = finalScore,
-                AchievementsSummary = summary
+                AchievementsSummary = summary,
+                IdentityUserId = "1"
             };
         }
 
