@@ -126,5 +126,12 @@ namespace OcenaPracownicza.API.Data.Identity
 
             return user != null && user.IsInRole("Employee");
         }
+
+        public async Task<bool> CreateWithoutPassword(IdentityUser user)
+        {
+            var result = await _userManager.CreateAsync(user);
+
+            return result.Succeeded;
+        }
     }
 }

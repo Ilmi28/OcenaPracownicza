@@ -7,6 +7,7 @@ namespace OcenaPracownicza.API.Interfaces.Other
     public interface IUserManager
     {
         Task<bool> CreateAsync(IdentityUser user, string password);
+        Task<bool> CreateWithoutPassword(IdentityUser user);
         Task<IdentityUser?> FindByIdAsync(string userId);
         Task<IdentityUser?> FindByEmailAsync(string email);
         Task<IdentityUser?> FindByNameAsync(string userName);
