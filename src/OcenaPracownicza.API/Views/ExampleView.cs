@@ -1,6 +1,6 @@
-﻿namespace OcenaPracownicza.API.Dtos
+﻿namespace OcenaPracownicza.API.Views
 {
-    public class ExampleDto
+    public class ExampleView
     {
         public required string Name { get; set; }
         public required string Description { get; set; }

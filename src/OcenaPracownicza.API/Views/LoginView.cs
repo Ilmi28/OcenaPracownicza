@@ -1,6 +1,6 @@
-﻿namespace OcenaPracownicza.API.Dtos
+﻿namespace OcenaPracownicza.API.Views
 {
-    public class LoginDto
+    public class LoginView
     {
         public required string Token { get; set; }
     }

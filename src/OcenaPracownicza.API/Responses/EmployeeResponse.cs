@@ -1,7 +1,7 @@
-﻿using OcenaPracownicza.API.Dtos;
+﻿using OcenaPracownicza.API.Views;
 
 namespace OcenaPracownicza.API.Responses;
 
-public class EmployeeResponse : BaseResponse<EmployeeDto>
+public class EmployeeResponse : BaseResponse<EmployeeView>
 {
 }

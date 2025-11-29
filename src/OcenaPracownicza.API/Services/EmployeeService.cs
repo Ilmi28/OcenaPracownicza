@@ -1,10 +1,10 @@
-﻿using OcenaPracownicza.API.Dtos;
-using OcenaPracownicza.API.Entities;
+﻿using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
+using OcenaPracownicza.API.Views;
 
 namespace OcenaPracownicza.API.Services;
 
@@ -33,7 +33,7 @@ public class EmployeeService : IEmployeeService
         {
             Data = entities.Select(x =>
             {
-                return new EmployeeDto
+                return new EmployeeView
                 {
                     Id = x.Id,
                     FirstName = x.FirstName,
@@ -95,7 +95,7 @@ public class EmployeeService : IEmployeeService
     {
         return new EmployeeResponse
         {
-            Data = new EmployeeDto
+            Data = new EmployeeView
             {
                 Id = entity.Id,
                 FirstName = entity.FirstName,
