@@ -24,7 +24,7 @@ public class Program
 
     public static void ConfigureServices(WebApplicationBuilder builder)
     {
-        builder.Services.AddAppDbContext(builder.Configuration);
+        builder.Services.AddAppDbContextWithIdentity(builder.Configuration);
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwagger();
