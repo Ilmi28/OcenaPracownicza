@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using OcenaPracownicza.API.Dtos;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
 using OcenaPracownicza.API.Services;
+using OcenaPracownicza.API.Views;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -34,7 +34,7 @@ public class AuthController(IAuthService authService) : ControllerBase
             Expires = DateTime.UtcNow.AddHours(1)
         });
 
-        var dto = new LoginDto
+        var dto = new LoginView
         {
             Token = token
         };
@@ -67,7 +67,7 @@ public class AuthController(IAuthService authService) : ControllerBase
             Expires = DateTime.UtcNow.AddHours(1)
         });
 
-        var dto = new LoginDto
+        var dto = new LoginView
         {
             Token = token
         };

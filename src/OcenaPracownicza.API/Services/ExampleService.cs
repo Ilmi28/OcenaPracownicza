@@ -1,10 +1,10 @@
-﻿using OcenaPracownicza.API.Dtos;
-using OcenaPracownicza.API.Entities;
+﻿using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
+using OcenaPracownicza.API.Views;
 
 namespace OcenaPracownicza.API.Services;
 
@@ -24,7 +24,7 @@ public class ExampleService(IExampleRepository exampleRepository) : IExampleServ
         var data = await exampleRepository.GetById(id)
             ?? throw new NotFoundException("Nie znaleziono takiego obiektu.");
 
-        var dto = new ExampleDto
+        var dto = new ExampleView
         {
             Name = data.Name,
             Description = data.Description,
@@ -40,7 +40,7 @@ public class ExampleService(IExampleRepository exampleRepository) : IExampleServ
     public async Task<ExampleListResponse> GetAll()
     {
         var data = await exampleRepository.GetAll();
-        var dtos = data.Select(d => new ExampleDto
+        var dtos = data.Select(d => new ExampleView
         {
             Name = d.Name,
             Description = d.Description,
@@ -67,7 +67,7 @@ public class ExampleService(IExampleRepository exampleRepository) : IExampleServ
         
         var created = await exampleRepository.Create(entity);
 
-        var dto = new ExampleDto
+        var dto = new ExampleView
         {
             Name = created.Name,
             Description = created.Description,
@@ -88,7 +88,7 @@ public class ExampleService(IExampleRepository exampleRepository) : IExampleServ
         existing.Description = request.Description;
         existing.SomeDetail = request.SomeDetail;
         var updated = await exampleRepository.Update(existing);
-        var dto = new ExampleDto
+        var dto = new ExampleView
         {
             Name = updated.Name,
             Description = updated.Description,

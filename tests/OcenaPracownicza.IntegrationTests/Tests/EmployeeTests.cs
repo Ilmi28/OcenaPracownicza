@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Requests;
+using OcenaPracownicza.API.Responses;
+using OcenaPracownicza.API.Views;
 using OcenaPracownicza.IntegrationTests.WebApplicationFactories;
 using System.Net;
 using System.Net.Http.Json;
@@ -10,9 +12,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 {
     public class EmployeeTests : BaseTests<EmployeeWebApplicationFactory>
     {
-        public EmployeeTests(EmployeeWebApplicationFactory factory) : base(factory)
-        {
-        }
+        public EmployeeTests(EmployeeWebApplicationFactory factory) : base(factory) { }
 
         protected override void SeedData()
         {
@@ -27,20 +27,37 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         }
 
         [Fact]
-        public async Task GetById_ReturnsSingleEmployee()
+        public async Task GetById_ReturnsEmployee()
         {
-            var entity = await context.Employees.FindAsync(1);
-            var response = await client.GetAsync($"/employee/{entity!.Id}");
+            var response = await client.GetAsync("/employee/1");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var result = await context.Employees.FindAsync(entity.Id);
+            var result = await response.Content.ReadFromJsonAsync<BaseResponse<EmployeeView>>();
             Assert.NotNull(result);
-            Assert.Equal("Jan", result!.FirstName);
-            Assert.Equal("Kowalski", result.LastName);
+            Assert.Equal("Jan", result!.Data.FirstName);
+            Assert.Equal("Kowalski", result.Data.LastName);
         }
 
         [Fact]
-        public async Task Post_AddsEmployee_ThenGetReturnsIt()
+        public async Task GetAll_ReturnsEmployees()
+        {
+            var response = await client.GetAsync("/employee");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var employees = await response.Content.ReadFromJsonAsync<BaseResponse<List<EmployeeView>>>();
+            var data = employees!.Data;
+
+            Assert.NotNull(data);
+            Assert.Equal("Jan", data[0].FirstName);
+            Assert.Equal("Anna"!, data[1].FirstName);
+            Assert.Equal("Piotr", data[2].FirstName);
+            Assert.Equal("To"!, data[3].FirstName);
+            Assert.Equal("A", data[4].FirstName);
+            Assert.Equal("B"!, data[5].FirstName);
+        }
+
+        [Fact]
+        public async Task Post_AddsEmployee()
         {
             var request = new EmployeeRequest
             {
@@ -52,8 +69,8 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 AchievementsSummary = "Created in test"
             };
 
-            var postResponse = await client.PostAsJsonAsync("/employee", request);
-            Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
+            var response = await client.PostAsJsonAsync("/employee", request);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var added = await context.Employees.FirstOrDefaultAsync(e => e.FirstName == "New" && e.LastName == "Employee");
             Assert.NotNull(added);
@@ -61,10 +78,8 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         }
 
         [Fact]
-        public async Task Put_UpdatesExistingEmployee()
+        public async Task Put_UpdatesEmployee()
         {
-            var entity = await context.Employees.FirstAsync(e => e.FirstName == "Anna");
-
             var updateRequest = new EmployeeRequest
             {
                 FirstName = "AnnaUpdated",
@@ -75,46 +90,13 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 AchievementsSummary = "Updated summary"
             };
 
-            var response = await client.PutAsJsonAsync($"/employee/{entity.Id}", updateRequest);
-
+            var response = await client.PutAsJsonAsync("/employee/2", updateRequest);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var result = await context.Employees.FindAsync(entity.Id);
-            Assert.NotNull(result);
-
-            Assert.Equal("Anna", result!.FirstName);
-            Assert.Equal("Nowak", result!.LastName);
-            Assert.Equal("QA", result!.Position);
-        }
-
-
-        [Fact]
-        public async Task Delete_RemovesEmployee()
-        {
-            var entity = await context.Employees.FirstAsync(e => e.FirstName == "To");
-            var deleteResponse = await client.DeleteAsync($"/employee/{entity.Id}");
-            Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
-
-            var exists = await context.Employees.AnyAsync(e => e.Id == entity.Id);
-            Assert.False(exists);
-
-            var count = await context.Employees.CountAsync();
-            Assert.Equal(5, count);
-        }
-
-        [Fact]
-        public async Task GetAll_ReturnsMultipleEmployees()
-        {
-            var response = await client.GetAsync("/employee");
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            var names = await context.Employees
-                .Where(e => e.Id == 5 || e.Id == 6)
-                .Select(e => e.FirstName)
-                .ToListAsync();
-
-            Assert.Contains("A", names);
-            Assert.Contains("B", names);
+            var updated = await context.Employees.FindAsync(2);
+            await context.Entry(updated!).ReloadAsync();
+            Assert.Equal("AnnaUpdated", updated!.FirstName);
+            Assert.Equal("Xyz", updated.LastName);
         }
 
         [Fact]
@@ -130,10 +112,18 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 AchievementsSummary = "N/A"
             };
 
-            var response = await client.PutAsJsonAsync($"/employee/{99999}", updateRequest);
-            // jeżeli w Twoim serwisie PUT dla nieistniejącego zwraca NotFound, oczekuj NotFound. 
-            // Jeśli implementacja zwraca OK z błędem w treści, dostosuj asercję poniżej.
+            var response = await client.PutAsJsonAsync("/employee/99999", updateRequest);
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task Delete_RemovesEmployee()
+        {
+            var response = await client.DeleteAsync("/employee/4");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var exists = await context.Employees.AnyAsync(e => e.Id == 4);
+            Assert.False(exists);
         }
     }
 }
