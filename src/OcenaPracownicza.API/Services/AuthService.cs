@@ -59,11 +59,8 @@ public class AuthService : IAuthService
     public async Task<string> LoginWithGoogle(AuthenticateResult authenticateResult)
     {
         var email = authenticateResult.Principal!.FindFirst(ClaimTypes.Email)?.Value;
-        var name = authenticateResult.Principal!.FindFirst(ClaimTypes.Name)?.Value;
-        var nameIdentifier = authenticateResult.Principal!.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var picture = authenticateResult.Principal!.FindFirst("picture")?.Value;
 
-        var existingUser = await _userManager.FindByNameAsync("Admin");
+        var existingUser = await _userManager.FindByEmailAsync(email!);
         if (existingUser != null)
         {
             var roles = await _userManager.GetUserRolesAsync(existingUser.Id);
@@ -71,14 +68,14 @@ public class AuthService : IAuthService
         }
         var identityUser = new IdentityUser
         {
-            UserName = name, 
+            UserName = email, 
             Email = email
         };
-        var result = await _userManager.CreateAsync(identityUser, "admin123");
+        var result = await _userManager.CreateWithoutPassword(identityUser);
 
         if (result)
         {
-            result = await _userManager.AddToRoleAsync(identityUser.Id, "Admin");
+            result = await _userManager.AddToRoleAsync(identityUser.Id, "Employee");
             var roles = await _userManager.GetUserRolesAsync(identityUser.Id);
 
             return _tokenService.GenerateToken(identityUser, roles);
