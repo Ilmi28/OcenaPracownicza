@@ -2,11 +2,10 @@
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Interfaces.Repositories;
 
-namespace OcenaPracownicza.API.Repositories;
-
-public class EmployeeRepository : BaseRepository<Employee>, IEmployeeRepository
+namespace OcenaPracownicza.API.Repositories
 {
-    public EmployeeRepository(ApplicationDbContext context) : base(context)
+    public class EmployeeRepository : BaseRepository<Employee>, IEmployeeRepository
     {
+        public EmployeeRepository(ApplicationDbContext context) : base(context) { }
     }
 }

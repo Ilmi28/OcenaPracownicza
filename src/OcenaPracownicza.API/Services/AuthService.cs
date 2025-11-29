@@ -1,73 +1,88 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 using System.IdentityModel.Tokens.Jwt;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace OcenaPracownicza.API.Services;
 
 public class AuthService : IAuthService
 {
-    public IConfiguration _configuration;
-    public AuthService(IConfiguration configuration)
+    private readonly IConfiguration _configuration;
+    private readonly IUserManager _userManager;
+    private readonly ITokenService _tokenService;
+    public AuthService(IConfiguration configuration, IUserManager userManager, ITokenService tokenService)
     {
         _configuration = configuration;
+        _userManager = userManager;
+        _tokenService = tokenService;
     }
 
-    public string Login(LoginRequest request)
+    public async Task<string> Login(LoginRequest request)
     {
         if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
             throw new ArgumentException("Username i Password nie mogą być puste.");
 
-        if (request.Username != "admin" || request.Password != "admin123")
+        if (request.Username != "admin" || request.Password != "Admin123!")
             throw new UnauthorizedAccessException("Nieprawidłowa nazwa użytkownika lub hasło.");
 
-        var claims = new[]
+        var existingUser = await _userManager.FindByNameAsync("Admin");
+        if (existingUser != null)
         {
-            new Claim(JwtRegisteredClaimNames.Sub, request.Username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Role, "Administrator")
+            var roles = await _userManager.GetUserRolesAsync(existingUser.Id);
+            return _tokenService.GenerateToken(existingUser, roles);
+        }
+        var identityUser = new IdentityUser
+        {
+            UserName = "admin",
+            Email = "admin@mail.com"
         };
+        var result = await _userManager.CreateAsync(identityUser, "Admin123!");
 
-        var token = GenerateJwtToken(claims);
-
-        return token;
-    }
-
-    public string LoginWithGoogle(AuthenticateResult result)
-    {
-        var email = result.Principal!.FindFirst(ClaimTypes.Email)?.Value;
-        var name = result.Principal!.FindFirst(ClaimTypes.Name)?.Value;
-        var nameIdentifier = result.Principal!.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var picture = result.Principal!.FindFirst("picture")?.Value;
-
-        return GenerateJwtToken(new[]
+        if (result)
         {
-            new Claim(ClaimTypes.Email, email ?? ""),
-            new Claim(ClaimTypes.Name, name ?? ""),
-            new Claim(ClaimTypes.NameIdentifier, nameIdentifier ?? ""),
-            new Claim("picture", picture ?? ""),
-            new Claim(ClaimTypes.Role, "User")
-        });
+            result = await _userManager.AddToRoleAsync(identityUser.Id, "Admin");
+            var roles = await _userManager.GetUserRolesAsync(identityUser.Id);
+
+            return _tokenService.GenerateToken(identityUser, roles);
+        }
+        throw new UnauthorizedAccessException("Nie udało się utworzyć użytkownika Admin.");
     }
 
-    private string GenerateJwtToken(IEnumerable<Claim> claims)
+    public async Task<string> LoginWithGoogle(AuthenticateResult authenticateResult)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["Secret"];
-        var issuer = jwtSettings["Issuer"];
-        var audience = jwtSettings["Audience"];
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            claims: claims,
-            expires: DateTime.Now.AddHours(1),
-            signingCredentials: credentials
-        );
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        var email = authenticateResult.Principal!.FindFirst(ClaimTypes.Email)?.Value;
+        var name = authenticateResult.Principal!.FindFirst(ClaimTypes.Name)?.Value;
+        var nameIdentifier = authenticateResult.Principal!.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var picture = authenticateResult.Principal!.FindFirst("picture")?.Value;
+
+        var existingUser = await _userManager.FindByNameAsync("Admin");
+        if (existingUser != null)
+        {
+            var roles = await _userManager.GetUserRolesAsync(existingUser.Id);
+            return _tokenService.GenerateToken(existingUser, roles);
+        }
+        var identityUser = new IdentityUser
+        {
+            UserName = name, 
+            Email = email
+        };
+        var result = await _userManager.CreateAsync(identityUser, "admin123");
+
+        if (result)
+        {
+            result = await _userManager.AddToRoleAsync(identityUser.Id, "Admin");
+            var roles = await _userManager.GetUserRolesAsync(identityUser.Id);
+
+            return _tokenService.GenerateToken(identityUser, roles);
+        }
+        throw new Exception();
     }
 }

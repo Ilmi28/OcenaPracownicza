@@ -2,6 +2,9 @@
 
 public class NotFoundException : Exception
 {
+    public NotFoundException() : base("Encja nie istnieje.")
+    {
+    }
     public NotFoundException(string message) : base(message)
     {
     }

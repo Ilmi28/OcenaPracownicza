@@ -33,7 +33,7 @@ public class Program
         builder.Services.AddRepositories();
         builder.Services.AddAuthorization();
         builder.Services.AddCorsWithPolicies();
-
+        builder.Services.AddHttpContextAccessor();
     }
 
     public static void ConfigureMiddleware(WebApplication app)

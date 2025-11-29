@@ -2,6 +2,9 @@
 
 public class InternalServerErrorException : Exception
 {
+    public InternalServerErrorException() : base("Wewnętrzny błąd serwera.")
+    {
+    }
     public InternalServerErrorException(string message) : base(message)
     {
     }

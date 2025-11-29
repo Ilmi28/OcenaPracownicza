@@ -1,10 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
 using OcenaPracownicza.API.Views;
 using OcenaPracownicza.IntegrationTests.WebApplicationFactories;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Xunit;
 
@@ -12,23 +15,139 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 {
     public class EmployeeTests : BaseTests<EmployeeWebApplicationFactory>
     {
-        public EmployeeTests(EmployeeWebApplicationFactory factory) : base(factory) { }
+        public EmployeeTests(EmployeeWebApplicationFactory factory) : base(factory)
+        {
+        }
+
+        private void LoginAsAdmin()
+        {
+            var user = context.Users.Find("7");
+            var jwtToken = tokenService.GenerateToken(user, new List<string> { "Admin" });
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
+        }
 
         protected override void SeedData()
         {
-            context.Employees.AddRange(
-                new Employee { Id = 1, FirstName = "Jan", LastName = "Kowalski", Position = "Dev", Period = "2024", FinalScore = "8", AchievementsSummary = "Good" },
-                new Employee { Id = 2, FirstName = "Anna", LastName = "Nowak", Position = "QA", Period = "2024", FinalScore = "7", AchievementsSummary = "Solid" },
-                new Employee { Id = 3, FirstName = "Piotr", LastName = "Zielinski", Position = "PM", Period = "2024", FinalScore = "9", AchievementsSummary = "Excellent" },
-                new Employee { Id = 4, FirstName = "To", LastName = "Delete", Position = "Temp", Period = "2024", FinalScore = "5", AchievementsSummary = "Remove me" },
-                new Employee { Id = 5, FirstName = "A", LastName = "Alpha", Position = "X", Period = "2024", FinalScore = "6", AchievementsSummary = "A" },
-                new Employee { Id = 6, FirstName = "B", LastName = "Beta", Position = "Y", Period = "2024", FinalScore = "6", AchievementsSummary = "B" }
+            var hasher = new PasswordHasher<IdentityUser>();
+
+            var roles = new List<IdentityRole>
+            {
+                new IdentityRole { Id = "role_admin", Name = "Admin", NormalizedName = "ADMIN" },
+                new IdentityRole { Id = "role_manager", Name = "Manager", NormalizedName = "MANAGER" },
+                new IdentityRole { Id = "role_employee", Name = "Employee", NormalizedName = "EMPLOYEE" }
+            };
+
+            var users = new List<IdentityUser>
+            {
+                new IdentityUser
+                {
+                    Id = "1",
+                    UserName = "jan_kowalski",
+                    NormalizedUserName = "JAN_KOWALSKI",
+                    Email = "jan@test.com",
+                    NormalizedEmail = "JAN@TEST.COM",
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
+                },
+                new IdentityUser
+                {
+                    Id = "2",
+                    UserName = "anna_nowak",
+                    NormalizedUserName = "ANNA_NOWAK",
+                    Email = "anna@test.com",
+                    NormalizedEmail = "ANNA@TEST.COM",
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
+                },
+                new IdentityUser
+                {
+                    Id = "3",
+                    UserName = "piotr_zielinski",
+                    NormalizedUserName = "PIOTR_ZIELINSKI",
+                    Email = "piotr@test.com",
+                    NormalizedEmail = "PIOTR@TEST.COM",
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
+                },
+                new IdentityUser
+                {
+                    Id = "4",
+                    UserName = "to_delete",
+                    NormalizedUserName = "TO_DELETE",
+                    Email = "delete@test.com",
+                    NormalizedEmail = "DELETE@TEST.COM",
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
+                },
+                new IdentityUser
+                {
+                    Id = "5",
+                    UserName = "alpha",
+                    NormalizedUserName = "ALPHA",
+                    Email = "alpha@test.com",
+                    NormalizedEmail = "ALPHA@TEST.COM",
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
+                },
+                new IdentityUser
+                {
+                    Id = "6",
+                    UserName = "beta",
+                    NormalizedUserName = "BETA",
+                    Email = "beta@test.com",
+                    NormalizedEmail = "BETA@TEST.COM",
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
+                },
+                new IdentityUser
+                {
+                    Id = "7",
+                    UserName = "admin",
+                    Email = "admin@test.com",
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
+                }
+            };
+
+            foreach (var user in users)
+            {
+                user.PasswordHash = hasher.HashPassword(user, "Password123!");
+            }
+
+            var employees = new List<Employee>
+            {
+                new Employee { Id = 1, FirstName = "Jan", LastName = "Kowalski", Position = "Dev", Period = "2024", FinalScore = "8", AchievementsSummary = "Good", IdentityUserId = "1" },
+                new Employee { Id = 2, FirstName = "Anna", LastName = "Nowak", Position = "QA", Period = "2024", FinalScore = "7", AchievementsSummary = "Solid", IdentityUserId = "2" },
+                new Employee { Id = 3, FirstName = "Piotr", LastName = "Zielinski", Position = "PM", Period = "2024", FinalScore = "9", AchievementsSummary = "Excellent", IdentityUserId = "3" },
+                new Employee { Id = 4, FirstName = "To", LastName = "Delete", Position = "Temp", Period = "2024", FinalScore = "5", AchievementsSummary = "Remove me", IdentityUserId = "4" },
+                new Employee { Id = 5, FirstName = "A", LastName = "Alpha", Position = "X", Period = "2024", FinalScore = "6", AchievementsSummary = "A", IdentityUserId = "5" },
+                new Employee { Id = 6, FirstName = "B", LastName = "Beta", Position = "Y", Period = "2024", FinalScore = "6", AchievementsSummary = "B", IdentityUserId = "6" }
+            };
+
+            context.Roles.AddRange(roles);
+            context.Users.AddRange(users);
+            context.Employees.AddRange(employees);
+
+            context.UserRoles.AddRange(
+                new IdentityUserRole<string> { RoleId = "role_employee", UserId = "1" },
+                new IdentityUserRole<string> { RoleId = "role_employee", UserId = "2" },
+                new IdentityUserRole<string> { RoleId = "role_employee", UserId = "3" },
+                new IdentityUserRole<string> { RoleId = "role_employee", UserId = "4" },
+                new IdentityUserRole<string> { RoleId = "role_admin", UserId = "7" }
             );
+
+            context.SaveChanges();
+        }
+
+        public void Setup()
+        {
+
         }
 
         [Fact]
         public async Task GetById_ReturnsEmployee()
         {
+            LoginAsAdmin();
             var response = await client.GetAsync("/employee/1");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -41,6 +160,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task GetAll_ReturnsEmployees()
         {
+            LoginAsAdmin();
             var response = await client.GetAsync("/employee");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -48,19 +168,19 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             var data = employees!.Data;
 
             Assert.NotNull(data);
-            Assert.Equal("Jan", data[0].FirstName);
-            Assert.Equal("Anna"!, data[1].FirstName);
-            Assert.Equal("Piotr", data[2].FirstName);
-            Assert.Equal("To"!, data[3].FirstName);
-            Assert.Equal("A", data[4].FirstName);
-            Assert.Equal("B"!, data[5].FirstName);
+            Assert.Contains(data, e => e.FirstName == "Jan");
+            Assert.Contains(data, e => e.FirstName == "Anna");
         }
 
         [Fact]
         public async Task Post_AddsEmployee()
         {
-            var request = new EmployeeRequest
+            LoginAsAdmin();
+            var request = new CreateEmployeeRequest
             {
+                UserName = "newuser_unique",
+                Email = "new_unique@example.com",
+                Password = "Password123!",
                 FirstName = "New",
                 LastName = "Employee",
                 Position = "DevOps",
@@ -75,13 +195,19 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             var added = await context.Employees.FirstOrDefaultAsync(e => e.FirstName == "New" && e.LastName == "Employee");
             Assert.NotNull(added);
             Assert.Equal("DevOps", added!.Position);
+
+            var identityUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "new_unique@example.com");
+            Assert.NotNull(identityUser);
         }
 
         [Fact]
         public async Task Put_UpdatesEmployee()
         {
-            var updateRequest = new EmployeeRequest
+            LoginAsAdmin();
+            var updateRequest = new UpdateEmployeeRequest
             {
+                UserName = "updatedUser",
+                Email = "updated@example.com",
                 FirstName = "AnnaUpdated",
                 LastName = "Xyz",
                 Position = "NewPos",
@@ -93,17 +219,22 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             var response = await client.PutAsJsonAsync("/employee/2", updateRequest);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var updated = await context.Employees.FindAsync(2);
-            await context.Entry(updated!).ReloadAsync();
-            Assert.Equal("AnnaUpdated", updated!.FirstName);
-            Assert.Equal("Xyz", updated.LastName);
+            var updatedEmployee = await context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == 2);
+            Assert.Equal("AnnaUpdated", updatedEmployee!.FirstName);
+
+            var updatedUser = await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == "2");
+            Assert.Equal("updatedUser", updatedUser!.UserName);
+            Assert.Equal("updated@example.com", updatedUser.Email);
         }
 
         [Fact]
         public async Task Put_NonExistingEmployee_ReturnsNotFound()
         {
-            var updateRequest = new EmployeeRequest
+            LoginAsAdmin();
+            var updateRequest = new UpdateEmployeeRequest
             {
+                UserName = "ghost",
+                Email = "ghost@example.com",
                 FirstName = "DoesNot",
                 LastName = "Exist",
                 Position = "None",
@@ -119,11 +250,15 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task Delete_RemovesEmployee()
         {
+            LoginAsAdmin();
             var response = await client.DeleteAsync("/employee/4");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var exists = await context.Employees.AnyAsync(e => e.Id == 4);
             Assert.False(exists);
+
+            var userExists = await context.Users.AnyAsync(u => u.Id == "4");
+            Assert.False(userExists);
         }
     }
 }

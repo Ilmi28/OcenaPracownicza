@@ -1,49 +1,42 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using OcenaPracownicza.API.Interfaces.Services;
+using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
 using OcenaPracownicza.API.Views;
+using System.Security.Claims;
 
-namespace OcenaPracownicza.API.Services
+namespace OcenaPracownicza.API.Data.Identity
 {
-    public class UserService : IUserService
+    public class UserManager : IUserManager
     {
         private readonly UserManager<IdentityUser> _userManager;
-
-        public UserService(UserManager<IdentityUser> userManager)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public UserManager(UserManager<IdentityUser> userManager, IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<bool> CreateAsync(UserRequest request, string password)
+        public async Task<bool> CreateAsync(IdentityUser user, string password)
         {
-            var user = new IdentityUser
-            {
-                UserName = request.UserName,
-                Email = request.Email
-            };
-
             var result = await _userManager.CreateAsync(user, password);
 
             return result.Succeeded;
         }
 
-        public async Task<UserResponse?> FindByIdAsync(string userId)
+        public async Task<IdentityUser?> FindByIdAsync(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            return user == null ? null : MapToResponse(user);
+            return await _userManager.FindByIdAsync(userId);
         }
 
-        public async Task<UserResponse?> FindByEmailAsync(string email)
+        public async Task<IdentityUser?> FindByEmailAsync(string email)
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            return user == null ? null : MapToResponse(user);
+            return await _userManager.FindByEmailAsync(email);
         }
 
-        public async Task<UserResponse?> FindByNameAsync(string userName)
+        public async Task<IdentityUser?> FindByNameAsync(string userName)
         {
-            var user = await _userManager.FindByNameAsync(userName);
-            return user == null ? null : MapToResponse(user);
+            return await _userManager.FindByNameAsync(userName);
         }
 
         public async Task<bool> CheckPasswordAsync(string userId, string password)
@@ -54,14 +47,8 @@ namespace OcenaPracownicza.API.Services
             return await _userManager.CheckPasswordAsync(user, password);
         }
 
-        public async Task<bool> UpdateAsync(string userId, UserRequest request)
+        public async Task<bool> UpdateAsync(IdentityUser user)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return false;
-
-            user.Email = request.Email;
-            user.UserName = request.UserName;
-
             var result = await _userManager.UpdateAsync(user);
             return result.Succeeded;
         }
@@ -110,17 +97,34 @@ namespace OcenaPracownicza.API.Services
             return await _userManager.GetRolesAsync(user);
         }
 
-        private UserResponse MapToResponse(IdentityUser user)
+        public async Task<bool> IsUserAccountOwner(string userId)
         {
-            return new UserResponse
-            {
-                Data = new UserView
-                {
-                    Id = user.Id,
-                    UserName = user.UserName ?? string.Empty,
-                    Email = user.Email ?? string.Empty
-                }
-            };
+            var user = _httpContextAccessor.HttpContext?.User;
+
+            if (user == null || user.FindFirstValue(ClaimTypes.NameIdentifier) != userId) return false;
+
+            return true;
+        }
+
+        public bool IsCurrentUserAdmin()
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+
+            return user != null && user.IsInRole("Admin");
+        }
+
+        public bool IsCurrentUserManager()
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+
+            return user != null && user.IsInRole("Manager");
+        }
+
+        public bool IsCurrentUserEmployee()
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+
+            return user != null && user.IsInRole("Employee");
         }
     }
 }

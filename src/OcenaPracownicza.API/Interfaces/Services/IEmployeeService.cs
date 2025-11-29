@@ -7,7 +7,7 @@ public interface IEmployeeService
 {
     Task<EmployeeResponse> GetById(int id);
     Task<EmployeeListResponse> GetAll();
-    Task<EmployeeResponse> Add(EmployeeRequest request);
-    Task<EmployeeResponse> Update(int id, EmployeeRequest request);
+    Task<EmployeeResponse> Add(CreateEmployeeRequest request);
+    Task<EmployeeResponse> Update(int id, UpdateEmployeeRequest request);
     Task<EmployeeResponse> Delete(int id);
 }

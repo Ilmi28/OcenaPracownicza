@@ -1,5 +1,8 @@
-﻿using OcenaPracownicza.API.Entities;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
+using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
@@ -10,10 +13,12 @@ namespace OcenaPracownicza.API.Services;
 
 public class EmployeeService : IEmployeeService
 {
+    private readonly IUserManager _userManager;
     private readonly IEmployeeRepository _employeeRepository;
 
-    public EmployeeService(IEmployeeRepository employeeRepository)
+    public EmployeeService(IUserManager userManager, IEmployeeRepository employeeRepository)
     {
+        _userManager = userManager;
         _employeeRepository = employeeRepository;
     }
 
@@ -21,13 +26,18 @@ public class EmployeeService : IEmployeeService
     {
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
-            throw new DirectoryNotFoundException("Employee not found");
+            throw new NotFoundException();
 
-        return MapToResponse(entity);
+        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        if (_userManager.IsCurrentUserAdmin() || _userManager.IsCurrentUserManager() || isAccountOwner) 
+            return MapToResponse(entity);
+        throw new ForbiddenException();
     }
 
     public async Task<EmployeeListResponse> GetAll()
     {
+        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager())
+            throw new ForbiddenException();
         var entities = await _employeeRepository.GetAll();
         var response = new EmployeeListResponse
         {
@@ -41,34 +51,65 @@ public class EmployeeService : IEmployeeService
                     Position = x.Position,
                     Period = x.Period,
                     FinalScore = x.FinalScore,
-                    AchievementsSummary = x.AchievementsSummary
+                    AchievementsSummary = x.AchievementsSummary,
+                    UserId = x.IdentityUserId
                 };
             }).ToList()
         };
         return response;
     }
 
-    public async Task<EmployeeResponse> Add(EmployeeRequest request)
+    public async Task<EmployeeResponse> Add(CreateEmployeeRequest request)
     {
-        var entity = new Employee
+        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager())
+            throw new ForbiddenException();
+        var identityUser = new IdentityUser
         {
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            Position = request.Position,
-            Period = request.Period,
-            FinalScore = request.FinalScore,
-            AchievementsSummary = request.AchievementsSummary
+            UserName = request.UserName,
+            Email = request.Email
         };
+        var result = await _userManager.CreateAsync(identityUser, request.Password);
 
-        var created = await _employeeRepository.Create(entity);
-        return MapToResponse(created);
+        if (result)
+        {
+            result = await _userManager.AddToRoleAsync(identityUser.Id, "Employee");
+            var entity = new Employee
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Position = request.Position,
+                Period = request.Period,
+                FinalScore = request.FinalScore,
+                AchievementsSummary = request.AchievementsSummary,
+                IdentityUserId = identityUser.Id
+            };
+
+            var created = await _employeeRepository.Create(entity);
+            return MapToResponse(created);
+        }
+        throw new Exception("Wystąpił błąd podczas tworzenia użytkownika");
+
     }
 
-    public async Task<EmployeeResponse> Update(int id, EmployeeRequest request)
+    public async Task<EmployeeResponse> Update(int id, UpdateEmployeeRequest request)
     {
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
-            throw new NotFoundException("Employee not found");
+            throw new NotFoundException();
+
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
+
+        if (user == null)
+            throw new NotFoundException();
+
+        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
+            throw new ForbiddenException();
+
+        user.UserName = request.UserName;
+        user.Email = request.Email;
+
+        var result = await _userManager.UpdateAsync(user);
 
         entity.FirstName = request.FirstName;
         entity.LastName = request.LastName;
@@ -83,9 +124,16 @@ public class EmployeeService : IEmployeeService
 
     public async Task<EmployeeResponse> Delete(int id)
     {
+        
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
-            throw new NotFoundException("Employee not found");
+            throw new NotFoundException();
+
+        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
+            throw new ForbiddenException();
+
+        var result = await _userManager.DeleteAsync(entity.IdentityUserId);
 
         await _employeeRepository.Delete(id);
         return MapToResponse(entity);

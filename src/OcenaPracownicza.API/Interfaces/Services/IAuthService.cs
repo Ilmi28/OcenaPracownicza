@@ -5,6 +5,6 @@ namespace OcenaPracownicza.API.Interfaces.Services;
 
 public interface IAuthService
 {
-    string Login(LoginRequest request);
-    string LoginWithGoogle(AuthenticateResult result);
+    Task<string> Login(LoginRequest request);
+    Task<string> LoginWithGoogle(AuthenticateResult result);
 }

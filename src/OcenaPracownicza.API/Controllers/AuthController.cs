@@ -22,9 +22,9 @@ public class AuthController(IAuthService authService) : ControllerBase
 {
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] Requests.LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] Requests.LoginRequest request)
     {
-        var token = authService.Login(request);
+        var token = await authService.Login(request);
 
         Response.Cookies.Append("jwt", token.ToString(), new CookieOptions
         {
@@ -57,7 +57,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     {
         var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-        var token = authService.LoginWithGoogle(result);
+        var token = await authService.LoginWithGoogle(result);
 
         Response.Cookies.Append("jwt", token.ToString(), new CookieOptions
         {
