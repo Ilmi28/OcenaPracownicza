@@ -1,67 +1,23 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
-import Button from "@mui/material/Button";
-import { authService } from "./services/authService";
-
-import axiosClient from "./services/axiosClient";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import MainLayout from './layouts/MainLayout';
+import Dashboard from './pages/Dashboard';
+import Users from './pages/Users';
+import Settings from './pages/Settings';
 
 function App() {
-    const [count, setCount] = useState(0);
-
-    const testLogin = async () => {
-        try {
-            await authService.login("admin", "admin123");
-            console.log("LOGIN OK");
-        } catch (e) {
-            console.log("LOGIN ERROR", e);
-        }
-    };
-
-    const testSecure = async () => {
-        try {
-            const res = await axiosClient.get("/auth/secure");
-            console.log("SECURE OK:", res.data);
-        } catch (e) {
-            console.log("SECURE ERROR:", e);
-        }
-    };
 
     return (
         <>
-            <div style={{ padding: "20px" }}>
-                <h1>Test MUI Button</h1>
-                <Button variant="contained">Hello world</Button>
-            </div>
-            <div>
-                <a href="https://vite.dev" target="_blank">
-                    <img src={viteLogo} className="logo" alt="Vite logo" />
-                </a>
-                <a href="https://react.dev" target="_blank">
-                    <img
-                        src={reactLogo}
-                        className="logo react"
-                        alt="React logo"
-                    />
-                </a>
-            </div>
-            <h1>Vite + React</h1>
-            <div className="card">
-                <button onClick={() => setCount((count) => count + 1)}>
-                    count is {count}
-                </button>
-                <p>
-                    Edit <code>src/App.tsx</code> and save to test HMR
-                </p>
-            </div>
-            <p className="read-the-docs">
-                Click on the Vite and React logos to learn more
-            </p>
-            <div style={{ padding: 20 }}>
-                <button onClick={testLogin}>Test Login</button>
-                <button onClick={testSecure}>Test Secure</button>
-            </div>
+            <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<MainLayout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="users" element={<Users />} />
+                <Route path="settings" element={<Settings />} />
+                </Route>
+            </Routes>
+            </BrowserRouter>
         </>
     );
 }
