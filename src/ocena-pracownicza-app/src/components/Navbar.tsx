@@ -10,7 +10,7 @@ interface User {
 
 interface NavbarProps {
   drawerWidth: number;
-  user: User | null;
+  user?: User | null;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
