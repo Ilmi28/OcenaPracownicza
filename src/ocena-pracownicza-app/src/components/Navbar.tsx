@@ -1,12 +1,19 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, Button, Avatar } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+
+interface User {
+  firstName: string;
+  lastName: string;
+  role: string;
+}
 
 interface NavbarProps {
   drawerWidth: number;
+  user: User | null;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ drawerWidth }) => {
+const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
   return (
     <AppBar
       position="fixed"
@@ -33,7 +40,6 @@ const Navbar: React.FC<NavbarProps> = ({ drawerWidth }) => {
           <Typography 
             variant="h6" 
             noWrap 
-            component="div" 
             color="text.primary" 
             fontWeight="600"
           >
@@ -50,12 +56,37 @@ const Navbar: React.FC<NavbarProps> = ({ drawerWidth }) => {
             px: 2 
           }}
         >
-          <Typography variant="body1" color="text.primary">
-            Użytkownik
-          </Typography>
+          {!user && (
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={() => console.log("Logowanie...")}
+            >
+              Zaloguj się
+            </Button>
+          )}
+
+          {user && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar>
+                {user.firstName[0]}
+                {user.lastName[0]}
+              </Avatar>
+
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography fontWeight={600}>
+                  {user.firstName} {user.lastName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {user.role}
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </Box>
       </Toolbar>
     </AppBar>
   );
 };
+
 export default Navbar;
