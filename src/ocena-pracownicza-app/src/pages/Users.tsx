@@ -36,7 +36,7 @@ const Users = () => {
   const [department, setDepartment] = useState('Wszystkie działy');
   const [status, setStatus] = useState('Wszystkie statusy');
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 

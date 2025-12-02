@@ -6,8 +6,6 @@ import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 
-const DRAWER_WIDTH = 240;
-
 const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
   return (
     <Drawer
