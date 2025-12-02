@@ -27,7 +27,7 @@ const Dashboard = () => {
         Dashboard
       </Typography>
       <Paper sx={{ p: 3 }}>
-        <Typography>
+        <Typography component="div">
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis, facere adipisci, voluptate esse numquam nobis eligendi asperiores voluptatibus praesentium itaque cum omnis, repellat officia ipsam aperiam recusandae! Ipsa, minima eveniet.
           <div style={{ padding: 20 }}>
                 <button onClick={testLogin}>Test Login</button>
