@@ -94,7 +94,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             Assert.NotNull(admins);
             Assert.Contains(admins, a => a.UserName == "TestAdmin");
         }
-
+        
         [Fact]
         public async Task Delete_RemovesUser_WhenAuthorized()
         {
@@ -102,11 +102,13 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             
             var createRes = await client.PostAsJsonAsync("/api/admin", 
                 new CreateAdminRequest { UserName = "ToDelete", Email = "del@test.com", Password = "Password123!" });
+            
+            createRes.EnsureSuccessStatusCode(); 
             var userToDelete = await createRes.Content.ReadFromJsonAsync<AdminResponse>();
-
+            
             var deleteResponse = await client.DeleteAsync($"/api/admin/{userToDelete.Id}");
-
-            Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+            
+            Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
             
             var getResponse = await client.GetAsync($"/api/admin/{userToDelete.Id}");
             Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);

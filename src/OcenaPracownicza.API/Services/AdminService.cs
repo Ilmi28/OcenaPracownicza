@@ -10,100 +10,138 @@ namespace OcenaPracownicza.API.Services;
 public class AdminService : IAdminService
 {
     private readonly IUserManager _userManager;
-    private const string AdminRoleName = "Admin";
 
     public AdminService(IUserManager userManager)
     {
         _userManager = userManager;
     }
 
-    public async Task<AdminResponse> GetById(string id)
-    {
-        if (!_userManager.IsCurrentUserAdmin())
-             throw new ForbiddenException();
-
-        var user = await _userManager.FindByIdAsync(id);
-        if (user == null)
-            throw new NotFoundException();
-
-        return MapToResponse(user);
-    }
-
     public async Task<List<AdminResponse>> GetAll()
     {
         if (!_userManager.IsCurrentUserAdmin())
-            throw new ForbiddenException();
-        
-        var admins = await _userManager.GetUsersInRoleAsync(AdminRoleName);
+        {
+            throw new ForbiddenException("Brak uprawnień do przeglądania administratorów.");
+        }
 
-        return admins.Select(MapToResponse).ToList();
+        var users = await _userManager.GetUsersInRoleAsync("Admin");
+
+        return users.Select(u => new AdminResponse
+        {
+            Id = u.Id,
+            UserName = u.UserName,
+            Email = u.Email
+        }).ToList();
+    }
+
+    public async Task<AdminResponse> GetById(string id)
+    {
+        if (!_userManager.IsCurrentUserAdmin())
+        {
+            throw new ForbiddenException("Brak uprawnień.");
+        }
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
+        {
+            throw new NotFoundException($"Nie znaleziono użytkownika o ID: {id}");
+        }
+
+        return new AdminResponse
+        {
+            Id = user.Id,
+            UserName = user.UserName,
+            Email = user.Email
+        };
     }
 
     public async Task<AdminResponse> Add(CreateAdminRequest request)
     {
         if (!_userManager.IsCurrentUserAdmin())
-            throw new ForbiddenException();
+        {
+            throw new ForbiddenException("Tylko administrator może dodawać nowych administratorów.");
+        }
 
-        var identityUser = new IdentityUser
+        var user = new IdentityUser
         {
             UserName = request.UserName,
             Email = request.Email,
             EmailConfirmed = true
         };
-
-        var result = await _userManager.CreateAsync(identityUser, request.Password);
-
-        if (result)
+        
+        var created = await _userManager.CreateAsync(user, request.Password);
+        if (!created)
         {
-            await _userManager.AddToRoleAsync(identityUser.Id, AdminRoleName);
-            return MapToResponse(identityUser);
+            throw new BadRequestException("Nie udało się utworzyć użytkownika. Sprawdź poprawność hasła.");
         }
         
-        throw new Exception("Wystąpił błąd podczas tworzenia administratora.");
+        var roleAdded = await _userManager.AddToRoleAsync(user.Id, "Admin");
+        if (!roleAdded)
+        {
+            await _userManager.DeleteAsync(user.Id);
+            throw new BadRequestException("Nie udało się przypisać roli Administratora.");
+        }
+
+        return new AdminResponse
+        {
+            Id = user.Id,
+            UserName = user.UserName,
+            Email = user.Email
+        };
     }
 
     public async Task<AdminResponse> Update(string id, UpdateAdminRequest request)
     {
-        var isAccountOwner = await _userManager.IsUserAccountOwner(id);
-        
-        if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
-            throw new ForbiddenException();
+        var isGlobalAdmin = _userManager.IsCurrentUserAdmin();
+        var isOwner = await _userManager.IsUserAccountOwner(id);
+
+        if (!isGlobalAdmin && !isOwner)
+        {
+            throw new ForbiddenException("Brak uprawnień do edycji tego konta.");
+        }
 
         var user = await _userManager.FindByIdAsync(id);
         if (user == null)
-            throw new NotFoundException();
+        {
+            throw new NotFoundException($"Nie znaleziono użytkownika o ID: {id}");
+        }
 
         user.UserName = request.UserName;
         user.Email = request.Email;
+        
+        var updated = await _userManager.UpdateAsync(user);
+        if (!updated)
+        {
+            throw new BadRequestException("Nie udało się zaktualizować użytkownika.");
+        }
 
-        var result = await _userManager.UpdateAsync(user);
-        if (!result)
-             throw new Exception("Wystąpił błąd podczas aktualizacji administratora.");
-
-        return MapToResponse(user);
+        return new AdminResponse
+        {
+            Id = user.Id,
+            UserName = user.UserName,
+            Email = user.Email
+        };
     }
 
-    public async Task Delete(string id)
+    public async Task<AdminResponse> Delete(string id)
     {
         if (!_userManager.IsCurrentUserAdmin())
-            throw new ForbiddenException();
-        
+        {
+            throw new ForbiddenException("Tylko administrator może usuwać użytkowników.");
+        }
+
         var user = await _userManager.FindByIdAsync(id);
         if (user == null)
-            throw new NotFoundException();
+        {
+            throw new NotFoundException($"Nie znaleziono użytkownika o ID: {id}");
+        }
         
-        var isAccountOwner = await _userManager.IsUserAccountOwner(id);
-        if (isAccountOwner)
-            throw new Exception("Nie możesz usunąć własnego konta.");
-        
-        var result = await _userManager.DeleteAsync(id);
-        
-        if (!result)
-            throw new Exception("Nie udało się usunąć użytkownika.");
-    }
+        var deleted = await _userManager.DeleteAsync(user.Id);
 
-    private static AdminResponse MapToResponse(IdentityUser user)
-    {
+        if (!deleted)
+        {
+            throw new BadRequestException("Nie udało się usunąć użytkownika.");
+        }
+
         return new AdminResponse
         {
             Id = user.Id,

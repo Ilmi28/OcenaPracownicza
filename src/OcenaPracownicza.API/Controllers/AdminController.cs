@@ -35,7 +35,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateAdminRequest request)
     {
         var result = await _adminService.Add(request);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        return Ok(result);
     }
 
     [HttpPut("{id}")]
@@ -48,7 +48,7 @@ public class AdminController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)
     {
-        await _adminService.Delete(id);
-        return NoContent();
+        var result = await _adminService.Delete(id);
+        return Ok(result);
     }
 }
