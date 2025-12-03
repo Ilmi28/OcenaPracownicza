@@ -18,7 +18,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(string id)
+    public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _adminService.GetById(id);
         return Ok(result);
@@ -39,14 +39,14 @@ public class AdminController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(string id, [FromBody] UpdateAdminRequest request)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAdminRequest request)
     {
         var result = await _adminService.Update(id, request);
         return Ok(result);
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _adminService.Delete(id);
         return Ok(result);

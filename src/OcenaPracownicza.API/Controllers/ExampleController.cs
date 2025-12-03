@@ -15,7 +15,7 @@ namespace OcenaPracownicza.Controllers;
 public class ExampleController(IExampleService exampleService) : ControllerBase
 {
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(int id)
+    public async Task<IActionResult> Get(Guid id)
     {
         var response = await exampleService.GetById(id);
 
@@ -37,14 +37,14 @@ public class ExampleController(IExampleService exampleService) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, ExampleRequest request)
+    public async Task<IActionResult> Put(Guid id, ExampleRequest request)
     {
         var response = await exampleService.Update(id, request);
         return Ok(response);
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var response = await exampleService.Delete(id);
         return Ok(response);

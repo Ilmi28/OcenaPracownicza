@@ -38,6 +38,7 @@ namespace OcenaPracownicza.API.Extensions
             services.AddScoped<IExampleRepository, ExampleRepository>();
             services.AddScoped<IEmployeeRepository, EmployeeRepository>();
             services.AddScoped<IUserManager, UserManager>();
+            services.AddScoped<IAdminRepository, AdminRepository>();
         }
 
         public static void AddAppDbContextWithIdentity(this IServiceCollection services, IConfiguration config)

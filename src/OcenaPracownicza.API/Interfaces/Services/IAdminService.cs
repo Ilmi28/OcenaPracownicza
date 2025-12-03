@@ -5,10 +5,10 @@ namespace OcenaPracownicza.API.Interfaces.Services
 {
     public interface IAdminService
     {
-        Task<List<AdminResponse>> GetAll();
-        Task<AdminResponse> GetById(string id);
+        Task<AdminListResponse> GetAll();
+        Task<AdminResponse> GetById(Guid id);
         Task<AdminResponse> Add(CreateAdminRequest request);
-        Task<AdminResponse> Update(string id, UpdateAdminRequest request);
-        Task<AdminResponse> Delete(string id);
+        Task<AdminResponse> Update(Guid id, UpdateAdminRequest request);
+        Task<AdminResponse> Delete(Guid id);
     }
 }

@@ -1,152 +1,150 @@
 using Microsoft.AspNetCore.Identity;
+using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Other;
+using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
+using OcenaPracownicza.API.Views;
 
 namespace OcenaPracownicza.API.Services;
 
 public class AdminService : IAdminService
 {
     private readonly IUserManager _userManager;
+    private readonly IAdminRepository _adminRepository;
 
-    public AdminService(IUserManager userManager)
+    public AdminService(IUserManager userManager, IAdminRepository adminRepository)
     {
         _userManager = userManager;
+        _adminRepository = adminRepository;
     }
 
-    public async Task<List<AdminResponse>> GetAll()
+    public async Task<AdminResponse> GetById(Guid id)
     {
-        if (!_userManager.IsCurrentUserAdmin())
-        {
-            throw new ForbiddenException("Brak uprawnień do przeglądania administratorów.");
-        }
+        var entity = await _adminRepository.GetById(id);
+        if (entity == null)
+            throw new NotFoundException();
 
-        var users = await _userManager.GetUsersInRoleAsync("Admin");
+        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+ 
+        if (_userManager.IsCurrentUserAdmin() || isAccountOwner)
+            return MapToResponse(entity);
 
-        return users.Select(u => new AdminResponse
-        {
-            Id = u.Id,
-            UserName = u.UserName,
-            Email = u.Email
-        }).ToList();
+        throw new ForbiddenException();
     }
 
-    public async Task<AdminResponse> GetById(string id)
+    public async Task<AdminListResponse> GetAll()
     {
         if (!_userManager.IsCurrentUserAdmin())
-        {
-            throw new ForbiddenException("Brak uprawnień.");
-        }
+            throw new ForbiddenException();
 
-        var user = await _userManager.FindByIdAsync(id);
-        if (user == null)
-        {
-            throw new NotFoundException($"Nie znaleziono użytkownika o ID: {id}");
-        }
+        var entities = await _adminRepository.GetAll();
 
-        return new AdminResponse
+        var response = new AdminListResponse
         {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email
+            Data = entities.Select(x =>
+            {
+                return new AdminView
+                {
+                    Id = x.Id,
+                    FirstName = x.FirstName,
+                    LastName = x.LastName,
+                    UserId = x.IdentityUserId
+                };
+            }).ToList()
         };
+        return response;
     }
 
     public async Task<AdminResponse> Add(CreateAdminRequest request)
     {
         if (!_userManager.IsCurrentUserAdmin())
-        {
-            throw new ForbiddenException("Tylko administrator może dodawać nowych administratorów.");
-        }
+            throw new ForbiddenException();
 
-        var user = new IdentityUser
+        var identityUser = new IdentityUser
         {
             UserName = request.UserName,
-            Email = request.Email,
-            EmailConfirmed = true
+            Email = request.Email
         };
-        
-        var created = await _userManager.CreateAsync(user, request.Password);
-        if (!created)
+
+        var result = await _userManager.CreateAsync(identityUser, request.Password);
+
+        if (result)
         {
-            throw new BadRequestException("Nie udało się utworzyć użytkownika. Sprawdź poprawność hasła.");
-        }
-        
-        var roleAdded = await _userManager.AddToRoleAsync(user.Id, "Admin");
-        if (!roleAdded)
-        {
-            await _userManager.DeleteAsync(user.Id);
-            throw new BadRequestException("Nie udało się przypisać roli Administratora.");
+            result = await _userManager.AddToRoleAsync(identityUser.Id, "Admin");
+
+            var entity = new Admin
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                IdentityUserId = identityUser.Id
+            };
+
+            var created = await _adminRepository.Create(entity);
+            return MapToResponse(created);
         }
 
-        return new AdminResponse
-        {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email
-        };
+        throw new Exception("Wystąpił błąd podczas tworzenia użytkownika");
     }
 
-    public async Task<AdminResponse> Update(string id, UpdateAdminRequest request)
+    public async Task<AdminResponse> Update(Guid id, UpdateAdminRequest request)
     {
-        var isGlobalAdmin = _userManager.IsCurrentUserAdmin();
-        var isOwner = await _userManager.IsUserAccountOwner(id);
+        var entity = await _adminRepository.GetById(id);
+        if (entity == null)
+            throw new NotFoundException();
 
-        if (!isGlobalAdmin && !isOwner)
-        {
-            throw new ForbiddenException("Brak uprawnień do edycji tego konta.");
-        }
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
 
-        var user = await _userManager.FindByIdAsync(id);
         if (user == null)
-        {
-            throw new NotFoundException($"Nie znaleziono użytkownika o ID: {id}");
-        }
+            throw new NotFoundException();
+
+        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+
+        if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
+            throw new ForbiddenException();
 
         user.UserName = request.UserName;
         user.Email = request.Email;
-        
-        var updated = await _userManager.UpdateAsync(user);
-        if (!updated)
-        {
-            throw new BadRequestException("Nie udało się zaktualizować użytkownika.");
-        }
 
-        return new AdminResponse
-        {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email
-        };
+        var result = await _userManager.UpdateAsync(user);
+
+        entity.FirstName = request.FirstName;
+        entity.LastName = request.LastName;
+
+        var updated = await _adminRepository.Update(entity);
+        return MapToResponse(updated);
     }
 
-    public async Task<AdminResponse> Delete(string id)
+    public async Task<AdminResponse> Delete(Guid id)
     {
-        if (!_userManager.IsCurrentUserAdmin())
-        {
-            throw new ForbiddenException("Tylko administrator może usuwać użytkowników.");
-        }
+        var entity = await _adminRepository.GetById(id);
+        if (entity == null)
+            throw new NotFoundException();
 
-        var user = await _userManager.FindByIdAsync(id);
-        if (user == null)
-        {
-            throw new NotFoundException($"Nie znaleziono użytkownika o ID: {id}");
-        }
-        
-        var deleted = await _userManager.DeleteAsync(user.Id);
+        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
 
-        if (!deleted)
-        {
-            throw new BadRequestException("Nie udało się usunąć użytkownika.");
-        }
+        if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
+            throw new ForbiddenException();
 
+        var result = await _userManager.DeleteAsync(entity.IdentityUserId);
+
+        await _adminRepository.Delete(id);
+        return MapToResponse(entity);
+    }
+
+    private static AdminResponse MapToResponse(Admin entity)
+    {
         return new AdminResponse
         {
-            Id = user.Id,
-            UserName = user.UserName,
-            Email = user.Email
+            Data = new AdminView
+            {
+                Id = entity.Id,
+                FirstName = entity.FirstName,
+                LastName = entity.LastName,
+                UserId = entity.IdentityUserId
+            }
         };
     }
 }

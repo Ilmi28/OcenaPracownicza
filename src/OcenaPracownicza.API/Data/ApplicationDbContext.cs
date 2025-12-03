@@ -15,4 +15,5 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
 
     public DbSet<ExampleEntity> ExampleEntities { get; set; }
     public DbSet<Employee> Employees { get; set; }
+    public DbSet<Admin> Admins { get; set; }
 }

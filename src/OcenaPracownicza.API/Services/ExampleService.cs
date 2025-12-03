@@ -18,7 +18,7 @@ namespace OcenaPracownicza.API.Services;
 public class ExampleService(IExampleRepository exampleRepository) : IExampleService
 {
 
-    public async Task<ExampleResponse> GetById(int id)
+    public async Task<ExampleResponse> GetById(Guid id)
     {
         // Przyklad wyjatku NotFoundException zdefiniowanego w projekcie
         var data = await exampleRepository.GetById(id)
@@ -80,7 +80,7 @@ public class ExampleService(IExampleRepository exampleRepository) : IExampleServ
         };
     }
 
-    public async Task<ExampleResponse> Update(int id, ExampleRequest request)
+    public async Task<ExampleResponse> Update(Guid id, ExampleRequest request)
     {
         var existing = await exampleRepository.GetById(id)
             ?? throw new NotFoundException("Nie znaleziono takiego obiektu.");
@@ -100,7 +100,7 @@ public class ExampleService(IExampleRepository exampleRepository) : IExampleServ
         };
     }
 
-    public async Task<ExampleResponse> Delete(int id)
+    public async Task<ExampleResponse> Delete(Guid id)
     {
         var exists = await exampleRepository.Exists(id);
         if (!exists)

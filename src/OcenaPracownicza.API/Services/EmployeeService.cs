@@ -22,7 +22,7 @@ public class EmployeeService : IEmployeeService
         _employeeRepository = employeeRepository;
     }
 
-    public async Task<EmployeeResponse> GetById(int id)
+    public async Task<EmployeeResponse> GetById(Guid id)
     {
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
@@ -91,7 +91,7 @@ public class EmployeeService : IEmployeeService
 
     }
 
-    public async Task<EmployeeResponse> Update(int id, UpdateEmployeeRequest request)
+    public async Task<EmployeeResponse> Update(Guid id, UpdateEmployeeRequest request)
     {
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
@@ -122,7 +122,7 @@ public class EmployeeService : IEmployeeService
         return MapToResponse(updated);
     }
 
-    public async Task<EmployeeResponse> Delete(int id)
+    public async Task<EmployeeResponse> Delete(Guid id)
     {
         
         var entity = await _employeeRepository.GetById(id);

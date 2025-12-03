@@ -26,7 +26,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         return entity;
     }
     
-    public virtual async Task<TEntity?> GetById(int id)
+    public virtual async Task<TEntity?> GetById(Guid id)
     {
         return await _dbSet.FindAsync(id);
     }
@@ -44,7 +44,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         return entity;
     }
     
-    public virtual async Task Delete(int id)
+    public virtual async Task Delete(Guid id)
     {
         var entity = await GetById(id);
         if (entity != null)
@@ -54,7 +54,7 @@ public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity : 
         }
     }
     
-    public virtual async Task<bool> Exists(int id)
+    public virtual async Task<bool> Exists(Guid id)
     {
         var entity = await GetById(id);
         return entity != null;

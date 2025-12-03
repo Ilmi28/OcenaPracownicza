@@ -5,9 +5,9 @@ namespace OcenaPracownicza.API.Interfaces.Services;
 
 public interface IEmployeeService
 {
-    Task<EmployeeResponse> GetById(int id);
+    Task<EmployeeResponse> GetById(Guid id);
     Task<EmployeeListResponse> GetAll();
     Task<EmployeeResponse> Add(CreateEmployeeRequest request);
-    Task<EmployeeResponse> Update(int id, UpdateEmployeeRequest request);
-    Task<EmployeeResponse> Delete(int id);
+    Task<EmployeeResponse> Update(Guid id, UpdateEmployeeRequest request);
+    Task<EmployeeResponse> Delete(Guid id);
 }
