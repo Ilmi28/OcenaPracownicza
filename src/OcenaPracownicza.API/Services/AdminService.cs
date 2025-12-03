@@ -1,4 +1,3 @@
-﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
@@ -11,47 +10,47 @@ using OcenaPracownicza.API.Views;
 
 namespace OcenaPracownicza.API.Services;
 
-public class EmployeeService : IEmployeeService
+public class AdminService : IAdminService
 {
     private readonly IUserManager _userManager;
-    private readonly IEmployeeRepository _employeeRepository;
+    private readonly IAdminRepository _adminRepository;
 
-    public EmployeeService(IUserManager userManager, IEmployeeRepository employeeRepository)
+    public AdminService(IUserManager userManager, IAdminRepository adminRepository)
     {
         _userManager = userManager;
-        _employeeRepository = employeeRepository;
+        _adminRepository = adminRepository;
     }
 
-    public async Task<EmployeeResponse> GetById(Guid id)
+    public async Task<AdminResponse> GetById(Guid id)
     {
-        var entity = await _employeeRepository.GetById(id);
+        var entity = await _adminRepository.GetById(id);
         if (entity == null)
             throw new NotFoundException();
 
         var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
-        if (_userManager.IsCurrentUserAdmin() || _userManager.IsCurrentUserManager() || isAccountOwner) 
+ 
+        if (_userManager.IsCurrentUserAdmin() || isAccountOwner)
             return MapToResponse(entity);
+
         throw new ForbiddenException();
     }
 
-    public async Task<EmployeeListResponse> GetAll()
+    public async Task<AdminListResponse> GetAll()
     {
-        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager())
+        if (!_userManager.IsCurrentUserAdmin())
             throw new ForbiddenException();
-        var entities = await _employeeRepository.GetAll();
-        var response = new EmployeeListResponse
+
+        var entities = await _adminRepository.GetAll();
+
+        var response = new AdminListResponse
         {
             Data = entities.Select(x =>
             {
-                return new EmployeeView
+                return new AdminView
                 {
                     Id = x.Id,
                     FirstName = x.FirstName,
                     LastName = x.LastName,
-                    Position = x.Position,
-                    Period = x.Period,
-                    FinalScore = x.FinalScore,
-                    AchievementsSummary = x.AchievementsSummary,
                     UserId = x.IdentityUserId
                 };
             }).ToList()
@@ -59,41 +58,40 @@ public class EmployeeService : IEmployeeService
         return response;
     }
 
-    public async Task<EmployeeResponse> Add(CreateEmployeeRequest request)
+    public async Task<AdminResponse> Add(CreateAdminRequest request)
     {
-        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager())
+        if (!_userManager.IsCurrentUserAdmin())
             throw new ForbiddenException();
+
         var identityUser = new IdentityUser
         {
             UserName = request.UserName,
             Email = request.Email
         };
+
         var result = await _userManager.CreateAsync(identityUser, request.Password);
 
         if (result)
         {
-            result = await _userManager.AddToRoleAsync(identityUser.Id, "Employee");
-            var entity = new Employee
+            result = await _userManager.AddToRoleAsync(identityUser.Id, "Admin");
+
+            var entity = new Admin
             {
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                Position = request.Position,
-                Period = request.Period,
-                FinalScore = request.FinalScore,
-                AchievementsSummary = request.AchievementsSummary,
                 IdentityUserId = identityUser.Id
             };
 
-            var created = await _employeeRepository.Create(entity);
+            var created = await _adminRepository.Create(entity);
             return MapToResponse(created);
         }
-        throw new Exception("Wystąpił błąd podczas tworzenia użytkownika");
 
+        throw new Exception("Wystąpił błąd podczas tworzenia użytkownika");
     }
 
-    public async Task<EmployeeResponse> Update(Guid id, UpdateEmployeeRequest request)
+    public async Task<AdminResponse> Update(Guid id, UpdateAdminRequest request)
     {
-        var entity = await _employeeRepository.GetById(id);
+        var entity = await _adminRepository.GetById(id);
         if (entity == null)
             throw new NotFoundException();
 
@@ -103,7 +101,8 @@ public class EmployeeService : IEmployeeService
             throw new NotFoundException();
 
         var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
-        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
+
+        if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
             throw new ForbiddenException();
 
         user.UserName = request.UserName;
@@ -113,45 +112,38 @@ public class EmployeeService : IEmployeeService
 
         entity.FirstName = request.FirstName;
         entity.LastName = request.LastName;
-        entity.Position = request.Position;
-        entity.Period = request.Period;
-        entity.FinalScore = request.FinalScore;
-        entity.AchievementsSummary = request.AchievementsSummary;
 
-        var updated = await _employeeRepository.Update(entity);
+        var updated = await _adminRepository.Update(entity);
         return MapToResponse(updated);
     }
 
-    public async Task<EmployeeResponse> Delete(Guid id)
+    public async Task<AdminResponse> Delete(Guid id)
     {
-        
-        var entity = await _employeeRepository.GetById(id);
+        var entity = await _adminRepository.GetById(id);
         if (entity == null)
             throw new NotFoundException();
 
         var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
-        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
+
+        if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
             throw new ForbiddenException();
 
         var result = await _userManager.DeleteAsync(entity.IdentityUserId);
 
-        await _employeeRepository.Delete(id);
+        await _adminRepository.Delete(id);
         return MapToResponse(entity);
     }
 
-    private static EmployeeResponse MapToResponse(Employee entity)
+    private static AdminResponse MapToResponse(Admin entity)
     {
-        return new EmployeeResponse
+        return new AdminResponse
         {
-            Data = new EmployeeView
+            Data = new AdminView
             {
                 Id = entity.Id,
                 FirstName = entity.FirstName,
                 LastName = entity.LastName,
-                Position = entity.Position,
-                Period = entity.Period,
-                FinalScore = entity.FinalScore,
-                AchievementsSummary = entity.AchievementsSummary
+                UserId = entity.IdentityUserId
             }
         };
     }

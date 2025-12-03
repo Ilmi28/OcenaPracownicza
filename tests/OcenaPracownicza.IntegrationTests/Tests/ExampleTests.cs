@@ -12,25 +12,33 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 {
     public class ExampleTests : BaseTests<ExampleWebApplicationFactory>
     {
+        private readonly Guid _id1 = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        private readonly Guid _id2 = Guid.Parse("00000000-0000-0000-0000-000000000002");
+        private readonly Guid _id3 = Guid.Parse("00000000-0000-0000-0000-000000000003");
+        private readonly Guid _id4 = Guid.Parse("00000000-0000-0000-0000-000000000004");
+        private readonly Guid _id5 = Guid.Parse("00000000-0000-0000-0000-000000000005");
+        private readonly Guid _id6 = Guid.Parse("00000000-0000-0000-0000-000000000006");
+        private readonly Guid _id7 = Guid.Parse("00000000-0000-0000-0000-000000000007");
+
         public ExampleTests(ExampleWebApplicationFactory factory) : base(factory) { }
 
         protected override void SeedData()
         {
             context.ExampleEntities.AddRange(
-                new ExampleEntity { Id = 1, Name = "Entity1", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Id = 2, Name = "Old Name", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Id = 3, Name = "To Delete", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Id = 4, Name = "A", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Id = 5, Name = "B", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Id = 6, Name = "First", Description = "Desc", SomeDetail = "Detail" },
-                new ExampleEntity { Id = 7, Name = "Second", Description = "Desc", SomeDetail = "Detail" }
+                new ExampleEntity { Id = _id1, Name = "Entity1", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = _id2, Name = "Old Name", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = _id3, Name = "To Delete", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = _id4, Name = "A", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = _id5, Name = "B", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = _id6, Name = "First", Description = "Desc", SomeDetail = "Detail" },
+                new ExampleEntity { Id = _id7, Name = "Second", Description = "Desc", SomeDetail = "Detail" }
             );
         }
 
         [Fact]
         public async Task GetById_ReturnsEntity()
         {
-            var response = await client.GetAsync("/example/1");
+            var response = await client.GetAsync($"/example/{_id1}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var result = await response.Content.ReadFromJsonAsync<BaseResponse<ExampleView>>();
@@ -50,13 +58,13 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             var data = payload!.Data;
 
             Assert.NotNull(data);
-            Assert.Equal("Entity1", data[0].Name);
-            Assert.Equal("Old Name", data[1].Name);
-            Assert.Equal("To Delete", data[2].Name);
-            Assert.Equal("A", data[3].Name);
-            Assert.Equal("B", data[4].Name);
-            Assert.Equal("First", data[5].Name);
-            Assert.Equal("Second", data[6].Name);
+            Assert.Contains(data, e => e.Name == "Entity1");
+            Assert.Contains(data, e => e.Name == "Old Name");
+            Assert.Contains(data, e => e.Name == "To Delete");
+            Assert.Contains(data, e => e.Name == "A");
+            Assert.Contains(data, e => e.Name == "B");
+            Assert.Contains(data, e => e.Name == "First");
+            Assert.Contains(data, e => e.Name == "Second");
         }
 
         [Fact]
@@ -76,6 +84,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             Assert.NotNull(added);
             Assert.Equal("Test Desc", added!.Description);
             Assert.Equal("Test Detail", added.SomeDetail);
+            Assert.NotEqual(Guid.Empty, added.Id);
         }
 
         [Fact]
@@ -88,10 +97,10 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 SomeDetail = "New Detail"
             };
 
-            var response = await client.PutAsJsonAsync("/example/2", updateRequest);
+            var response = await client.PutAsJsonAsync($"/example/{_id2}", updateRequest);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var updated = await context.ExampleEntities.FindAsync(2);
+            var updated = await context.ExampleEntities.FindAsync(_id2);
             await context.Entry(updated!).ReloadAsync();
             Assert.NotNull(updated);
             Assert.Equal("New Name", updated!.Name);
@@ -109,7 +118,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 SomeDetail = "Detail"
             };
 
-            var response = await client.PutAsJsonAsync("/example/9999", updateRequest);
+            var response = await client.PutAsJsonAsync($"/example/{Guid.NewGuid()}", updateRequest);
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             Assert.False(context.ExampleEntities.Any(e => e.Name == "NonExist"));
         }
@@ -117,10 +126,10 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task Delete_RemovesEntity()
         {
-            var response = await client.DeleteAsync("/example/3");
+            var response = await client.DeleteAsync($"/example/{_id3}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var exists = await context.ExampleEntities.AnyAsync(e => e.Id == 3);
+            var exists = await context.ExampleEntities.AnyAsync(e => e.Id == _id3);
             Assert.False(exists);
 
             var count = await context.ExampleEntities.CountAsync();
@@ -130,7 +139,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task Delete_NonExistingEntity_ReturnsNotFound()
         {
-            var response = await client.DeleteAsync("/example/9999");
+            var response = await client.DeleteAsync($"/example/{Guid.NewGuid()}");
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
     }

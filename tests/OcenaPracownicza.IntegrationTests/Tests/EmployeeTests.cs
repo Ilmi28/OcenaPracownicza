@@ -15,6 +15,13 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 {
     public class EmployeeTests : BaseTests<EmployeeWebApplicationFactory>
     {
+        private readonly Guid _emp1Id = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        private readonly Guid _emp2Id = Guid.Parse("00000000-0000-0000-0000-000000000002");
+        private readonly Guid _emp3Id = Guid.Parse("00000000-0000-0000-0000-000000000003");
+        private readonly Guid _emp4Id = Guid.Parse("00000000-0000-0000-0000-000000000004");
+        private readonly Guid _emp5Id = Guid.Parse("00000000-0000-0000-0000-000000000005");
+        private readonly Guid _emp6Id = Guid.Parse("00000000-0000-0000-0000-000000000006");
+
         public EmployeeTests(EmployeeWebApplicationFactory factory) : base(factory)
         {
         }
@@ -116,12 +123,12 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 
             var employees = new List<Employee>
             {
-                new Employee { Id = 1, FirstName = "Jan", LastName = "Kowalski", Position = "Dev", Period = "2024", FinalScore = "8", AchievementsSummary = "Good", IdentityUserId = "1" },
-                new Employee { Id = 2, FirstName = "Anna", LastName = "Nowak", Position = "QA", Period = "2024", FinalScore = "7", AchievementsSummary = "Solid", IdentityUserId = "2" },
-                new Employee { Id = 3, FirstName = "Piotr", LastName = "Zielinski", Position = "PM", Period = "2024", FinalScore = "9", AchievementsSummary = "Excellent", IdentityUserId = "3" },
-                new Employee { Id = 4, FirstName = "To", LastName = "Delete", Position = "Temp", Period = "2024", FinalScore = "5", AchievementsSummary = "Remove me", IdentityUserId = "4" },
-                new Employee { Id = 5, FirstName = "A", LastName = "Alpha", Position = "X", Period = "2024", FinalScore = "6", AchievementsSummary = "A", IdentityUserId = "5" },
-                new Employee { Id = 6, FirstName = "B", LastName = "Beta", Position = "Y", Period = "2024", FinalScore = "6", AchievementsSummary = "B", IdentityUserId = "6" }
+                new Employee { Id = _emp1Id, FirstName = "Jan", LastName = "Kowalski", Position = "Dev", Period = "2024", FinalScore = "8", AchievementsSummary = "Good", IdentityUserId = "1" },
+                new Employee { Id = _emp2Id, FirstName = "Anna", LastName = "Nowak", Position = "QA", Period = "2024", FinalScore = "7", AchievementsSummary = "Solid", IdentityUserId = "2" },
+                new Employee { Id = _emp3Id, FirstName = "Piotr", LastName = "Zielinski", Position = "PM", Period = "2024", FinalScore = "9", AchievementsSummary = "Excellent", IdentityUserId = "3" },
+                new Employee { Id = _emp4Id, FirstName = "To", LastName = "Delete", Position = "Temp", Period = "2024", FinalScore = "5", AchievementsSummary = "Remove me", IdentityUserId = "4" },
+                new Employee { Id = _emp5Id, FirstName = "A", LastName = "Alpha", Position = "X", Period = "2024", FinalScore = "6", AchievementsSummary = "A", IdentityUserId = "5" },
+                new Employee { Id = _emp6Id, FirstName = "B", LastName = "Beta", Position = "Y", Period = "2024", FinalScore = "6", AchievementsSummary = "B", IdentityUserId = "6" }
             };
 
             context.Roles.AddRange(roles);
@@ -139,16 +146,11 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             context.SaveChanges();
         }
 
-        public void Setup()
-        {
-
-        }
-
         [Fact]
         public async Task GetById_ReturnsEmployee()
         {
             LoginAsAdmin();
-            var response = await client.GetAsync("/employee/1");
+            var response = await client.GetAsync($"/employee/{_emp1Id}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var result = await response.Content.ReadFromJsonAsync<BaseResponse<EmployeeView>>();
@@ -195,6 +197,8 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             var added = await context.Employees.FirstOrDefaultAsync(e => e.FirstName == "New" && e.LastName == "Employee");
             Assert.NotNull(added);
             Assert.Equal("DevOps", added!.Position);
+            
+            Assert.NotEqual(Guid.Empty, added.Id);
 
             var identityUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "new_unique@example.com");
             Assert.NotNull(identityUser);
@@ -216,10 +220,10 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 AchievementsSummary = "Updated summary"
             };
 
-            var response = await client.PutAsJsonAsync("/employee/2", updateRequest);
+            var response = await client.PutAsJsonAsync($"/employee/{_emp2Id}", updateRequest);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var updatedEmployee = await context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == 2);
+            var updatedEmployee = await context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == _emp2Id);
             Assert.Equal("AnnaUpdated", updatedEmployee!.FirstName);
 
             var updatedUser = await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == "2");
@@ -243,7 +247,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 AchievementsSummary = "N/A"
             };
 
-            var response = await client.PutAsJsonAsync("/employee/99999", updateRequest);
+            var response = await client.PutAsJsonAsync($"/employee/{Guid.NewGuid()}", updateRequest);
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
@@ -251,10 +255,10 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         public async Task Delete_RemovesEmployee()
         {
             LoginAsAdmin();
-            var response = await client.DeleteAsync("/employee/4");
+            var response = await client.DeleteAsync($"/employee/{_emp4Id}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var exists = await context.Employees.AnyAsync(e => e.Id == 4);
+            var exists = await context.Employees.AnyAsync(e => e.Id == _emp4Id);
             Assert.False(exists);
 
             var userExists = await context.Users.AnyAsync(u => u.Id == "4");

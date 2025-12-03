@@ -13,7 +13,7 @@ namespace OcenaPracownicza.Controllers;
 public class EmployeeController(IEmployeeService employeeService) : ControllerBase
 {
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(int id)
+    public async Task<IActionResult> Get(Guid id)
     {
         var response = await employeeService.GetById(id);
         return Ok(response);
@@ -34,14 +34,14 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, UpdateEmployeeRequest request)
+    public async Task<IActionResult> Put(Guid id, UpdateEmployeeRequest request)
     {
         var response = await employeeService.Update(id, request);
         return Ok(response);
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var response = await employeeService.Delete(id);
         return Ok(response);

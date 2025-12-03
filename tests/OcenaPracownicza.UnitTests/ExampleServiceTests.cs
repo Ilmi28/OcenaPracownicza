@@ -8,6 +8,7 @@ using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using System; 
 
 namespace OcenaPracownicza.UnitTests
 {
@@ -25,10 +26,11 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task ExampleService_GetById_ReturnsEntity_WhenExists()
         {
-            var entity = new ExampleEntity { Name = "Test", Description = "Desc", SomeDetail = "Detail" };
-            _repoMock.Setup(r => r.GetById(1)).ReturnsAsync(entity);
+            var id = Guid.NewGuid();
+            var entity = new ExampleEntity { Id = id, Name = "Test", Description = "Desc", SomeDetail = "Detail" };
+            _repoMock.Setup(r => r.GetById(id)).ReturnsAsync(entity);
 
-            var result = await _service.GetById(1);
+            var result = await _service.GetById(id);
 
             Assert.NotNull(result);
             Assert.Equal("Test", result.Data.Name);
@@ -37,16 +39,17 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task ExampleService_GetById_ThrowsNotFoundException_WhenNotExists()
         {
-            _repoMock.Setup(r => r.GetById(1)).ReturnsAsync((ExampleEntity)null!);
+            var id = Guid.NewGuid();
+            _repoMock.Setup(r => r.GetById(id)).ReturnsAsync((ExampleEntity)null!);
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.GetById(1));
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.GetById(id));
         }
 
         [Fact]
         public async Task ExampleService_Add_CreatesEntity()
         {
             var request = new ExampleRequest { Name = "New", Description = "Desc", SomeDetail = "Detail" };
-            var entity = new ExampleEntity { Name = "New", Description = "Desc", SomeDetail = "Detail" };
+            var entity = new ExampleEntity { Id = Guid.NewGuid(), Name = "New", Description = "Desc", SomeDetail = "Detail" };
 
             _repoMock.Setup(r => r.Create(It.IsAny<ExampleEntity>())).ReturnsAsync(entity);
 
@@ -65,13 +68,14 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task ExampleService_Update_UpdatesEntity_WhenExists()
         {
-            var existing = new ExampleEntity { Name = "Old", Description = "OldDesc", SomeDetail = "OldDetail" };
+            var id = Guid.NewGuid();
+            var existing = new ExampleEntity { Id = id, Name = "Old", Description = "OldDesc", SomeDetail = "OldDetail" };
             var request = new ExampleRequest { Name = "New", Description = "NewDesc", SomeDetail = "NewDetail" };
 
-            _repoMock.Setup(r => r.GetById(1)).ReturnsAsync(existing);
+            _repoMock.Setup(r => r.GetById(id)).ReturnsAsync(existing);
             _repoMock.Setup(r => r.Update(existing)).ReturnsAsync(existing);
 
-            var result = await _service.Update(1, request);
+            var result = await _service.Update(id, request);
 
             Assert.Equal("New", result.Data.Name);
             Assert.Equal("NewDesc", result.Data.Description);
@@ -80,19 +84,21 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task ExampleService_Update_ThrowsNotFoundException_WhenNotExists()
         {
-            _repoMock.Setup(r => r.GetById(1)).ReturnsAsync((ExampleEntity)null!);
+            var id = Guid.NewGuid();
+            _repoMock.Setup(r => r.GetById(id)).ReturnsAsync((ExampleEntity)null!);
             var request = new ExampleRequest { Name = "X", Description = "X", SomeDetail = "X" };
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(1, request));
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(id, request));
         }
 
         [Fact]
         public async Task ExampleService_Delete_RemovesEntity_WhenExists()
         {
-            _repoMock.Setup(r => r.Exists(1)).ReturnsAsync(true);
-            _repoMock.Setup(r => r.Delete(1)).Returns(Task.CompletedTask);
+            var id = Guid.NewGuid();
+            _repoMock.Setup(r => r.Exists(id)).ReturnsAsync(true);
+            _repoMock.Setup(r => r.Delete(id)).Returns(Task.CompletedTask);
 
-            var result = await _service.Delete(1);
+            var result = await _service.Delete(id);
 
             Assert.NotNull(result);
         }
@@ -100,9 +106,10 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task ExampleService_Delete_ThrowsNotFoundException_WhenNotExists()
         {
-            _repoMock.Setup(r => r.Exists(1)).ReturnsAsync(false);
+            var id = Guid.NewGuid();
+            _repoMock.Setup(r => r.Exists(id)).ReturnsAsync(false);
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.Delete(1));
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.Delete(id));
         }
 
         [Fact]
@@ -114,23 +121,26 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task ExampleService_GetById_Throws_WhenNotFound()
         {
-            _repoMock.Setup(r => r.GetById(1)).ReturnsAsync((ExampleEntity?)null);
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.GetById(1));
+            var id = Guid.NewGuid();
+            _repoMock.Setup(r => r.GetById(id)).ReturnsAsync((ExampleEntity?)null);
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.GetById(id));
         }
 
         [Fact]
         public async Task ExampleService_Update_Throws_WhenNotFound()
         {
-            _repoMock.Setup(r => r.GetById(1)).ReturnsAsync((ExampleEntity?)null);
+            var id = Guid.NewGuid();
+            _repoMock.Setup(r => r.GetById(id)).ReturnsAsync((ExampleEntity?)null);
             var request = new ExampleRequest { Name = "X", Description = "Y", SomeDetail = "Z" };
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(1, request));
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(id, request));
         }
 
         [Fact]
         public async Task ExampleService_Delete_Throws_WhenNotFound()
         {
-            _repoMock.Setup(r => r.Exists(1)).ReturnsAsync(false);
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.Delete(1));
+            var id = Guid.NewGuid();
+            _repoMock.Setup(r => r.Exists(id)).ReturnsAsync(false);
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.Delete(id));
         }
 
         [Fact]
@@ -146,8 +156,8 @@ namespace OcenaPracownicza.UnitTests
         {
             var entities = new List<ExampleEntity>
             {
-                new() { Name = "A", Description = "B", SomeDetail = "C" },
-                new() { Name = "X", Description = "Y", SomeDetail = "Z" }
+                new() { Id = Guid.NewGuid(), Name = "A", Description = "B", SomeDetail = "C" },
+                new() { Id = Guid.NewGuid(), Name = "X", Description = "Y", SomeDetail = "Z" }
             };
             _repoMock.Setup(r => r.GetAll()).ReturnsAsync(entities);
 
@@ -174,12 +184,13 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task ExampleService_Update_MapsFieldsCorrectly()
         {
-            var existing = new ExampleEntity { Name = "Old", Description = "OldDesc", SomeDetail = "OldDetail" };
-            _repoMock.Setup(r => r.GetById(1)).ReturnsAsync(existing);
+            var id = Guid.NewGuid();
+            var existing = new ExampleEntity { Id = id, Name = "Old", Description = "OldDesc", SomeDetail = "OldDetail" };
+            _repoMock.Setup(r => r.GetById(id)).ReturnsAsync(existing);
             _repoMock.Setup(r => r.Update(It.IsAny<ExampleEntity>())).ReturnsAsync((ExampleEntity e) => e);
 
             var request = new ExampleRequest { Name = "New", Description = "NewDesc", SomeDetail = "NewDetail" };
-            var result = await _service.Update(1, request);
+            var result = await _service.Update(id, request);
 
             Assert.Equal("New", result.Data.Name);
             Assert.Equal("NewDesc", result.Data.Description);

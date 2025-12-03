@@ -18,6 +18,7 @@ namespace OcenaPracownicza.API.Interfaces.Other
         Task<bool> AddToRoleAsync(string userId, string roleName);
         Task<bool> RemoveFromRoleAsync(string userId, string roleName);
         Task<IList<string>> GetUserRolesAsync(string userId);
+        Task<IList<IdentityUser>> GetUsersInRoleAsync(string roleName);
         Task<bool> IsUserAccountOwner(string userId);
         bool IsCurrentUserAdmin();
         bool IsCurrentUserManager();

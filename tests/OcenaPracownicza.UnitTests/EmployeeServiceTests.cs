@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using System; 
 
 namespace OcenaPracownicza.UnitTests
 {
@@ -29,10 +30,11 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task GetById_ReturnsEmployee_WhenUserIsAdmin()
         {
-            var employee = new Employee 
-            { 
-                Id = 1, 
-                FirstName = "Jan", 
+            var empId = Guid.NewGuid();
+            var employee = new Employee
+            {
+                Id = empId,
+                FirstName = "Jan",
                 LastName = "Kowalski",
                 Position = "Developer",
                 Period = "Q1 2024",
@@ -40,12 +42,12 @@ namespace OcenaPracownicza.UnitTests
                 AchievementsSummary = "Good performance",
                 IdentityUserId = "user123"
             };
-            
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(employee);
+
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
             _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
 
-            var result = await _service.GetById(1);
+            var result = await _service.GetById(empId);
 
             Assert.NotNull(result);
             Assert.Equal("Jan", result.Data.FirstName);
@@ -55,32 +57,34 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task GetById_ThrowsForbiddenException_WhenUserNotAuthorized()
         {
-            var employee = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var employee = new Employee
+            {
                 FirstName = "John",
                 LastName = "Smith",
                 Position = "Teacher",
-                Id = 1,
+                Id = empId,
                 Period = "Q1 2024",
                 FinalScore = "80.0",
                 AchievementsSummary = "Average",
                 IdentityUserId = "user123"
             };
-            
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(employee);
+
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
             _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
 
-            await Assert.ThrowsAsync<ForbiddenException>(() => _service.GetById(1));
+            await Assert.ThrowsAsync<ForbiddenException>(() => _service.GetById(empId));
         }
 
         [Fact]
         public async Task GetById_ThrowsNotFoundException_WhenEmployeeNotExists()
         {
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync((Employee)null!);
+            var empId = Guid.NewGuid();
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync((Employee)null!);
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.GetById(1));
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.GetById(empId));
         }
 
         [Fact]
@@ -88,8 +92,8 @@ namespace OcenaPracownicza.UnitTests
         {
             var employees = new List<Employee>
             {
-                new() { IdentityUserId = "user123",Id = 1, FirstName = "Jan", LastName = "Kowalski", Position = "Developer", Period = "Q1", FinalScore = "85", AchievementsSummary = "Good" },
-                new() { IdentityUserId = "user1234",Id = 2, FirstName = "Anna", LastName = "Nowak", Position = "Manager", Period = "Q1", FinalScore = "90", AchievementsSummary = "Excellent" }
+                new() { IdentityUserId = "user123", Id = Guid.NewGuid(), FirstName = "Jan", LastName = "Kowalski", Position = "Developer", Period = "Q1", FinalScore = "85", AchievementsSummary = "Good" },
+                new() { IdentityUserId = "user1234", Id = Guid.NewGuid(), FirstName = "Anna", LastName = "Nowak", Position = "Manager", Period = "Q1", FinalScore = "90", AchievementsSummary = "Excellent" }
             };
 
             _employeeRepoMock.Setup(r => r.GetAll()).ReturnsAsync(employees);
@@ -108,7 +112,7 @@ namespace OcenaPracownicza.UnitTests
         {
             var employees = new List<Employee>
             {
-                new() { IdentityUserId = "user123",Position="Teacher",Id = 1, FirstName = "Piotr", LastName = "Zając", Period = "Q2", FinalScore = "87", AchievementsSummary = "Very good" }
+                new() { IdentityUserId = "user123", Position="Teacher", Id = Guid.NewGuid(), FirstName = "Piotr", LastName = "Zając", Period = "Q2", FinalScore = "87", AchievementsSummary = "Very good" }
             };
 
             _employeeRepoMock.Setup(r => r.GetAll()).ReturnsAsync(employees);
@@ -144,11 +148,11 @@ namespace OcenaPracownicza.UnitTests
             };
 
             var identityUser = new IdentityUser { Id = "newUserId", UserName = "jkowalski" };
-            var employee = new Employee 
-            { 
+            var employee = new Employee
+            {
                 Position = "Teacher",
-                Id = 1, 
-                FirstName = "Jan", 
+                Id = Guid.NewGuid(),
+                FirstName = "Jan",
                 LastName = "Kowalski",
                 Period = "Q1 2024",
                 FinalScore = "85.0",
@@ -180,12 +184,12 @@ namespace OcenaPracownicza.UnitTests
                 LastName = "Nowak"
             };
 
-            var employee = new Employee 
-            { 
+            var employee = new Employee
+            {
                 Position = "Teacher",
                 IdentityUserId = "user123",
-                Id = 1, 
-                FirstName = "Anna", 
+                Id = Guid.NewGuid(),
+                FirstName = "Anna",
                 LastName = "Nowak",
                 Period = "Q2 2024",
                 FinalScore = "88.0",
@@ -272,13 +276,14 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task Update_UpdatesEmployee_WhenUserIsAdmin()
         {
-            var existing = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var existing = new Employee
+            {
                 Position = "Teacher",
                 Period = "Q2 2024",
                 FinalScore = "88.0",
-                Id = 1, 
-                FirstName = "Old", 
+                Id = empId,
+                FirstName = "Old",
                 LastName = "Name",
                 IdentityUserId = "user123",
                 AchievementsSummary = "Excellent performance"
@@ -292,13 +297,13 @@ namespace OcenaPracownicza.UnitTests
                 LastName = "Name"
             };
 
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(existing);
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
             _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
             _userManagerMock.Setup(u => u.UpdateAsync(It.IsAny<IdentityUser>())).ReturnsAsync(true);
             _employeeRepoMock.Setup(r => r.Update(It.IsAny<Employee>())).ReturnsAsync((Employee e) => e);
 
-            var result = await _service.Update(1, request);
+            var result = await _service.Update(empId, request);
 
             Assert.Equal("New", result.Data.FirstName);
             Assert.Equal("Name", result.Data.LastName);
@@ -307,12 +312,13 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task Update_UpdatesEmployee_WhenUserIsManager()
         {
-            var existing = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var existing = new Employee
+            {
                 FirstName = "John",
                 LastName = "Smith",
                 Position = "Teacher",
-                Id = 1,
+                Id = empId,
                 Period = "Q1",
                 FinalScore = "75.0",
                 AchievementsSummary = "Summary",
@@ -321,14 +327,14 @@ namespace OcenaPracownicza.UnitTests
             var identityUser = new IdentityUser { Id = "user123" };
             var request = new UpdateEmployeeRequest { FirstName = "Updated", LastName = "Employee" };
 
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(existing);
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
             _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(true);
             _userManagerMock.Setup(u => u.UpdateAsync(It.IsAny<IdentityUser>())).ReturnsAsync(true);
             _employeeRepoMock.Setup(r => r.Update(It.IsAny<Employee>())).ReturnsAsync((Employee e) => e);
 
-            var result = await _service.Update(1, request);
+            var result = await _service.Update(empId, request);
 
             Assert.Equal("Updated", result.Data.FirstName);
         }
@@ -336,12 +342,13 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task Update_UpdatesEmployee_WhenUserIsAccountOwner()
         {
-            var existing = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var existing = new Employee
+            {
                 FirstName = "John",
                 LastName = "Smith",
                 Position = "Teacher",
-                Id = 1,
+                Id = empId,
                 Period = "Q3",
                 FinalScore = "82.0",
                 AchievementsSummary = "Good",
@@ -350,7 +357,7 @@ namespace OcenaPracownicza.UnitTests
             var identityUser = new IdentityUser { Id = "user123" };
             var request = new UpdateEmployeeRequest { FirstName = "Self", LastName = "Updated" };
 
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(existing);
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
             _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
@@ -358,7 +365,7 @@ namespace OcenaPracownicza.UnitTests
             _userManagerMock.Setup(u => u.UpdateAsync(It.IsAny<IdentityUser>())).ReturnsAsync(true);
             _employeeRepoMock.Setup(r => r.Update(It.IsAny<Employee>())).ReturnsAsync((Employee e) => e);
 
-            var result = await _service.Update(1, request);
+            var result = await _service.Update(empId, request);
 
             Assert.Equal("Self", result.Data.FirstName);
         }
@@ -366,42 +373,45 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task Update_ThrowsNotFoundException_WhenEmployeeNotExists()
         {
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync((Employee)null!);
+            var empId = Guid.NewGuid();
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync((Employee)null!);
             var request = new UpdateEmployeeRequest { FirstName = "Test" };
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(1, request));
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(empId, request));
         }
 
         [Fact]
         public async Task Update_ThrowsNotFoundException_WhenIdentityUserNotExists()
         {
-            var existing = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var existing = new Employee
+            {
                 FirstName = "John",
                 LastName = "Smith",
                 Position = "Teacher",
-                Id = 1,
+                Id = empId,
                 Period = "Q1",
                 FinalScore = "70.0",
                 AchievementsSummary = "Test",
                 IdentityUserId = "user123"
             };
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(existing);
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
             _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync((IdentityUser)null!);
             var request = new UpdateEmployeeRequest { FirstName = "Test" };
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(1, request));
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(empId, request));
         }
 
         [Fact]
         public async Task Update_ThrowsForbiddenException_WhenUserNotAuthorized()
         {
-            var existing = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var existing = new Employee
+            {
                 FirstName = "John",
                 LastName = "Smith",
                 Position = "Teacher",
-                Id = 1,
+                Id = empId,
                 Period = "Q2",
                 FinalScore = "78.0",
                 AchievementsSummary = "Average",
@@ -409,7 +419,7 @@ namespace OcenaPracownicza.UnitTests
             };
             var identityUser = new IdentityUser { Id = "user123" };
 
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(existing);
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
             _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
@@ -417,17 +427,18 @@ namespace OcenaPracownicza.UnitTests
 
             var request = new UpdateEmployeeRequest { FirstName = "Test" };
 
-            await Assert.ThrowsAsync<ForbiddenException>(() => _service.Update(1, request));
+            await Assert.ThrowsAsync<ForbiddenException>(() => _service.Update(empId, request));
         }
 
         [Fact]
         public async Task Delete_DeletesEmployee_WhenUserIsAdmin()
         {
-            var employee = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var employee = new Employee
+            {
                 LastName = "Smith",
                 Position = "Teacher",
-                Id = 1, 
+                Id = empId,
                 FirstName = "Jan",
                 Period = "Q1",
                 FinalScore = "85.0",
@@ -437,12 +448,12 @@ namespace OcenaPracownicza.UnitTests
 
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
             _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(employee);
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
             _userManagerMock.Setup(u => u.DeleteAsync("user123")).ReturnsAsync(true);
-            _employeeRepoMock.Setup(r => r.Delete(1)).Returns(Task.CompletedTask);
+            _employeeRepoMock.Setup(r => r.Delete(empId)).Returns(Task.CompletedTask);
 
-            var result = await _service.Delete(1);
+            var result = await _service.Delete(empId);
 
             Assert.NotNull(result);
             Assert.Equal("Jan", result.Data.FirstName);
@@ -451,11 +462,12 @@ namespace OcenaPracownicza.UnitTests
         [Fact]
         public async Task Delete_DeletesEmployee_WhenUserIsManager()
         {
-            var employee = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var employee = new Employee
+            {
                 LastName = "Smith",
                 Position = "Teacher",
-                Id = 1, 
+                Id = empId,
                 FirstName = "Anna",
                 Period = "Q2",
                 FinalScore = "90.0",
@@ -463,47 +475,49 @@ namespace OcenaPracownicza.UnitTests
                 IdentityUserId = "user456"
             };
             _userManagerMock.Setup(u => u.IsUserAccountOwner("user456")).ReturnsAsync(false);
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(employee);
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(true);
             _userManagerMock.Setup(u => u.DeleteAsync("user456")).ReturnsAsync(true);
-            _employeeRepoMock.Setup(r => r.Delete(1)).Returns(Task.CompletedTask);
+            _employeeRepoMock.Setup(r => r.Delete(empId)).Returns(Task.CompletedTask);
 
-            var result = await _service.Delete(1);
+            var result = await _service.Delete(empId);
 
             Assert.NotNull(result);
         }
-        
+
 
         [Fact]
         public async Task Delete_ThrowsNotFoundException_WhenEmployeeNotExists()
         {
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync((Employee)null!);
+            var empId = Guid.NewGuid();
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync((Employee)null!);
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _service.Delete(1));
+            await Assert.ThrowsAsync<NotFoundException>(() => _service.Delete(empId));
         }
 
         [Fact]
         public async Task Delete_ThrowsForbiddenException_WhenUserNotAuthorized()
         {
-            var employee = new Employee 
-            { 
+            var empId = Guid.NewGuid();
+            var employee = new Employee
+            {
                 FirstName = "John",
                 LastName = "Smith",
                 Position = "Teacher",
-                Id = 1,
+                Id = empId,
                 Period = "Q1",
                 FinalScore = "80.0",
                 AchievementsSummary = "Average",
                 IdentityUserId = "user123"
             };
 
-            _employeeRepoMock.Setup(r => r.GetById(1)).ReturnsAsync(employee);
+            _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
             _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
 
-            await Assert.ThrowsAsync<ForbiddenException>(() => _service.Delete(1));
+            await Assert.ThrowsAsync<ForbiddenException>(() => _service.Delete(empId));
         }
     }
 }

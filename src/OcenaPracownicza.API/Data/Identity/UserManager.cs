@@ -97,6 +97,11 @@ namespace OcenaPracownicza.API.Data.Identity
             return await _userManager.GetRolesAsync(user);
         }
 
+        public async Task<IList<IdentityUser>> GetUsersInRoleAsync(string roleName)
+        {
+            return await _userManager.GetUsersInRoleAsync(roleName);
+        }
+        
         public async Task<bool> IsUserAccountOwner(string userId)
         {
             var user = _httpContextAccessor.HttpContext?.User;
