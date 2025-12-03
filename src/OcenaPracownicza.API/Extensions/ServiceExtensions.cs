@@ -30,6 +30,7 @@ namespace OcenaPracownicza.API.Extensions
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IEmployeeService, EmployeeService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IAdminService, AdminService>();
         }
 
         public static void AddRepositories(this IServiceCollection services)
