@@ -11,7 +11,7 @@ namespace OcenaPracownicza.Controllers;
 // Nie implementujemy logiki biznesowej w kontrolerze, tylko w serwisach
 // Wyrzucone wyjatki z serwisów sa obsługiwane globalnie w middleware w Program.cs wiec tutaj nic nie trzeba robic jedynie zwrocic odpowiedni rezultat
 [ApiController]
-[Route("example")]
+[Route("api/example")]
 public class ExampleController(IExampleService exampleService) : ControllerBase
 {
     [HttpGet("{id}")]

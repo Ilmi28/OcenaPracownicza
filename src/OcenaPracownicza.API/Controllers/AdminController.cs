@@ -6,7 +6,7 @@ using OcenaPracownicza.API.Requests;
 namespace OcenaPracownicza.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/admin")]
 [Authorize]
 public class AdminController : ControllerBase
 {

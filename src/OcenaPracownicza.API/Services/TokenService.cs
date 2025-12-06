@@ -21,9 +21,9 @@ namespace OcenaPracownicza.API.Services
 
             var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserName ?? ""),
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Email, user.Email ?? ""),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id ?? ""),
+            new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName ?? ""),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? ""),
         };
 
             foreach (var role in roles)

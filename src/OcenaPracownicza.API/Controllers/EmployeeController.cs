@@ -9,7 +9,8 @@ using OcenaPracownicza.API.Requests;
 namespace OcenaPracownicza.Controllers;
 
 [ApiController]
-[Route("employee")]
+[Authorize]
+[Route("api/employee")]
 public class EmployeeController(IEmployeeService employeeService) : ControllerBase
 {
     [HttpGet("{id}")]
