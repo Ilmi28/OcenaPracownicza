@@ -45,7 +45,7 @@ namespace OcenaPracownicza.UnitTests
 
             _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
-            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
+            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
 
             var result = await _service.GetById(empId);
 
@@ -73,7 +73,7 @@ namespace OcenaPracownicza.UnitTests
             _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
-            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
+            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
 
             await Assert.ThrowsAsync<ForbiddenException>(() => _service.GetById(empId));
         }
@@ -361,7 +361,7 @@ namespace OcenaPracownicza.UnitTests
             _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
-            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(true);
+            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(true);
             _userManagerMock.Setup(u => u.UpdateAsync(It.IsAny<IdentityUser>())).ReturnsAsync(true);
             _employeeRepoMock.Setup(r => r.Update(It.IsAny<Employee>())).ReturnsAsync((Employee e) => e);
 
@@ -423,7 +423,7 @@ namespace OcenaPracownicza.UnitTests
             _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
-            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
+            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
 
             var request = new UpdateEmployeeRequest { FirstName = "Test" };
 
@@ -447,7 +447,7 @@ namespace OcenaPracownicza.UnitTests
             };
 
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
-            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
+            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
             _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
             _userManagerMock.Setup(u => u.DeleteAsync("user123")).ReturnsAsync(true);
@@ -474,7 +474,7 @@ namespace OcenaPracownicza.UnitTests
                 AchievementsSummary = "Excellent",
                 IdentityUserId = "user456"
             };
-            _userManagerMock.Setup(u => u.IsUserAccountOwner("user456")).ReturnsAsync(false);
+            _userManagerMock.Setup(u => u.IsUserAccountOwner("user456")).Returns(false);
             _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(true);
@@ -515,7 +515,7 @@ namespace OcenaPracownicza.UnitTests
             _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
             _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
             _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
-            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).ReturnsAsync(false);
+            _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
 
             await Assert.ThrowsAsync<ForbiddenException>(() => _service.Delete(empId));
         }

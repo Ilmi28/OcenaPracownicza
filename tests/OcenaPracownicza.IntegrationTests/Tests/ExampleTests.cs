@@ -38,7 +38,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task GetById_ReturnsEntity()
         {
-            var response = await client.GetAsync($"/example/{_id1}");
+            var response = await client.GetAsync($"/api/example/{_id1}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var result = await response.Content.ReadFromJsonAsync<BaseResponse<ExampleView>>();
@@ -51,7 +51,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task GetAll_ReturnsEntities()
         {
-            var response = await client.GetAsync("/example");
+            var response = await client.GetAsync("/api/example");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var payload = await response.Content.ReadFromJsonAsync<BaseResponse<List<ExampleView>>>();
@@ -77,7 +77,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 SomeDetail = "Test Detail"
             };
 
-            var response = await client.PostAsJsonAsync("/example", request);
+            var response = await client.PostAsJsonAsync("/api/example", request);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var added = await context.ExampleEntities.FirstOrDefaultAsync(e => e.Name == "Test Name");
@@ -97,7 +97,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 SomeDetail = "New Detail"
             };
 
-            var response = await client.PutAsJsonAsync($"/example/{_id2}", updateRequest);
+            var response = await client.PutAsJsonAsync($"/api/example/{_id2}", updateRequest);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var updated = await context.ExampleEntities.FindAsync(_id2);
@@ -118,7 +118,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 SomeDetail = "Detail"
             };
 
-            var response = await client.PutAsJsonAsync($"/example/{Guid.NewGuid()}", updateRequest);
+            var response = await client.PutAsJsonAsync($"/api/example/{Guid.NewGuid()}", updateRequest);
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
             Assert.False(context.ExampleEntities.Any(e => e.Name == "NonExist"));
         }
@@ -126,7 +126,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task Delete_RemovesEntity()
         {
-            var response = await client.DeleteAsync($"/example/{_id3}");
+            var response = await client.DeleteAsync($"/api/example/{_id3}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var exists = await context.ExampleEntities.AnyAsync(e => e.Id == _id3);
@@ -139,7 +139,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task Delete_NonExistingEntity_ReturnsNotFound()
         {
-            var response = await client.DeleteAsync($"/example/{Guid.NewGuid()}");
+            var response = await client.DeleteAsync($"/api/example/{Guid.NewGuid()}");
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
     }

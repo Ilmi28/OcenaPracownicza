@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
@@ -150,7 +149,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         public async Task GetById_ReturnsEmployee()
         {
             LoginAsAdmin();
-            var response = await client.GetAsync($"/employee/{_emp1Id}");
+            var response = await client.GetAsync($"/api/employee/{_emp1Id}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var result = await response.Content.ReadFromJsonAsync<BaseResponse<EmployeeView>>();
@@ -163,7 +162,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         public async Task GetAll_ReturnsEmployees()
         {
             LoginAsAdmin();
-            var response = await client.GetAsync("/employee");
+            var response = await client.GetAsync("/api/employee");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var employees = await response.Content.ReadFromJsonAsync<BaseResponse<List<EmployeeView>>>();
@@ -191,7 +190,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 AchievementsSummary = "Created in test"
             };
 
-            var response = await client.PostAsJsonAsync("/employee", request);
+            var response = await client.PostAsJsonAsync("/api/employee", request);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var added = await context.Employees.FirstOrDefaultAsync(e => e.FirstName == "New" && e.LastName == "Employee");
@@ -220,7 +219,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 AchievementsSummary = "Updated summary"
             };
 
-            var response = await client.PutAsJsonAsync($"/employee/{_emp2Id}", updateRequest);
+            var response = await client.PutAsJsonAsync($"/api/employee/{_emp2Id}", updateRequest);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var updatedEmployee = await context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == _emp2Id);
@@ -247,7 +246,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 AchievementsSummary = "N/A"
             };
 
-            var response = await client.PutAsJsonAsync($"/employee/{Guid.NewGuid()}", updateRequest);
+            var response = await client.PutAsJsonAsync($"/api/employee/{Guid.NewGuid()}", updateRequest);
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
@@ -255,7 +254,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         public async Task Delete_RemovesEmployee()
         {
             LoginAsAdmin();
-            var response = await client.DeleteAsync($"/employee/{_emp4Id}");
+            var response = await client.DeleteAsync($"/api/employee/{_emp4Id}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var exists = await context.Employees.AnyAsync(e => e.Id == _emp4Id);
