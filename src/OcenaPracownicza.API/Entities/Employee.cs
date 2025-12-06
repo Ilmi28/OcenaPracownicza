@@ -9,7 +9,9 @@ namespace OcenaPracownicza.API.Entities
         public required string Position { get; set; }
         public required string Period { get; set; }
         public required string FinalScore { get; set; }
-        public required string AchievementsSummary { get; set; }
+        public required string AchievementsSummary { get; set; } 
+        public Guid? ManagerId { get; set; }
+        public Manager? Manager { get; set; }
         public required string IdentityUserId { get; set; }
         public IdentityUser IdentityUser { get; set; } = null!;
     }
