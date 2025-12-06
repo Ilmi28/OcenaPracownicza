@@ -11,7 +11,7 @@ using OcenaPracownicza.API.Views;
 
 namespace OcenaPracownicza.API.Services;
 
-public class ManagerService 
+public class ManagerService : IManagerService
 {
     private readonly IUserManager _userManager;
     private readonly IManagerRepository _managerRepository;
