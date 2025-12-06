@@ -15,45 +15,40 @@ namespace OcenaPracownicza.API.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IConfiguration _configuration;
     private readonly IUserManager _userManager;
     private readonly ITokenService _tokenService;
-    public AuthService(IConfiguration configuration, IUserManager userManager, ITokenService tokenService)
+    public AuthService(IUserManager userManager, ITokenService tokenService)
     {
-        _configuration = configuration;
         _userManager = userManager;
         _tokenService = tokenService;
     }
 
     public async Task<string> Login(LoginRequest request)
     {
-        if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
-            throw new ArgumentException("Username i Password nie mogą być puste.");
+        if (string.IsNullOrEmpty(request.UserNameEmail) || string.IsNullOrEmpty(request.Password))
+            throw new ArgumentException("Username and Password cannot be empty.");
 
-        if (request.Username != "admin" || request.Password != "Admin123!")
-            throw new UnauthorizedAccessException("Nieprawidłowa nazwa użytkownika lub hasło.");
+        var user = await _userManager.FindByEmailAsync(request.UserNameEmail);
 
-        var existingUser = await _userManager.FindByNameAsync("Admin");
-        if (existingUser != null)
+        if (user == null)
         {
-            var roles = await _userManager.GetUserRolesAsync(existingUser.Id);
-            return _tokenService.GenerateToken(existingUser, roles);
+            user = await _userManager.FindByNameAsync(request.UserNameEmail);
         }
-        var identityUser = new IdentityUser
-        {
-            UserName = "admin",
-            Email = "admin@mail.com"
-        };
-        var result = await _userManager.CreateAsync(identityUser, "Admin123!");
 
-        if (result)
+        if (user == null)
         {
-            result = await _userManager.AddToRoleAsync(identityUser.Id, "Admin");
-            var roles = await _userManager.GetUserRolesAsync(identityUser.Id);
-
-            return _tokenService.GenerateToken(identityUser, roles);
+            throw new UnauthorizedAccessException("Invalid username or password.");
         }
-        throw new UnauthorizedAccessException("Nie udało się utworzyć użytkownika Admin.");
+
+        var isPasswordValid = await _userManager.CheckPasswordAsync(user.Id, request.Password);
+
+        if (!isPasswordValid)
+        {
+            throw new UnauthorizedAccessException("Invalid username or password.");
+        }
+
+        var roles = await _userManager.GetUserRolesAsync(user.Id);
+        return _tokenService.GenerateToken(user, roles);
     }
 
     public async Task<string> LoginWithGoogle(AuthenticateResult authenticateResult)

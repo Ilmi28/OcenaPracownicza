@@ -17,7 +17,7 @@ using System.Text;
 namespace OcenaPracownicza.API.Controllers;
   
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController(IAuthService authService) : ControllerBase
 {
 

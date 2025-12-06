@@ -27,7 +27,7 @@ public class AdminService : IAdminService
         if (entity == null)
             throw new NotFoundException();
 
-        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
  
         if (_userManager.IsCurrentUserAdmin() || isAccountOwner)
             return MapToResponse(entity);
@@ -100,7 +100,7 @@ public class AdminService : IAdminService
         if (user == null)
             throw new NotFoundException();
 
-        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
 
         if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
             throw new ForbiddenException();
@@ -123,7 +123,7 @@ public class AdminService : IAdminService
         if (entity == null)
             throw new NotFoundException();
 
-        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
 
         if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
             throw new ForbiddenException();

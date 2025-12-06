@@ -17,6 +17,11 @@ namespace OcenaPracownicza.API.Data.Identity
             _httpContextAccessor = httpContextAccessor;
         }
 
+        public async Task<IList<IdentityUser>> GetAllUsersAsync()
+        {
+            return await Task.FromResult(_userManager.Users.ToList());
+        }
+
         public async Task<bool> CreateAsync(IdentityUser user, string password)
         {
             var result = await _userManager.CreateAsync(user, password);
@@ -38,6 +43,8 @@ namespace OcenaPracownicza.API.Data.Identity
         {
             return await _userManager.FindByNameAsync(userName);
         }
+
+        public string? GetCurrentUserId() => _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         public async Task<bool> CheckPasswordAsync(string userId, string password)
         {
@@ -102,7 +109,7 @@ namespace OcenaPracownicza.API.Data.Identity
             return await _userManager.GetUsersInRoleAsync(roleName);
         }
         
-        public async Task<bool> IsUserAccountOwner(string userId)
+        public bool IsUserAccountOwner(string userId)
         {
             var user = _httpContextAccessor.HttpContext?.User;
 

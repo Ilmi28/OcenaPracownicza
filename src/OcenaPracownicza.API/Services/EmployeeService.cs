@@ -28,7 +28,7 @@ public class EmployeeService : IEmployeeService
         if (entity == null)
             throw new NotFoundException();
 
-        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
         if (_userManager.IsCurrentUserAdmin() || _userManager.IsCurrentUserManager() || isAccountOwner) 
             return MapToResponse(entity);
         throw new ForbiddenException();
@@ -102,7 +102,7 @@ public class EmployeeService : IEmployeeService
         if (user == null)
             throw new NotFoundException();
 
-        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
         if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
             throw new ForbiddenException();
 
@@ -129,7 +129,7 @@ public class EmployeeService : IEmployeeService
         if (entity == null)
             throw new NotFoundException();
 
-        var isAccountOwner = await _userManager.IsUserAccountOwner(entity.IdentityUserId);
+        var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
         if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
             throw new ForbiddenException();
 
