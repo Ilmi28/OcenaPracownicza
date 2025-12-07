@@ -32,6 +32,7 @@ namespace OcenaPracownicza.API.Extensions
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAdminService, AdminService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IManagerService, ManagerService>();
         }
 
         public static void AddRepositories(this IServiceCollection services)
@@ -40,6 +41,7 @@ namespace OcenaPracownicza.API.Extensions
             services.AddScoped<IEmployeeRepository, EmployeeRepository>();
             services.AddScoped<IUserManager, UserManager>();
             services.AddScoped<IAdminRepository, AdminRepository>();
+            services.AddScoped<IManagerRepository, ManagerRepository>();
         }
 
         public static void AddAppDbContextWithIdentity(this IServiceCollection services, IConfiguration config)
