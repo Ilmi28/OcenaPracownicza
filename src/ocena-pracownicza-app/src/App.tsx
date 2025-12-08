@@ -4,6 +4,7 @@ import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import Login from "./pages/Login";
 
 function App() {
 
@@ -15,6 +16,7 @@ function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="users" element={<Users />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="/login" element={<Login />} />
                 </Route>
             </Routes>
             </BrowserRouter>
