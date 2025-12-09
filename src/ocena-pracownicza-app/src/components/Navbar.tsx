@@ -1,6 +1,8 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Box, Button, Avatar } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import { useNavigate } from "react-router-dom";
+
 
 interface User {
   firstName: string;
@@ -14,7 +16,8 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
-  return (
+    const navigate = useNavigate();
+    return (
     <AppBar
       position="fixed"
       elevation={0}
@@ -57,12 +60,8 @@ const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
           }}
         >
           {!user && (
-            <Button 
-              variant="contained" 
-              color="primary"
-              onClick={() => console.log("Logowanie...")}
-            >
-              Zaloguj się
+            <Button variant="contained" color="primary" onClick={() => navigate("/login")}>
+                Zaloguj się
             </Button>
           )}
 
