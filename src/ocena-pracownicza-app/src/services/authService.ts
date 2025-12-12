@@ -1,16 +1,20 @@
 import axiosClient from "./axiosClient";
 
 export const authService = {
-    login: async (username: string, password: string) => {
-        const res = await axiosClient.post("/auth/login", {
-            username,
-            password,
+    login: async (emailOrUsername: string, password: string) => {
+        const payload = {
+            userNameEmail: emailOrUsername,   
+            password: password                
+        };
+
+        const res = await axiosClient.post("/auth/login", payload, {
+            withCredentials: true,
         });
+
         return res.data;
     },
 
     check: async () => {
-        const res = await axiosClient.get("/auth/secure");
-        return res.data;
+        return await axiosClient.get("/auth/secure", { withCredentials: true });
     },
 };
