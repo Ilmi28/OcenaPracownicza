@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Box, Typography, TextField, Button } from "@mui/material";
 import axios from "axios";
-import { changePassword } from "../services/authService";
+import { authService } from "../services/authService";
 
 const Settings: React.FC = () => {
     const [oldPassword, setOldPassword] = useState("");
@@ -9,20 +9,20 @@ const Settings: React.FC = () => {
     const [message, setMessage] = useState("");
 
     const handleChangePassword = async () => {
-        setMessage(""); // wyczyœæ komunikat
+        setMessage(""); // wyczyÅ›Ä‡ komunikat
 
         try {
-            await changePassword(oldPassword, newPassword);
+            await authService.changePassword(oldPassword, newPassword);
 
-            setMessage("Has³o zosta³o zmienione.");
+            setMessage("HasÅ‚o zostaÅ‚o zmienione.");
             setOldPassword("");
             setNewPassword("");
         } catch (error: unknown) {
             console.error(error);
 
-            let backendMessage = "Wyst¹pi³ b³¹d podczas zmiany has³a.";
+            let backendMessage = "WystÄ…piÅ‚ bÅ‚Ä…d podczas zmiany hasÅ‚a.";
 
-            //  Typ bezpieczny - tylko jeœli to AxiosError
+            //  Typ bezpieczny - tylko jeÅ›li to AxiosError
             if (axios.isAxiosError(error)) {
                 const data = error.response?.data;
 
@@ -45,11 +45,11 @@ const Settings: React.FC = () => {
     return (
         <Box sx={{ maxWidth: 400 }}>
             <Typography variant="h5" sx={{ mb: 3 }}>
-                Zmieñ has³o
+                ZmieÅ„ hasÅ‚o
             </Typography>
 
             <TextField
-                label="Stare has³o"
+                label="Stare hasÅ‚o"
                 type="password"
                 fullWidth
                 sx={{ mb: 2 }}
@@ -58,7 +58,7 @@ const Settings: React.FC = () => {
             />
 
             <TextField
-                label="Nowe has³o"
+                label="Nowe hasÅ‚o"
                 type="password"
                 fullWidth
                 sx={{ mb: 2 }}
@@ -67,7 +67,7 @@ const Settings: React.FC = () => {
             />
 
             <Button variant="contained" fullWidth onClick={handleChangePassword}>
-                Zmieñ has³o
+                ZmieÅ„ hasÅ‚o
             </Button>
 
             {message && (

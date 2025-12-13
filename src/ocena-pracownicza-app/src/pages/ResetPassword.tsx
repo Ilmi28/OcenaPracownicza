@@ -17,13 +17,13 @@ const ResetPassword: React.FC = () => {
         try {
             await authService.changePassword(oldPassword, newPassword);
 
-            setMessage("Has≥o zosta≥o zmienione.");
+            setMessage("Has≈Ço zosta≈Ço zmienione.");
             setOldPassword("");
             setNewPassword("");
         } catch (err: unknown) {
             console.error(err);
 
-            let backendMessage = "Wystπpi≥ b≥πd.";
+            let backendMessage = "WystƒÖpi≈Ç b≈ÇƒÖd.";
 
             if (axios.isAxiosError(err) && err.response?.data) {
                 const data = err.response.data;
@@ -48,7 +48,7 @@ const ResetPassword: React.FC = () => {
         <div className="min-h-screen flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white shadow rounded-xl p-6">
                 <h1 className="text-xl font-semibold mb-4">
-                    ZmieÒ has≥o
+                    Zmie≈Ñ has≈Ço
                 </h1>
 
                 {message && (
@@ -61,7 +61,7 @@ const ResetPassword: React.FC = () => {
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block mb-1">Stare has≥o</label>
+                        <label className="block mb-1">Stare has≈Ço</label>
                         <input
                             type="password"
                             className="w-full border px-3 py-2 rounded"
@@ -72,7 +72,7 @@ const ResetPassword: React.FC = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block mb-1">Nowe has≥o</label>
+                        <label className="block mb-1">Nowe has≈Ço</label>
                         <input
                             type="password"
                             className="w-full border px-3 py-2 rounded"
@@ -86,12 +86,12 @@ const ResetPassword: React.FC = () => {
                         type="submit"
                         className="w-full bg-black text-white py-2 rounded hover:bg-gray-800"
                     >
-                        ZmieÒ has≥o
+                        Zmie≈Ñ has≈Ço
                     </button>
                 </form>
             </div>
         </div>
     );
 };
-//
+
 export default ResetPassword;
