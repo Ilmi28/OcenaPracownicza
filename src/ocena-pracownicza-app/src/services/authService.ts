@@ -18,4 +18,13 @@ export const authService = {
         const res = await axiosClient.get("/auth/secure");
         return res.data;
     },
+
+    changePassword: async (oldPassword: string, newPassword: string) => {
+        return axiosClient.post("/user/change-password", {
+            oldPassword,
+            newPassword,
+        });
+    },
 };
+
+
