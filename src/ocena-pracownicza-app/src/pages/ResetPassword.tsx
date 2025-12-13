@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import axios from "axios";
-import {authService} from "../services/authService";
+import { authService } from "../services/authService";
 
 const ResetPassword: React.FC = () => {
-    const [email, setEmail] = useState("");
+    const [oldPassword, setOldPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
@@ -14,17 +15,16 @@ const ResetPassword: React.FC = () => {
         setError("");
 
         try {
-            await authService.resetPassword(email);
+            await authService.changePassword(oldPassword, newPassword);
 
-            setMessage("Jeœli email istnieje, wys³ano link resetuj¹cy.");
-            setEmail("");
+            setMessage("Has³o zosta³o zmienione.");
+            setOldPassword("");
+            setNewPassword("");
         } catch (err: unknown) {
             console.error(err);
 
-            // Domyœlny komunikat gdy nie mamy szczegó³ów z backendu
             let backendMessage = "Wyst¹pi³ b³¹d.";
 
-            // Jeœli to b³¹d axios, spróbuj wyci¹gn¹æ message z response.data
             if (axios.isAxiosError(err) && err.response?.data) {
                 const data = err.response.data;
 
@@ -47,8 +47,9 @@ const ResetPassword: React.FC = () => {
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white shadow rounded-xl p-6">
-
-                <h1 className="text-xl font-semibold mb-4">Reset has³a</h1>
+                <h1 className="text-xl font-semibold mb-4">
+                    Zmieñ has³o
+                </h1>
 
                 {message && (
                     <p className="text-green-600 mb-3">{message}</p>
@@ -60,12 +61,23 @@ const ResetPassword: React.FC = () => {
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block mb-1">Email</label>
+                        <label className="block mb-1">Stare has³o</label>
                         <input
-                            type="email"
+                            type="password"
                             className="w-full border px-3 py-2 rounded"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            value={oldPassword}
+                            onChange={(e) => setOldPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block mb-1">Nowe has³o</label>
+                        <input
+                            type="password"
+                            className="w-full border px-3 py-2 rounded"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
                             required
                         />
                     </div>
@@ -74,10 +86,9 @@ const ResetPassword: React.FC = () => {
                         type="submit"
                         className="w-full bg-black text-white py-2 rounded hover:bg-gray-800"
                     >
-                        Resetuj has³o
+                        Zmieñ has³o
                     </button>
                 </form>
-
             </div>
         </div>
     );
