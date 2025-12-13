@@ -5,20 +5,22 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
 
     return (
         <>
             <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<MainLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="users" element={<Users />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="/login" element={<Login />} />
-                </Route>
-            </Routes>
+                <Routes>
+                    <Route path="/" element={<MainLayout />}>
+                        <Route index element={<Dashboard />} />
+                        <Route path="users" element={<Users />} />
+                        <Route path="settings" element={<Settings />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                    </Route>
+                </Routes>
             </BrowserRouter>
         </>
     );

@@ -77,4 +77,35 @@ public class AuthService : IAuthService
         }
         throw new Exception();
     }
+
+    public async Task<string> Register(RegisterRequest request)
+    {
+        var existingUserByEmail = await _userManager.FindByEmailAsync(request.Email);
+        if (existingUserByEmail != null)
+        {
+            throw new ArgumentException("Email is already in use.");
+        }
+        var existingUserByUsername = await _userManager.FindByNameAsync(request.UserName);
+        if (existingUserByUsername != null)
+        {
+            throw new ArgumentException("Username is already in use.");
+        }
+        var newUser = new IdentityUser
+        {
+            UserName = request.UserName,
+            Email = request.Email
+        };
+        var result = await _userManager.CreateAsync(newUser, request.Password);
+        if (!result)
+        {
+            throw new Exception("User registration failed.");
+        }
+        result = await _userManager.AddToRoleAsync(newUser.Id, "Guest");
+        if (!result)
+        {
+            throw new Exception("Assigning role failed.");
+        }
+        var roles = await _userManager.GetUserRolesAsync(newUser.Id);
+        return _tokenService.GenerateToken(newUser, roles);
+    }
 }

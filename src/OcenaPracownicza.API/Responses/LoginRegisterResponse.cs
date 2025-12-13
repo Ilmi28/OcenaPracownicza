@@ -2,7 +2,7 @@
 
 namespace OcenaPracownicza.API.Responses
 {
-    public class LoginResponse : BaseResponse<LoginView>
+    public class LoginRegisterResponse : BaseResponse<LoginRegisterView>
     {
     }
 }
