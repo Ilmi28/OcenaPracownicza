@@ -10,7 +10,7 @@ import {
     Divider,
     List,
     ListItem,
-    ListItemText
+    ListItemText,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
@@ -29,7 +29,10 @@ const Login: React.FC = () => {
         setLoading(true);
 
         try {
-            const response = await authService.login(login, password);
+            const response = await authService.login({
+                userNameEmail: login,
+                password: password,
+            });
             console.log("LOGIN SUCCESS:", response);
             navigate("/");
         } catch (err) {
@@ -43,7 +46,12 @@ const Login: React.FC = () => {
     return (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
             <Paper elevation={3} sx={{ p: 5, width: 460 }}>
-                <Typography variant="h4" fontWeight={700} gutterBottom textAlign="center">
+                <Typography
+                    variant="h4"
+                    fontWeight={700}
+                    gutterBottom
+                    textAlign="center"
+                >
                     Ocena Pracownicza
                 </Typography>
                 <Typography variant="subtitle1" gutterBottom textAlign="center">
@@ -65,7 +73,11 @@ const Login: React.FC = () => {
                     </Alert>
                 )}
 
-                <Box component="form" onSubmit={handleLogin} sx={{ display: "grid", gap: 2 }}>
+                <Box
+                    component="form"
+                    onSubmit={handleLogin}
+                    sx={{ display: "grid", gap: 2 }}
+                >
                     <TextField
                         label="Adres e-mail lub nazwa użytkownika"
                         variant="outlined"

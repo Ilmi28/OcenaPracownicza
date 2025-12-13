@@ -7,4 +7,5 @@ public interface IAuthService
 {
     Task<string> Login(LoginRequest request);
     Task<string> LoginWithGoogle(AuthenticateResult result);
+    Task<string> Register(RegisterRequest request);
 }

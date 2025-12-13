@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using OcenaPracownicza.API.Interfaces.Services;
@@ -22,7 +21,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 {
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] Requests.LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var token = await authService.Login(request);
 
@@ -34,12 +33,12 @@ public class AuthController(IAuthService authService) : ControllerBase
             Expires = DateTime.UtcNow.AddHours(1)
         });
 
-        var dto = new LoginView
+        var dto = new LoginRegisterView
         {
             Token = token
         };
 
-        return Ok(new LoginResponse
+        return Ok(new LoginRegisterResponse
         {
             Data = dto
         });
@@ -67,12 +66,12 @@ public class AuthController(IAuthService authService) : ControllerBase
             Expires = DateTime.UtcNow.AddHours(1)
         });
 
-        var dto = new LoginView
+        var dto = new LoginRegisterView
         {
             Token = token
         };
 
-        return Ok(new LoginResponse
+        return Ok(new LoginRegisterResponse
         {
             Data = dto
         });
@@ -89,5 +88,27 @@ public class AuthController(IAuthService authService) : ControllerBase
     public IActionResult Admin()
     {
         return Ok("Dostęp tylko dla administratorów");
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    {
+        var token = await authService.Register(request);
+
+        Response.Cookies.Append("jwt", token.ToString(), new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Expires = DateTime.UtcNow.AddHours(1)
+        });
+
+        return Ok(new LoginRegisterResponse
+        {
+            Data = new LoginRegisterView
+            {
+                Token = token
+            }
+        });
     }
 }

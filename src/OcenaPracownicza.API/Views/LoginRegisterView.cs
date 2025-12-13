@@ -1,6 +1,6 @@
 ﻿namespace OcenaPracownicza.API.Views
 {
-    public class LoginView
+    public class LoginRegisterView
     {
         public required string Token { get; set; }
     }
