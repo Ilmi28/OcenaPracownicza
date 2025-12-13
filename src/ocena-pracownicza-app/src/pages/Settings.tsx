@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Box, Typography, TextField, Button } from "@mui/material";
 import axios from "axios";
-import { changePassword } from "../services/authService";
+import { authService } from "../services/authService";
 
 const Settings: React.FC = () => {
     const [oldPassword, setOldPassword] = useState("");
@@ -12,7 +12,7 @@ const Settings: React.FC = () => {
         setMessage(""); // wyczyœæ komunikat
 
         try {
-            await changePassword(oldPassword, newPassword);
+            await authService.changePassword(oldPassword, newPassword);
 
             setMessage("Has³o zosta³o zmienione.");
             setOldPassword("");
