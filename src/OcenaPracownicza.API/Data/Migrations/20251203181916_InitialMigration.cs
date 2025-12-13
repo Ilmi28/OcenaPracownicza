@@ -276,7 +276,8 @@ namespace OcenaPracownicza.API.Data.Migrations
                 {
                     { "2c5e174e-3b0e-446f-86af-483d56fd7210", "Admin", "ADMIN", null },
                     { "8e445865-a24d-4543-a6c6-9443d048cdb9", "Manager", "MANAGER", null },
-                    { "d1b5952a-2162-46c7-b29e-1d2334847682", "Employee", "EMPLOYEE", null }
+                    { "d1b5952a-2162-46c7-b29e-1d2334847682", "Employee", "EMPLOYEE", null },
+                    { "97d8c5f2-4a0b-4e1c-8e6f-1f0d3a2b5c7e", "Guest", "GUEST", null  }
                 });
 
         }

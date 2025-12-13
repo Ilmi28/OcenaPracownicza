@@ -1,8 +1,16 @@
 import axiosClient from "./axiosClient";
 
+interface LoginCredentials {
+    userNameEmail: string;
+    password: string;
+}
+
 export const authService = {
-    login: async (username: string, password: string) => {
-        const res = await axiosClient.post("/auth/login", { username, password });
+    login: async (loginCredentials: LoginCredentials) => {
+        const res = await axiosClient.post("/auth/login", {
+            userNameEmail: loginCredentials.userNameEmail,
+            password: loginCredentials.password,
+        });
         return res.data;
     },
 
