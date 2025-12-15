@@ -1,4 +1,4 @@
-import { ElementType, FC } from 'react';
+Ôªøimport { ElementType, FC } from 'react';
 import {
     Box,
     Typography,
@@ -73,11 +73,11 @@ const ManagerPanel: FC = () => {
     const { user, loading } = useAuth();
 
     if (loading) {
-        return <Typography sx={{ p: 4 }}>£adowanie danych uøytkownika...</Typography>;
+        return <Typography sx={{ p: 4 }}>≈Åadowanie danych u≈ºytkownika...</Typography>;
     }
 
     if (!user) {
-        return <Typography sx={{ p: 4 }}>B≥πd: Uøytkownik nie jest zalogowany.</Typography>;
+        return <Typography sx={{ p: 4 }}>B≈ÇƒÖd: U≈ºytkownik nie jest zalogowany.</Typography>;
     }
 
     const currentData: UserDataType = {
@@ -85,7 +85,7 @@ const ManagerPanel: FC = () => {
         nazwisko: user.surname || 'Brak',
         email: user.email || 'Brak',
         stanowisko: user.job || user.role || 'Pracownik',
-        dzial: 'Dzia≥ IT',
+        dzial: '-',
         wFirmieOd: '-',
         ukonczoneOceny: 0,
         sredniaOcena: '-',
@@ -96,16 +96,16 @@ const ManagerPanel: FC = () => {
 
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h5" component="h1" fontWeight="600" sx={{ color: COLORS.TEXT_PRIMARY }}>
-                    MÛj Profil
+                    M√≥j Profil
                 </Typography>
                 <Typography variant="body2" sx={{ color: COLORS.TEXT_SECONDARY_GREY }}>
-                    Zarzπdzaj swoimi danymi osobowymi
+                    ZarzƒÖdzaj swoimi danymi osobowymi
                 </Typography>
             </Box>
 
             <Paper sx={{ p: 3, mb: 3, borderRadius: '8px', bgcolor: COLORS.PAPER_BACKGROUND }}>
                 <Typography variant="subtitle1" fontWeight="600" sx={{ mb: 2, color: COLORS.TEXT_PRIMARY }}>
-                    ZdjÍcie profilowe
+                    Zdjƒôcie profilowe
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                     <Avatar sx={{ width: 64, height: 64, bgcolor: COLORS.ACCENT_BLUE, fontSize: 24 }}>
@@ -126,7 +126,7 @@ const ManagerPanel: FC = () => {
                                 mb: 0.5
                             }}
                         >
-                            ZmieÒ zdjÍcie
+                            Zmie≈Ñ zdjƒôcie
                         </Button>
                         <Typography variant="caption" display="block" sx={{ color: COLORS.TEXT_SECONDARY_GREY }}>
                             Zalecany format: JPG, PNG. Maksymalny rozmiar: 2MB
@@ -152,12 +152,12 @@ const ManagerPanel: FC = () => {
                     gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
                     gap: 3
                 }}>
-                    <ProfileField label="ImiÍ" value={currentData.imie} icon={PersonOutlineIcon} />
+                    <ProfileField label="Imiƒô" value={currentData.imie} icon={PersonOutlineIcon} />
                     <ProfileField label="Nazwisko" value={currentData.nazwisko} icon={PersonOutlineIcon} />
                     <ProfileField label="E-mail" value={currentData.email} icon={MailOutlineIcon} />
                     <Box sx={{ display: { xs: 'none', sm: 'block' } }} />
                     <ProfileField label="Stanowisko" value={currentData.stanowisko} icon={WorkOutlineIcon} />
-                    <ProfileField label="Dzia≥" value={currentData.dzial} icon={WorkOutlineIcon} />
+                    <ProfileField label="Dzia≈Ç" value={currentData.dzial} icon={WorkOutlineIcon} />
                 </Box>
             </Paper>
 
@@ -182,7 +182,7 @@ const ManagerPanel: FC = () => {
 
                     <Box sx={{ minWidth: 150 }}>
                         <Typography variant="body2" sx={{ color: COLORS.TEXT_SECONDARY_GREY, mb: 0.5 }}>
-                            UkoÒczone oceny
+                            Uko≈Ñczone oceny
                         </Typography>
                         <Typography variant="h6" fontWeight="700" sx={{ color: COLORS.TEXT_PRIMARY }}>
                             {currentData.ukonczoneOceny}
@@ -191,7 +191,7 @@ const ManagerPanel: FC = () => {
 
                     <Box sx={{ minWidth: 150 }}>
                         <Typography variant="body2" sx={{ color: COLORS.TEXT_SECONDARY_GREY, mb: 0.5 }}>
-                            årednia ocena
+                            ≈örednia ocena
                         </Typography>
                         <Typography variant="h6" fontWeight="700" sx={{ color: COLORS.TEXT_PRIMARY }}>
                             {currentData.sredniaOcena}
