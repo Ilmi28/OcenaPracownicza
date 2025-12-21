@@ -6,6 +6,7 @@ import Users from './pages/Users';
 import Settings from './pages/Settings';
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
+import AdminProfile from "./pages/AdminProfile";
 
 function App() {
 
@@ -19,6 +20,7 @@ function App() {
                         <Route path="settings" element={<Settings />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="profile" element={<AdminProfile />} />
                     </Route>
                 </Routes>
             </BrowserRouter>
