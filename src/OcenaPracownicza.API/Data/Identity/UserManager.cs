@@ -3,6 +3,7 @@ using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
 using OcenaPracownicza.API.Views;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace OcenaPracownicza.API.Data.Identity
@@ -44,7 +45,11 @@ namespace OcenaPracownicza.API.Data.Identity
             return await _userManager.FindByNameAsync(userName);
         }
 
-        public string? GetCurrentUserId() => _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        public string? GetCurrentUserId()
+        {
+            var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue("sub");
+            return userId;
+        }
 
         public async Task<bool> CheckPasswordAsync(string userId, string password)
         {

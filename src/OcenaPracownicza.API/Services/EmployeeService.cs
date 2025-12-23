@@ -139,6 +139,23 @@ public class EmployeeService : IEmployeeService
         return MapToResponse(entity);
     }
 
+
+    public async Task<EmployeeResponse> GetCurrent()
+    {
+        var userId = _userManager.GetCurrentUserId();
+
+
+        if (string.IsNullOrEmpty(userId))
+            throw new UnauthorizedAccessException();
+
+        var entity = await _employeeRepository.GetByUserId(userId);
+
+        if (entity == null)
+            throw new NotFoundException("Profil pracownika nie istnieje.");
+
+        return MapToResponse(entity);
+    }
+
     private static EmployeeResponse MapToResponse(Employee entity)
     {
         return new EmployeeResponse
