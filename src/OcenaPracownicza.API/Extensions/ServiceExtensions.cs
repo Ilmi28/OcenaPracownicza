@@ -105,7 +105,6 @@ namespace OcenaPracownicza.API.Extensions
 
         public static void AddAuthenticationWithGoogle(this IServiceCollection services, IConfiguration config)
         {
-            System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             var jwtSection = config.GetSection("JwtSettings");
             var issuer = jwtSection["Issuer"];
             var audience = jwtSection["Audience"];

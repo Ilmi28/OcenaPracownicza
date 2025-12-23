@@ -45,11 +45,7 @@ namespace OcenaPracownicza.API.Data.Identity
             return await _userManager.FindByNameAsync(userName);
         }
 
-        public string? GetCurrentUserId()
-        {
-            var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue("sub");
-            return userId;
-        }
+        public string? GetCurrentUserId() => _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         public async Task<bool> CheckPasswordAsync(string userId, string password)
         {
