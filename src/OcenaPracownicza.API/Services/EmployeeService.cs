@@ -15,11 +15,13 @@ public class EmployeeService : IEmployeeService
 {
     private readonly IUserManager _userManager;
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly IUserService _userService;
 
-    public EmployeeService(IUserManager userManager, IEmployeeRepository employeeRepository)
+    public EmployeeService(IUserManager userManager, IEmployeeRepository employeeRepository, IUserService userService)
     {
         _userManager = userManager;
         _employeeRepository = employeeRepository;
+        _userService = userService;
     }
 
     public async Task<EmployeeResponse> GetById(Guid id)
@@ -136,6 +138,22 @@ public class EmployeeService : IEmployeeService
         var result = await _userManager.DeleteAsync(entity.IdentityUserId);
 
         await _employeeRepository.Delete(id);
+        return MapToResponse(entity);
+    }
+
+
+    public async Task<EmployeeResponse> GetCurrent()
+    {
+        var userResponse = await _userService.GetCurrentUser();
+        var userId = userResponse.Data.Id;
+
+        var entity = await _employeeRepository.GetByUserId(userId);
+
+        if (entity == null)
+        {
+            throw new NotFoundException("Profil pracownika nie istnieje dla tego użytkownika.");
+        }
+
         return MapToResponse(entity);
     }
 
