@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import AdminProfile from "./pages/AdminProfile";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
 import { AuthProvider } from "./hooks/AuthProvider";
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="profile" element={<AdminProfile />} />
                         <Route path="/employee" element={<EmployeeDashboard />} />
+                        <Route path="/manager" element={<ManagerDashboard />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

@@ -15,11 +15,13 @@ public class ManagerService : IManagerService
 {
     private readonly IUserManager _userManager;
     private readonly IManagerRepository _managerRepository;
+    private readonly IUserService _userService;
 
-    public ManagerService(IUserManager userManager, IManagerRepository managerRepository)
+    public ManagerService(IUserManager userManager, IManagerRepository managerRepository, IUserService userService)
     {
         _userManager = userManager;
         _managerRepository = managerRepository;
+        _userService = userService;
     }
 
     public async Task<ManagerResponse> GetById(Guid id)
@@ -142,5 +144,20 @@ public class ManagerService : IManagerService
                 UserId = entity.IdentityUserId
             }
         };
+    }
+
+    public async Task<ManagerResponse> GetCurrent()
+    {
+        var userResponse = await _userService.GetCurrentUser();
+        var userId = userResponse.Data.Id;
+
+        var entity = await _managerRepository.GetByUserId(userId);
+
+        if (entity == null)
+        {
+            throw new NotFoundException("Profil menadżera nie istnieje dla tego użytkownika.");
+        }
+
+        return MapToResponse(entity);
     }
 }

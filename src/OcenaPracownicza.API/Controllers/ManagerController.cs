@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
+using OcenaPracownicza.API.Services;
 
 namespace OcenaPracownicza.API.Controllers;
 
@@ -50,5 +51,12 @@ public class ManagerController : ControllerBase
     {
         var result = await _managerService.Delete(id);
         return Ok(result);
+    }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentManager()
+    {
+        var response = await _managerService.GetCurrent();
+        return Ok(response);
     }
 }

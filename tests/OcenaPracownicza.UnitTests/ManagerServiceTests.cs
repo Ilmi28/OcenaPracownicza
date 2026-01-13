@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System;
+using OcenaPracownicza.API.Interfaces.Services;
 
 namespace OcenaPracownicza.UnitTests
 {
@@ -19,12 +20,14 @@ namespace OcenaPracownicza.UnitTests
         private readonly Mock<IUserManager> _userManagerMock;
         private readonly Mock<IManagerRepository> _managerRepoMock;
         private readonly ManagerService _service;
+        private readonly Mock<IUserService> _userServiceMock;
 
         public ManagerServiceTests()
         {
             _userManagerMock = new Mock<IUserManager>();
             _managerRepoMock = new Mock<IManagerRepository>();
-            _service = new ManagerService(_userManagerMock.Object, _managerRepoMock.Object);
+            _userServiceMock = new Mock<IUserService>();
+            _service = new ManagerService(_userManagerMock.Object, _managerRepoMock.Object, _userServiceMock.Object);
         }
 
         [Fact]
