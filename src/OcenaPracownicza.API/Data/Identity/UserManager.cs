@@ -3,6 +3,7 @@ using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
 using OcenaPracownicza.API.Views;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace OcenaPracownicza.API.Data.Identity

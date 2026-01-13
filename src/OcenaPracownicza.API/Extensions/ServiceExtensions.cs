@@ -111,6 +111,7 @@ namespace OcenaPracownicza.API.Extensions
             var secret = jwtSection["Secret"];
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret!));
 
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

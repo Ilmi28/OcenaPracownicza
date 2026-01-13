@@ -4,5 +4,6 @@ namespace OcenaPracownicza.API.Interfaces.Repositories
 {
     public interface IEmployeeRepository : IBaseRepository<Employee>
     {
+        Task<Employee?> GetByUserId(string userId);
     }
 }

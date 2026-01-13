@@ -2,6 +2,11 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { authService } from "../services/authService";
 import { UserFromJwt } from "../services/authService";
 
+interface User {
+    id: string;
+    email?: string;
+}
+
 
 interface User extends UserFromJwt {
     surname?: string;
@@ -32,7 +37,6 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
     };
 
     const refresh = async () => {
-        debugger;
         setLoading(true);
         try {
             const token = authService.getToken();

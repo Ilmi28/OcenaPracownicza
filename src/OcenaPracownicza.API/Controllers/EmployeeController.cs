@@ -47,4 +47,11 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
         var response = await employeeService.Delete(id);
         return Ok(response);
     }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentEmployee()
+    {
+        var response = await employeeService.GetCurrent();
+        return Ok(response);
+    }
 }

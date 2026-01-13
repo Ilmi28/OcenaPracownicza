@@ -10,7 +10,8 @@ using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
-using System; 
+using System;
+using OcenaPracownicza.API.Interfaces.Services;
 
 namespace OcenaPracownicza.UnitTests
 {
@@ -18,13 +19,15 @@ namespace OcenaPracownicza.UnitTests
     {
         private readonly Mock<IUserManager> _userManagerMock;
         private readonly Mock<IEmployeeRepository> _employeeRepoMock;
+        private readonly Mock<IUserService> _userServiceMock;
         private readonly EmployeeService _service;
 
         public EmployeeServiceTests()
         {
             _userManagerMock = new Mock<IUserManager>();
             _employeeRepoMock = new Mock<IEmployeeRepository>();
-            _service = new EmployeeService(_userManagerMock.Object, _employeeRepoMock.Object);
+            _userServiceMock = new Mock<IUserService>();
+            _service = new EmployeeService(_userManagerMock.Object, _employeeRepoMock.Object, _userServiceMock.Object);
         }
 
         [Fact]
