@@ -10,4 +10,5 @@ public interface IManagerService
     Task<ManagerResponse> Add(CreateManagerRequest request);
     Task<ManagerResponse> Update(Guid id, UpdateManagerRequest request);
     Task<ManagerResponse> Delete(Guid id);
+    Task<ManagerResponse> GetCurrent();
 }
