@@ -1,8 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { authService } from "../services/authService";
 
+interface User {
+    id: string;
+    email?: string;
+}
+
 interface AuthContextType {
-    user: boolean | null;
+    user: User | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
     refresh: () => Promise<void>;
@@ -15,16 +20,16 @@ interface Props {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<Props> = ({ children }) => {
-    const [user, setUser] = useState<boolean | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     const refresh = async () => {
         setLoading(true);
         try {
-            await authService.check();
-            setUser(true);
+            const userData = await authService.check();
+            setUser(userData);
         } catch {
-            setUser(false);
+            setUser(null);
         } finally {
             setLoading(false);
         }
