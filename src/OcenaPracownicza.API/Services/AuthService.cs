@@ -1,15 +1,9 @@
-﻿using Azure.Core;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
-using System.IdentityModel.Tokens.Jwt;
-using System.Runtime.InteropServices;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OcenaPracownicza.API.Services;
 
@@ -63,7 +57,7 @@ public class AuthService : IAuthService
         }
         var identityUser = new IdentityUser
         {
-            UserName = email, 
+            UserName = email,
             Email = email
         };
         var result = await _userManager.CreateWithoutPassword(identityUser);

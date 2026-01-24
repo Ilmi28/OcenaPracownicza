@@ -4,7 +4,6 @@ using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
-using OcenaPracownicza.API.Repositories;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
 using OcenaPracownicza.API.Views;
@@ -30,10 +29,12 @@ public class ManagerService : IManagerService
         if (entity == null)
             throw new NotFoundException();
 
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
+
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
 
         if (_userManager.IsCurrentUserAdmin() || isAccountOwner)
-            return MapToResponse(entity);
+            return MapToResponse(entity, user);
 
         throw new ForbiddenException();
     }
@@ -44,16 +45,28 @@ public class ManagerService : IManagerService
             throw new ForbiddenException();
 
         var entities = await _managerRepository.GetAll();
+        var managerViews = new List<ManagerView>();
+        foreach (var entity in entities)
+        {
+            var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
+            if (user != null)
+            {
+                managerViews.Add(new ManagerView
+                {
+                    Id = entity.Id,
+                    UserName = user.UserName ?? "",
+                    Email = user.Email ?? "",
+                    FirstName = entity.FirstName,
+                    LastName = entity.LastName,
+                    AchievementsSummary = entity.AchievementsSummary,
+                    UserId = entity.IdentityUserId
+                });
+            }
+        }
+
         var response = new ManagerListResponse
         {
-            Data = entities.Select(x => new ManagerView
-            {
-                Id = x.Id,
-                FirstName = x.FirstName,
-                LastName = x.LastName,
-                AchievementsSummary = x.AchievementsSummary,
-                UserId = x.IdentityUserId
-            }).ToList()
+            Data = managerViews
         };
         return response;
     }
@@ -83,7 +96,7 @@ public class ManagerService : IManagerService
             };
 
             var created = await _managerRepository.Create(entity);
-            return MapToResponse(created);
+            return MapToResponse(created, identityUser);
         }
 
         throw new Exception("Wystąpił błąd podczas tworzenia użytkownika");
@@ -112,7 +125,7 @@ public class ManagerService : IManagerService
         entity.AchievementsSummary = request.AchievementsSummary;
 
         var updated = await _managerRepository.Update(entity);
-        return MapToResponse(updated);
+        return MapToResponse(updated, user);
     }
 
     public async Task<ManagerResponse> Delete(Guid id)
@@ -121,6 +134,7 @@ public class ManagerService : IManagerService
         if (entity == null)
             throw new NotFoundException();
 
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
         if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
             throw new ForbiddenException();
@@ -128,16 +142,18 @@ public class ManagerService : IManagerService
         await _userManager.DeleteAsync(entity.IdentityUserId);
         await _managerRepository.Delete(id);
 
-        return MapToResponse(entity);
+        return MapToResponse(entity, user);
     }
 
-    private static ManagerResponse MapToResponse(Manager entity)
+    private static ManagerResponse MapToResponse(Manager entity, IdentityUser? user)
     {
         return new ManagerResponse
         {
             Data = new ManagerView
             {
                 Id = entity.Id,
+                UserName = user?.UserName ?? string.Empty,
+                Email = user?.Email ?? string.Empty,
                 FirstName = entity.FirstName,
                 LastName = entity.LastName,
                 AchievementsSummary = entity.AchievementsSummary,
@@ -153,11 +169,13 @@ public class ManagerService : IManagerService
 
         var entity = await _managerRepository.GetByUserId(userId);
 
+        var user = await _userManager.FindByIdAsync(userId);
+
         if (entity == null)
         {
             throw new NotFoundException("Profil menadżera nie istnieje dla tego użytkownika.");
         }
 
-        return MapToResponse(entity);
+        return MapToResponse(entity, user);
     }
 }
