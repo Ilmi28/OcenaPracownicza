@@ -5,8 +5,6 @@ VisualStudioVersion = 18.0.11222.15 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OcenaPracownicza.API", "src\OcenaPracownicza.API\OcenaPracownicza.API.csproj", "{66F1B1F9-3631-29AE-46DC-1CF4954EAC81}"
 EndProject
-Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "ocena-pracownicza-app", "src\ocena-pracownicza-app\ocena-pracownicza-app.esproj", "{B03876F1-EF4E-649E-5657-E34B589791F1}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OcenaPracownicza.UnitTests", "tests\OcenaPracownicza.UnitTests\OcenaPracownicza.UnitTests.csproj", "{303EC40A-55EF-4EB3-872B-EF01004C2758}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OcenaPracownicza.IntegrationTests", "tests\OcenaPracownicza.IntegrationTests\OcenaPracownicza.IntegrationTests.csproj", "{98705D27-8E8A-4A7F-AAE2-34A0DA137F09}"

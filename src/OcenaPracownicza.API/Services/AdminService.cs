@@ -14,11 +14,13 @@ public class AdminService : IAdminService
 {
     private readonly IUserManager _userManager;
     private readonly IAdminRepository _adminRepository;
+    private readonly IUserService _userService;
 
-    public AdminService(IUserManager userManager, IAdminRepository adminRepository)
+    public AdminService(IUserManager userManager, IAdminRepository adminRepository, IUserService userService)
     {
         _userManager = userManager;
         _adminRepository = adminRepository;
+        _userService = userService;
     }
 
     public async Task<AdminResponse> GetById(Guid id)
@@ -27,10 +29,12 @@ public class AdminService : IAdminService
         if (entity == null)
             throw new NotFoundException();
 
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
+
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
- 
+
         if (_userManager.IsCurrentUserAdmin() || isAccountOwner)
-            return MapToResponse(entity);
+            return MapToResponse(entity, user);
 
         throw new ForbiddenException();
     }
@@ -42,25 +46,35 @@ public class AdminService : IAdminService
 
         var entities = await _adminRepository.GetAll();
 
+        var adminListView = new List<AdminView>();
+
+        foreach (var entity in entities)
+        {
+            var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
+            if (user == null)
+                throw new NotFoundException();
+
+            adminListView.Add(new AdminView
+            {
+                Id = entity.Id,
+                UserName = user.UserName ?? "",
+                Email = user.Email ?? "",
+                FirstName = entity.FirstName,
+                LastName = entity.LastName,
+                UserId = entity.IdentityUserId
+            });
+        }
+
         var response = new AdminListResponse
         {
-            Data = entities.Select(x =>
-            {
-                return new AdminView
-                {
-                    Id = x.Id,
-                    FirstName = x.FirstName,
-                    LastName = x.LastName,
-                    UserId = x.IdentityUserId
-                };
-            }).ToList()
+            Data = adminListView
         };
         return response;
     }
 
-    public async Task<AdminResponse> Add(CreateAdminRequest request)
+    public async Task<AdminResponse> Add(CreateAdminRequest request, bool bypassRoles = false)
     {
-        if (!_userManager.IsCurrentUserAdmin())
+        if (!_userManager.IsCurrentUserAdmin() && !bypassRoles)
             throw new ForbiddenException();
 
         var identityUser = new IdentityUser
@@ -83,7 +97,7 @@ public class AdminService : IAdminService
             };
 
             var created = await _adminRepository.Create(entity);
-            return MapToResponse(created);
+            return MapToResponse(created, identityUser);
         }
 
         throw new Exception("Wystąpił błąd podczas tworzenia użytkownika");
@@ -114,7 +128,7 @@ public class AdminService : IAdminService
         entity.LastName = request.LastName;
 
         var updated = await _adminRepository.Update(entity);
-        return MapToResponse(updated);
+        return MapToResponse(updated, user);
     }
 
     public async Task<AdminResponse> Delete(Guid id)
@@ -123,6 +137,7 @@ public class AdminService : IAdminService
         if (entity == null)
             throw new NotFoundException();
 
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
 
         if (!_userManager.IsCurrentUserAdmin() && !isAccountOwner)
@@ -131,20 +146,39 @@ public class AdminService : IAdminService
         var result = await _userManager.DeleteAsync(entity.IdentityUserId);
 
         await _adminRepository.Delete(id);
-        return MapToResponse(entity);
+        return MapToResponse(entity, user);
     }
 
-    private static AdminResponse MapToResponse(Admin entity)
+    private static AdminResponse MapToResponse(Admin entity, IdentityUser? user)
     {
         return new AdminResponse
         {
             Data = new AdminView
             {
                 Id = entity.Id,
+                UserName = user?.UserName ?? "",
+                Email = user?.Email ?? "",
                 FirstName = entity.FirstName,
                 LastName = entity.LastName,
                 UserId = entity.IdentityUserId
             }
         };
+    }
+
+    public async Task<AdminResponse> GetCurrent()
+    {
+        var userResponse = await _userService.GetCurrentUser();
+        var userId = userResponse.Data.Id;
+
+        var entity = await _adminRepository.GetByUserId(userId);
+
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (entity == null)
+        {
+            throw new NotFoundException("Profil menadżera nie istnieje dla tego użytkownika.");
+        }
+
+        return MapToResponse(entity, user);
     }
 }

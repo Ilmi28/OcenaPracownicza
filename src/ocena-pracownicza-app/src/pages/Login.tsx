@@ -13,15 +13,16 @@ import {
     ListItemText,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
+import { useAuth } from "../hooks/AuthProvider";
 
 const Login: React.FC = () => {
-    const [login, setLogin] = useState("");
+    const [loginValue, setLoginValue] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,18 +30,14 @@ const Login: React.FC = () => {
         setLoading(true);
 
         try {
-            const response = await authService.login({
-                userNameEmail: login,
-                password: password,
-            });
-            console.log("LOGIN SUCCESS:", response);
+            await login(loginValue, password);
             navigate("/");
         } catch (err) {
             console.error("LOGIN FAILED:", err);
             setError("Nieprawidłowy login lub hasło.");
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     return (
@@ -81,8 +78,8 @@ const Login: React.FC = () => {
                     <TextField
                         label="Adres e-mail lub nazwa użytkownika"
                         variant="outlined"
-                        value={login}
-                        onChange={(e) => setLogin(e.target.value)}
+                        value={loginValue}
+                        onChange={(e) => setLoginValue(e.target.value)}
                         required
                     />
 

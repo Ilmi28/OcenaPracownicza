@@ -51,4 +51,11 @@ public class AdminController : ControllerBase
         var result = await _adminService.Delete(id);
         return Ok(result);
     }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentManager()
+    {
+        var response = await _adminService.GetCurrent();
+        return Ok(response);
+    }
 }

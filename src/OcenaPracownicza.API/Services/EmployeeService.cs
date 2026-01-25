@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Other;
@@ -30,9 +29,11 @@ public class EmployeeService : IEmployeeService
         if (entity == null)
             throw new NotFoundException();
 
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
+
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
-        if (_userManager.IsCurrentUserAdmin() || _userManager.IsCurrentUserManager() || isAccountOwner) 
-            return MapToResponse(entity);
+        if (_userManager.IsCurrentUserAdmin() || _userManager.IsCurrentUserManager() || isAccountOwner)
+            return MapToResponse(entity, user);
         throw new ForbiddenException();
     }
 
@@ -41,22 +42,34 @@ public class EmployeeService : IEmployeeService
         if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager())
             throw new ForbiddenException();
         var entities = await _employeeRepository.GetAll();
+
+        var employeeViews = new List<EmployeeView>();
+
+        foreach (var entity in entities)
+        {
+            var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
+            if (user != null)
+            {
+                employeeViews.Add(new EmployeeView
+                {
+                    Id = entity.Id,
+                    UserName = user.UserName ?? "",
+                    Email = user.Email ?? "",
+                    FirstName = entity.FirstName,
+                    LastName = entity.LastName,
+                    Position = entity.Position,
+                    Period = entity.Period,
+                    FinalScore = entity.FinalScore,
+                    AchievementsSummary = entity.AchievementsSummary,
+                    UserId = entity.IdentityUserId
+                });
+            }
+
+        }
+
         var response = new EmployeeListResponse
         {
-            Data = entities.Select(x =>
-            {
-                return new EmployeeView
-                {
-                    Id = x.Id,
-                    FirstName = x.FirstName,
-                    LastName = x.LastName,
-                    Position = x.Position,
-                    Period = x.Period,
-                    FinalScore = x.FinalScore,
-                    AchievementsSummary = x.AchievementsSummary,
-                    UserId = x.IdentityUserId
-                };
-            }).ToList()
+            Data = employeeViews
         };
         return response;
     }
@@ -87,7 +100,7 @@ public class EmployeeService : IEmployeeService
             };
 
             var created = await _employeeRepository.Create(entity);
-            return MapToResponse(created);
+            return MapToResponse(created, identityUser);
         }
         throw new Exception("Wystąpił błąd podczas tworzenia użytkownika");
 
@@ -121,15 +134,17 @@ public class EmployeeService : IEmployeeService
         entity.AchievementsSummary = request.AchievementsSummary;
 
         var updated = await _employeeRepository.Update(entity);
-        return MapToResponse(updated);
+        return MapToResponse(updated, user);
     }
 
     public async Task<EmployeeResponse> Delete(Guid id)
     {
-        
+
         var entity = await _employeeRepository.GetById(id);
         if (entity == null)
             throw new NotFoundException();
+
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
 
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
         if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
@@ -138,7 +153,7 @@ public class EmployeeService : IEmployeeService
         var result = await _userManager.DeleteAsync(entity.IdentityUserId);
 
         await _employeeRepository.Delete(id);
-        return MapToResponse(entity);
+        return MapToResponse(entity, user);
     }
 
 
@@ -154,16 +169,20 @@ public class EmployeeService : IEmployeeService
             throw new NotFoundException("Profil pracownika nie istnieje dla tego użytkownika.");
         }
 
-        return MapToResponse(entity);
+        var user = await _userManager.FindByIdAsync(entity.IdentityUserId);
+
+        return MapToResponse(entity, user);
     }
 
-    private static EmployeeResponse MapToResponse(Employee entity)
+    private static EmployeeResponse MapToResponse(Employee entity, IdentityUser? user)
     {
         return new EmployeeResponse
         {
             Data = new EmployeeView
             {
                 Id = entity.Id,
+                UserName = user?.UserName ?? string.Empty,
+                Email = user?.Email ?? string.Empty,
                 FirstName = entity.FirstName,
                 LastName = entity.LastName,
                 Position = entity.Position,

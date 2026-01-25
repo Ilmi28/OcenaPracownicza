@@ -14,6 +14,23 @@ export const authService = {
         return res.data;
     },
 
+    logout: async () => {
+        await axiosClient.get("/auth/logout");
+    },
+
+    isLoggedIn: async () => {
+        const res = await axiosClient.get("/auth/me");
+
+        if (res.status === 401) return false;
+        return true;
+    },
+
+    getUser: async () => {
+        const res = await axiosClient.get("/auth/me");
+
+        return res.data;
+    },
+
     check: async () => {
         const res = await axiosClient.get("/auth/secure");
         return res.data;
@@ -26,5 +43,3 @@ export const authService = {
         });
     },
 };
-
-
