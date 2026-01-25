@@ -1,11 +1,9 @@
 ﻿using DotNetEnv;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OcenaPracownicza.API.Data;
+using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Extensions;
-using OcenaPracownicza.API.Interfaces.Services;
-using OcenaPracownicza.API.Requests;
-
-
 
 namespace OcenaPracownicza.API;
 
@@ -23,30 +21,78 @@ public class Program
 
         ConfigureMiddleware(app);
 
-        using (var scope = app.Services.CreateScope())
+        await SeedAsync(app);
+
+        await app.RunAsync();
+    }
+
+    private static async Task SeedAsync(WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+
+        var db = services.GetRequiredService<ApplicationDbContext>();
+
+        if (db.Database.IsRelational())
         {
-            var services = scope.ServiceProvider;
+            await db.Database.MigrateAsync();
+        }
+        else
+        {
+            await db.Database.EnsureCreatedAsync();
+        }
 
-            var appDbContext = services.GetRequiredService<ApplicationDbContext>();
-            var adminService = services.GetRequiredService<IAdminService>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
 
-            await appDbContext.Database.MigrateAsync();
+        if (!await roleManager.RoleExistsAsync("Admin"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Admin"));
+        }
 
-            var adminCount = await appDbContext.Admins.CountAsync();
-            if (adminCount == 0)
+        var adminUserName = "admin";
+        var adminEmail = "admin@mail.com";
+        var adminPassword = "Admin123!";
+
+        var adminUser = await userManager.FindByNameAsync(adminUserName);
+        if (adminUser == null)
+        {
+            adminUser = new IdentityUser
             {
-                await adminService.Add(new CreateAdminRequest
-                {
-                    FirstName = "Super",
-                    LastName = "Admin",
-                    UserName = "admin",
-                    Email = "admin@mail.com",
-                    Password = "Admin123!"
-                }, true);
+                UserName = adminUserName,
+                Email = adminEmail,
+                EmailConfirmed = true
+            };
+
+            var createResult = await userManager.CreateAsync(adminUser, adminPassword);
+            if (!createResult.Succeeded)
+            {
+                var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                throw new Exception(errors);
             }
         }
 
-        await app.RunAsync();
+        if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
+        {
+            var addRoleResult = await userManager.AddToRoleAsync(adminUser, "Admin");
+            if (!addRoleResult.Succeeded)
+            {
+                var errors = string.Join("; ", addRoleResult.Errors.Select(e => e.Description));
+                throw new Exception(errors);
+            }
+        }
+
+        if (!await db.Admins.AnyAsync(a => a.IdentityUserId == adminUser.Id))
+        {
+            db.Admins.Add(new Admin
+            {
+                FirstName = "Super",
+                LastName = "Admin",
+                IdentityUserId = adminUser.Id
+            });
+
+            await db.SaveChangesAsync();
+        }
     }
 
     public static void ConfigureServices(WebApplicationBuilder builder)
@@ -81,5 +127,4 @@ public class Program
 
         app.MapControllers();
     }
-
 }

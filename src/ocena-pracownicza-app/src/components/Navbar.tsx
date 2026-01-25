@@ -1,15 +1,7 @@
-import React, { useEffect, useState } from "react";
-import {
-    AppBar,
-    Toolbar,
-    Typography,
-    Box,
-    Button,
-    Avatar,
-} from "@mui/material";
+import React from "react";
+import { AppBar, Toolbar, Typography, Box, Button } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
 import { User } from "../utils/types";
 import { useAuth } from "../hooks/AuthProvider";
 

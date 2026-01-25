@@ -1,4 +1,3 @@
-import { jwtDecode } from "jwt-decode";
 import axiosClient from "./axiosClient";
 
 interface LoginCredentials {
