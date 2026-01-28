@@ -10,6 +10,7 @@ import AdminProfile from "./pages/AdminProfile";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import { AuthProvider } from "./hooks/AuthProvider";
+import Register from "./pages/Register";
 
 function App() {
     return (
@@ -22,6 +23,8 @@ function App() {
                             <Route path="users" element={<Users />} />
                             <Route path="settings" element={<Settings />} />
                             <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+
                             <Route
                                 path="/reset-password"
                                 element={<ResetPassword />}
