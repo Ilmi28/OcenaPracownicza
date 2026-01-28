@@ -9,6 +9,8 @@ import {
     Divider,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { RegisterRequest } from "../utils/types";
+import axiosClient from "../services/axiosClient";
 
 const Register: React.FC = () => {
     const [username, setUsername] = useState("");
@@ -24,25 +26,21 @@ const Register: React.FC = () => {
         setError(null);
         setLoading(true);
 
+        const payload: RegisterRequest = {
+            userName: username,
+            email: email,
+            password: password,
+        };
+
         try {
-            const res = await fetch("https://localhost:5000/api/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    UserName: username,
-                    Email: email,
-                    Password: password,
-                }),
-            });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data?.message || "Coś poszło nie tak podczas rejestracji");
-            }
-
-            navigate("/login"); // po udanej rejestracji przenosi na login
+            await axiosClient.post("/auth/register", payload);
+            navigate("/login");
         } catch (err: any) {
-            setError(err.message);
+            if (err.response?.data) {
+                setError(err.response.data);
+            } else {
+                setError("Coś poszło nie tak podczas rejestracji");
+            }
         } finally {
             setLoading(false);
         }
@@ -97,7 +95,11 @@ const Register: React.FC = () => {
                         required
                     />
 
-                    <Typography variant="caption" color="text.secondary" component="div">
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        component="div"
+                    >
                         Hasło musi spełniać następujące wymagania:
                         <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
                             <li>Duża litera</li>
