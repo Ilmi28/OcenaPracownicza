@@ -23,7 +23,6 @@ const KATEGORIE: Record<number, { nazwa: string; kolor: string }> = {
 const AchievementList: React.FC = () => {
     const [achievements, setAchievements] = useState<AchievementListItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
     const fetchAchievements = async () => {
@@ -32,9 +31,8 @@ const AchievementList: React.FC = () => {
             const resp =
                 await axiosClient.get<AchievementListItem[]>("/achievement");
             setAchievements(resp.data);
-            setError(null);
         } catch (err: any) {
-            setError("Błąd pobierania danych.");
+            console.error("Błąd pobierania danych.", err);
         } finally {
             setLoading(false);
         }
