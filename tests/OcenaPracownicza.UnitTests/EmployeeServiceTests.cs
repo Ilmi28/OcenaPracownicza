@@ -1,0 +1,713 @@
+using Microsoft.AspNetCore.Identity;
+using Moq;
+using OcenaPracownicza.API.Entities;
+using OcenaPracownicza.API.Exceptions.BaseExceptions;
+using OcenaPracownicza.API.Interfaces.Other;
+using OcenaPracownicza.API.Interfaces.Repositories;
+using OcenaPracownicza.API.Interfaces.Services;
+using OcenaPracownicza.API.Requests;
+using OcenaPracownicza.API.Responses;
+using OcenaPracownicza.API.Services;
+using OcenaPracownicza.API.Views;
+
+namespace OcenaPracownicza.UnitTests;
+
+public class EmployeeServiceTests
+{
+    private readonly Mock<IUserManager> _userManagerMock;
+    private readonly Mock<IEmployeeRepository> _employeeRepoMock;
+    private readonly Mock<IUserService> _userServiceMock;
+    private readonly EmployeeService _service;
+
+    public EmployeeServiceTests()
+    {
+        _userManagerMock = new Mock<IUserManager>();
+        _employeeRepoMock = new Mock<IEmployeeRepository>();
+        _userServiceMock = new Mock<IUserService>();
+        _service = new EmployeeService(_userManagerMock.Object, _employeeRepoMock.Object, _userServiceMock.Object);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsEmployee_WhenUserIsAdmin()
+    {
+        var empId = Guid.NewGuid();
+        var employee = new Employee
+        {
+            Id = empId,
+            FirstName = "Jan",
+            LastName = "Kowalski",
+            Position = "Developer",
+            Period = "Q1 2024",
+            FinalScore = "85.0",
+            AchievementsSummary = "Good performance",
+            IdentityUserId = "user123"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(new IdentityUser { Id = "user123", UserName = "jan", Email = "jan@mail.com" });
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
+
+        var result = await _service.GetById(empId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Jan", result.Data.FirstName);
+        Assert.Equal("Kowalski", result.Data.LastName);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsEmployee_WhenUserIsManager()
+    {
+        var empId = Guid.NewGuid();
+        var employee = new Employee
+        {
+            Id = empId,
+            FirstName = "Jan",
+            LastName = "Kowalski",
+            Position = "Developer",
+            Period = "Q1 2024",
+            FinalScore = "85.0",
+            AchievementsSummary = "Good performance",
+            IdentityUserId = "user123"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(new IdentityUser { Id = "user123", UserName = "jan", Email = "jan@mail.com" });
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(true);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
+
+        var result = await _service.GetById(empId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Jan", result.Data.FirstName);
+        Assert.Equal("Kowalski", result.Data.LastName);
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsEmployee_WhenUserIsAccountOwner()
+    {
+        var empId = Guid.NewGuid();
+        var employee = new Employee
+        {
+            Id = empId,
+            FirstName = "Jan",
+            LastName = "Kowalski",
+            Position = "Developer",
+            Period = "Q1 2024",
+            FinalScore = "85.0",
+            AchievementsSummary = "Good performance",
+            IdentityUserId = "user123"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(new IdentityUser { Id = "user123", UserName = "jan", Email = "jan@mail.com" });
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(true);
+
+        var result = await _service.GetById(empId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Jan", result.Data.FirstName);
+        Assert.Equal("Kowalski", result.Data.LastName);
+    }
+
+    [Fact]
+    public async Task GetById_ThrowsForbiddenException_WhenUserNotAuthorized()
+    {
+        var empId = Guid.NewGuid();
+        var employee = new Employee
+        {
+            FirstName = "John",
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            Period = "Q1 2024",
+            FinalScore = "80.0",
+            AchievementsSummary = "Average",
+            IdentityUserId = "user123"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(new IdentityUser { Id = "user123" });
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => _service.GetById(empId));
+    }
+
+    [Fact]
+    public async Task GetById_ThrowsNotFoundException_WhenEmployeeNotExists()
+    {
+        var empId = Guid.NewGuid();
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync((Employee)null!);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.GetById(empId));
+    }
+
+    [Fact]
+    public async Task GetAll_ReturnsAllEmployees_WhenUserIsAdmin()
+    {
+        var employees = new List<Employee>
+        {
+            new() { IdentityUserId = "user123", Id = Guid.NewGuid(), FirstName = "Jan", LastName = "Kowalski", Position = "Developer", Period = "Q1", FinalScore = "85", AchievementsSummary = "Good" },
+            new() { IdentityUserId = "user1234", Id = Guid.NewGuid(), FirstName = "Anna", LastName = "Nowak", Position = "Manager", Period = "Q1", FinalScore = "90", AchievementsSummary = "Excellent" }
+        };
+
+        _employeeRepoMock.Setup(r => r.GetAll()).ReturnsAsync(employees);
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(new IdentityUser { Id = "user123", UserName = "u1", Email = "u1@mail.com" });
+        _userManagerMock.Setup(u => u.FindByIdAsync("user1234")).ReturnsAsync(new IdentityUser { Id = "user1234", UserName = "u2", Email = "u2@mail.com" });
+
+        var result = await _service.GetAll();
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Data.Count);
+        Assert.Contains(result.Data, e => e.FirstName == "Jan");
+        Assert.Contains(result.Data, e => e.FirstName == "Anna");
+    }
+
+    [Fact]
+    public async Task GetAll_ReturnsAllEmployees_WhenUserIsManager()
+    {
+        var employees = new List<Employee>
+        {
+            new() { IdentityUserId = "user123", Position = "Teacher", Id = Guid.NewGuid(), FirstName = "Piotr", LastName = "Zając", Period = "Q2", FinalScore = "87", AchievementsSummary = "Very good" }
+        };
+
+        _employeeRepoMock.Setup(r => r.GetAll()).ReturnsAsync(employees);
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(true);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(new IdentityUser { Id = "user123", UserName = "piotr", Email = "piotr@mail.com" });
+
+        var result = await _service.GetAll();
+
+        Assert.NotNull(result);
+        Assert.Single(result.Data);
+    }
+
+    [Fact]
+    public async Task GetAll_ThrowsForbiddenException_WhenUserNotAuthorized()
+    {
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => _service.GetAll());
+    }
+
+    [Fact]
+    public async Task Add_CreatesEmployee_WhenUserIsAdmin()
+    {
+        var request = new CreateEmployeeRequest
+        {
+            UserName = "jkowalski",
+            Email = "jan@example.com",
+            Password = "Password123!",
+            FirstName = "Jan",
+            LastName = "Kowalski",
+            Position = "Developer"
+        };
+
+        var employee = new Employee
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Jan",
+            LastName = "Kowalski",
+            Position = "Developer",
+            Period = "Q1 2024",
+            FinalScore = "85.0",
+            AchievementsSummary = "Good performance",
+            IdentityUserId = "newUserId"
+        };
+
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.CreateAsync(It.IsAny<IdentityUser>(), "Password123!"))
+            .ReturnsAsync(true)
+            .Callback<IdentityUser, string>((u, p) => u.Id = "newUserId");
+        _userManagerMock.Setup(u => u.AddToRoleAsync("newUserId", "Employee")).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Create(It.IsAny<Employee>())).ReturnsAsync(employee);
+
+        var result = await _service.Add(request);
+
+        Assert.NotNull(result);
+        Assert.Equal("Jan", result.Data.FirstName);
+        Assert.Equal("Kowalski", result.Data.LastName);
+    }
+
+    [Fact]
+    public async Task Add_CreatesEmployee_WhenUserIsManager()
+    {
+        var request = new CreateEmployeeRequest
+        {
+            UserName = "anowak",
+            Email = "anna@example.com",
+            Password = "Password123!",
+            FirstName = "Anna",
+            LastName = "Nowak"
+        };
+
+        var employee = new Employee
+        {
+            IdentityUserId = "newUserId",
+            Id = Guid.NewGuid(),
+            FirstName = "Anna",
+            LastName = "Nowak",
+            Period = "Q2 2024",
+            FinalScore = "88.0",
+            AchievementsSummary = "Great work",
+            Position = ""
+        };
+
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(true);
+        _userManagerMock.Setup(u => u.CreateAsync(It.IsAny<IdentityUser>(), It.IsAny<string>()))
+            .ReturnsAsync(true)
+            .Callback<IdentityUser, string>((u, p) => u.Id = "newUserId");
+        _userManagerMock.Setup(u => u.AddToRoleAsync(It.IsAny<string>(), "Employee")).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Create(It.IsAny<Employee>())).ReturnsAsync(employee);
+
+        var result = await _service.Add(request);
+
+        Assert.NotNull(result);
+        Assert.Equal("Anna", result.Data.FirstName);
+        Assert.Equal("Nowak", result.Data.LastName);
+    }
+
+    [Fact]
+    public async Task Add_ThrowsForbiddenException_WhenUserNotAuthorized()
+    {
+        var request = new CreateEmployeeRequest
+        {
+            UserName = "test",
+            Email = "test@example.com",
+            Password = "Password123!"
+        };
+
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => _service.Add(request));
+    }
+
+    [Fact]
+    public async Task Add_ThrowsException_WhenUserCreationFails()
+    {
+        var request = new CreateEmployeeRequest
+        {
+            UserName = "test",
+            Email = "test@example.com",
+            Password = "Password123!",
+            FirstName = "Test",
+            LastName = "User"
+        };
+
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.CreateAsync(It.IsAny<IdentityUser>(), It.IsAny<string>())).ReturnsAsync(false);
+
+        var ex = await Assert.ThrowsAsync<Exception>(() => _service.Add(request));
+        Assert.Equal("Wystąpił błąd podczas tworzenia użytkownika", ex.Message);
+    }
+
+    [Fact]
+    public async Task Add_MapsAllFieldsCorrectly()
+    {
+        var request = new CreateEmployeeRequest
+        {
+            UserName = "pzajac",
+            Email = "piotr@example.com",
+            Password = "Password123!",
+            FirstName = "Piotr",
+            LastName = "Zając",
+            Position = "Senior Developer",
+            Period = "Q1 2024",
+            FinalScore = "95.5",
+            AchievementsSummary = "Excellent performance"
+        };
+
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.CreateAsync(It.IsAny<IdentityUser>(), It.IsAny<string>()))
+            .ReturnsAsync(true)
+            .Callback<IdentityUser, string>((u, p) => u.Id = "newUserId");
+        _userManagerMock.Setup(u => u.AddToRoleAsync(It.IsAny<string>(), "Employee")).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Create(It.IsAny<Employee>())).ReturnsAsync((Employee e) => e);
+
+        var result = await _service.Add(request);
+
+        Assert.Equal("Piotr", result.Data.FirstName);
+        Assert.Equal("Zając", result.Data.LastName);
+        Assert.Equal("Senior Developer", result.Data.Position);
+        Assert.Equal("Q1 2024", result.Data.Period);
+        Assert.Equal("95.5", result.Data.FinalScore);
+        Assert.Equal("Excellent performance", result.Data.AchievementsSummary);
+    }
+
+    [Fact]
+    public async Task Update_UpdatesEmployee_WhenUserIsAdmin()
+    {
+        var empId = Guid.NewGuid();
+        var existing = new Employee
+        {
+            Position = "Teacher",
+            Period = "Q2 2024",
+            FinalScore = "88.0",
+            Id = empId,
+            FirstName = "Old",
+            LastName = "Name",
+            IdentityUserId = "user123",
+            AchievementsSummary = "Excellent performance"
+        };
+        var identityUser = new IdentityUser { Id = "user123", UserName = "oldname", Email = "old@mail.com" };
+        var request = new UpdateEmployeeRequest
+        {
+            UserName = "newname",
+            Email = "new@example.com",
+            FirstName = "New",
+            LastName = "Name",
+            Position = existing.Position,
+            Period = existing.Period,
+            FinalScore = existing.FinalScore,
+            AchievementsSummary = existing.AchievementsSummary
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
+        _userManagerMock.Setup(u => u.UpdateAsync(It.IsAny<IdentityUser>())).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Update(It.IsAny<Employee>())).ReturnsAsync((Employee e) => e);
+
+        var result = await _service.Update(empId, request);
+
+        Assert.Equal("New", result.Data.FirstName);
+        Assert.Equal("Name", result.Data.LastName);
+    }
+
+    [Fact]
+    public async Task Update_UpdatesEmployee_WhenUserIsManager()
+    {
+        var empId = Guid.NewGuid();
+        var existing = new Employee
+        {
+            FirstName = "John",
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            Period = "Q1",
+            FinalScore = "75.0",
+            AchievementsSummary = "Summary",
+            IdentityUserId = "user123"
+        };
+        var identityUser = new IdentityUser { Id = "user123" };
+        var request = new UpdateEmployeeRequest
+        {
+            FirstName = "Updated",
+            LastName = "Employee",
+            UserName = "u",
+            Email = "e",
+            Position = existing.Position,
+            Period = existing.Period,
+            FinalScore = existing.FinalScore,
+            AchievementsSummary = existing.AchievementsSummary
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(true);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
+        _userManagerMock.Setup(u => u.UpdateAsync(It.IsAny<IdentityUser>())).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Update(It.IsAny<Employee>())).ReturnsAsync((Employee e) => e);
+
+        var result = await _service.Update(empId, request);
+
+        Assert.Equal("Updated", result.Data.FirstName);
+    }
+
+    [Fact]
+    public async Task Update_UpdatesEmployee_WhenUserIsAccountOwner()
+    {
+        var empId = Guid.NewGuid();
+        var existing = new Employee
+        {
+            FirstName = "John",
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            Period = "Q3",
+            FinalScore = "82.0",
+            AchievementsSummary = "Good",
+            IdentityUserId = "user123"
+        };
+        var identityUser = new IdentityUser { Id = "user123" };
+        var request = new UpdateEmployeeRequest
+        {
+            FirstName = "Self",
+            LastName = "Updated",
+            UserName = "u",
+            Email = "e",
+            Position = existing.Position,
+            Period = existing.Period,
+            FinalScore = existing.FinalScore,
+            AchievementsSummary = existing.AchievementsSummary
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(true);
+        _userManagerMock.Setup(u => u.UpdateAsync(It.IsAny<IdentityUser>())).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Update(It.IsAny<Employee>())).ReturnsAsync((Employee e) => e);
+
+        var result = await _service.Update(empId, request);
+
+        Assert.Equal("Self", result.Data.FirstName);
+    }
+
+    [Fact]
+    public async Task Update_ThrowsNotFoundException_WhenEmployeeNotExists()
+    {
+        var empId = Guid.NewGuid();
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync((Employee)null!);
+        var request = new UpdateEmployeeRequest { FirstName = "Test" };
+
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(empId, request));
+    }
+
+    [Fact]
+    public async Task Update_ThrowsNotFoundException_WhenIdentityUserNotExists()
+    {
+        var empId = Guid.NewGuid();
+        var existing = new Employee
+        {
+            FirstName = "John",
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            Period = "Q1",
+            FinalScore = "70.0",
+            AchievementsSummary = "Test",
+            IdentityUserId = "user123"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync((IdentityUser)null!);
+
+        var request = new UpdateEmployeeRequest { FirstName = "Test" };
+
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.Update(empId, request));
+    }
+
+    [Fact]
+    public async Task Update_ThrowsForbiddenException_WhenUserNotAuthorized()
+    {
+        var empId = Guid.NewGuid();
+        var existing = new Employee
+        {
+            FirstName = "John",
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            Period = "Q2",
+            FinalScore = "78.0",
+            AchievementsSummary = "Average",
+            IdentityUserId = "user123"
+        };
+        var identityUser = new IdentityUser { Id = "user123" };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(identityUser);
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
+
+        var request = new UpdateEmployeeRequest { FirstName = "Test" };
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => _service.Update(empId, request));
+    }
+
+    [Fact]
+    public async Task Delete_DeletesEmployee_WhenUserIsAdmin()
+    {
+        var empId = Guid.NewGuid();
+        var employee = new Employee
+        {
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            FirstName = "Jan",
+            Period = "Q1",
+            FinalScore = "85.0",
+            AchievementsSummary = "Good",
+            IdentityUserId = "user123"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(new IdentityUser { Id = "user123" });
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
+        _userManagerMock.Setup(u => u.DeleteAsync("user123")).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Delete(empId)).Returns(Task.CompletedTask);
+
+        var result = await _service.Delete(empId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Jan", result.Data.FirstName);
+    }
+
+    [Fact]
+    public async Task Delete_DeletesEmployee_WhenUserIsManager()
+    {
+        var empId = Guid.NewGuid();
+        var employee = new Employee
+        {
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            FirstName = "Anna",
+            Period = "Q2",
+            FinalScore = "90.0",
+            AchievementsSummary = "Excellent",
+            IdentityUserId = "user456"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user456")).ReturnsAsync(new IdentityUser { Id = "user456" });
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(true);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user456")).Returns(false);
+        _userManagerMock.Setup(u => u.DeleteAsync("user456")).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Delete(empId)).Returns(Task.CompletedTask);
+
+        var result = await _service.Delete(empId);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task Delete_DeletesEmployee_WhenUserIsAccountOwner()
+    {
+        var empId = Guid.NewGuid();
+        var employee = new Employee
+        {
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            FirstName = "Anna",
+            Period = "Q2",
+            FinalScore = "90.0",
+            AchievementsSummary = "Excellent",
+            IdentityUserId = "user456"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user456")).ReturnsAsync(new IdentityUser { Id = "user456" });
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user456")).Returns(true);
+        _userManagerMock.Setup(u => u.DeleteAsync("user456")).ReturnsAsync(true);
+        _employeeRepoMock.Setup(r => r.Delete(empId)).Returns(Task.CompletedTask);
+
+        var result = await _service.Delete(empId);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task Delete_ThrowsNotFoundException_WhenEmployeeNotExists()
+    {
+        var empId = Guid.NewGuid();
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync((Employee)null!);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.Delete(empId));
+    }
+
+    [Fact]
+    public async Task Delete_ThrowsForbiddenException_WhenUserNotAuthorized()
+    {
+        var empId = Guid.NewGuid();
+        var employee = new Employee
+        {
+            FirstName = "John",
+            LastName = "Smith",
+            Position = "Teacher",
+            Id = empId,
+            Period = "Q1",
+            FinalScore = "80.0",
+            AchievementsSummary = "Average",
+            IdentityUserId = "user123"
+        };
+
+        _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(employee);
+        _userManagerMock.Setup(u => u.FindByIdAsync("user123")).ReturnsAsync(new IdentityUser { Id = "user123" });
+        _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(false);
+        _userManagerMock.Setup(u => u.IsCurrentUserManager()).Returns(false);
+        _userManagerMock.Setup(u => u.IsUserAccountOwner("user123")).Returns(false);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => _service.Delete(empId));
+    }
+
+    [Fact]
+    public async Task GetCurrent_ReturnsEmployeeProfile_ForCurrentUser()
+    {
+        var userId = "user123";
+        var employee = new Employee
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Jan",
+            LastName = "Kowalski",
+            Position = "Developer",
+            Period = "Q1 2024",
+            FinalScore = "85.0",
+            AchievementsSummary = "Good performance",
+            IdentityUserId = userId
+        };
+
+        _userServiceMock
+            .Setup(s => s.GetCurrentUser())
+            .ReturnsAsync(new UserResponse { Data = new UserView { Id = userId } });
+
+        _employeeRepoMock.Setup(r => r.GetByUserId(userId)).ReturnsAsync(employee);
+
+        _userManagerMock
+            .Setup(u => u.FindByIdAsync(userId))
+            .ReturnsAsync(new IdentityUser { Id = userId, UserName = "jan", Email = "jan@mail.com" });
+
+        var result = await _service.GetCurrent();
+
+        Assert.NotNull(result);
+        Assert.Equal(employee.Id, result.Data.Id);
+        Assert.Equal("Jan", result.Data.FirstName);
+        Assert.Equal("Kowalski", result.Data.LastName);
+        Assert.Equal("Developer", result.Data.Position);
+        Assert.Equal("Q1 2024", result.Data.Period);
+        Assert.Equal("85.0", result.Data.FinalScore);
+        Assert.Equal("Good performance", result.Data.AchievementsSummary);
+        Assert.Equal("jan", result.Data.UserName);
+        Assert.Equal("jan@mail.com", result.Data.Email);
+    }
+
+    [Fact]
+    public async Task GetCurrent_ThrowsNotFoundException_WhenProfileDoesNotExist()
+    {
+        var userId = "user123";
+
+        _userServiceMock
+            .Setup(s => s.GetCurrentUser())
+            .ReturnsAsync(new UserResponse { Data = new UserView { Id = userId } });
+
+        _employeeRepoMock.Setup(r => r.GetByUserId(userId)).ReturnsAsync((Employee)null!);
+
+        var ex = await Assert.ThrowsAsync<NotFoundException>(() => _service.GetCurrent());
+        Assert.Equal("Profil pracownika nie istnieje dla tego użytkownika.", ex.Message);
+    }
+}
