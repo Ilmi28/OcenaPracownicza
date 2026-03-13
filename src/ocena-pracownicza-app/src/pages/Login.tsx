@@ -104,6 +104,19 @@ const Login: React.FC = () => {
                     >
                         {loading ? "Logowanie..." : "Zaloguj się"}
                     </Button>
+
+                    <Typography textAlign="center" sx={{ mt: 2 }}>
+                        Nie masz konta?{" "}
+                        <Link
+                            component="button"
+                            variant="body2"
+                            onClick={() => navigate("/register")}
+                            sx={{ fontWeight: 600 }}
+                        >
+                            Zarejestruj się
+                        </Link>
+                    </Typography>
+
                 </Box>
 
                 <Divider sx={{ my: 4 }} />

@@ -3,11 +3,9 @@ import {
     Box,
     Typography,
     Paper,
-    Avatar,
     Button,
     TextField,
     Grid,
-    Chip,
     CircularProgress,
     Alert,
 } from "@mui/material";
@@ -132,11 +130,6 @@ const AdminProfile = () => {
     }
 
     const currentAdmin = editMode && newAdmin ? newAdmin : admin;
-
-    const initials =
-        `${currentAdmin.firstName?.[0] ?? ""}${currentAdmin.lastName?.[0] ?? ""}`
-            .trim()
-            .toUpperCase() || "A";
 
     return (
         <Box>

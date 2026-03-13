@@ -1,11 +1,10 @@
-import React, { useEffect, useEffectEvent, useState } from "react";
+import React from "react";
 import { Drawer, Toolbar, List, Box } from "@mui/material";
 import SidebarItem from "./SidebarItem";
 import HomeIcon from "@mui/icons-material/Home";
 import PeopleIcon from "@mui/icons-material/People";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
-import { authService } from "../services/authService";
 import { useAuth } from "../hooks/AuthProvider";
 
 // Zakładam, że masz hook useAuth. Jeśli nie, na razie podaję wersję z symulacją.

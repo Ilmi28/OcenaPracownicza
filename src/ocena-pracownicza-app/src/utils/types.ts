@@ -32,3 +32,9 @@ export interface AdminView {
     firstName: string;
     lastName: string;
 }
+
+export interface RegisterRequest {
+    userName: string;
+    email: string;
+    password: string;
+}
