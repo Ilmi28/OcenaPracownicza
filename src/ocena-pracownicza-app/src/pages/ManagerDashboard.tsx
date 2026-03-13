@@ -1,19 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
-    Box, Typography, Paper, CircularProgress, Alert,
-    Table, TableBody, TableCell, TableContainer, TableRow
-} from '@mui/material';
-import axiosClient from '../services/axiosClient';
-import { useAuth } from '../hooks/AuthProvider';
-
-interface ManagerView {
-    firstName: string;
-    lastName: string;
-    position: string;
-    period: string;
-    finalScore: string;
-    achievementsSummary: string;
-}
+    Box,
+    Typography,
+    Paper,
+    CircularProgress,
+    Alert,
+    TextField,
+    Grid,
+    Button,
+} from "@mui/material";
+import axiosClient from "../services/axiosClient";
+import { useAuth } from "../hooks/AuthProvider";
+import { ManagerView } from "../utils/types";
 
 interface ApiResponse<T> {
     success: boolean;
@@ -21,19 +19,30 @@ interface ApiResponse<T> {
     data: T;
 }
 
-export default function Managerashboard() {
+export default function ManagerDashboard() {
     const { user, loading: authLoading } = useAuth();
+
     const [manager, setManager] = useState<ManagerView | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [editMode, setEditMode] = useState(false);
+    const [newManager, setNewManager] = useState<ManagerView | null>(null);
+    const [saving, setSaving] = useState(false);
+
     useEffect(() => {
         const fetchManagerData = async () => {
             try {
-                const resp = await axiosClient.get<ApiResponse<ManagerView>>('/manager/me');
+                const resp =
+                    await axiosClient.get<ApiResponse<ManagerView>>(
+                        "/manager/me",
+                    );
                 setManager(resp.data.data);
             } catch (err: any) {
-                const msg = err?.response?.data?.message || err?.message || 'B³¹d pobierania danych';
+                const msg =
+                    err?.response?.data?.message ||
+                    err?.message ||
+                    "BÅ‚Ä…d pobierania danych";
                 setError(msg);
             } finally {
                 setLoading(false);
@@ -47,48 +56,249 @@ export default function Managerashboard() {
         }
     }, [user, authLoading]);
 
+    const handleSave = async () => {
+        if (!newManager || !manager?.id) {
+            setError("Brak danych do zapisania");
+            return;
+        }
+
+        setSaving(true);
+        setError(null);
+
+        try {
+            const payload = {
+                userName: newManager.userName || "",
+                email: newManager.email || "",
+                firstName: newManager.firstName,
+                lastName: newManager.lastName,
+                achievementSummary: newManager.achievementsSummary,
+            };
+
+            await axiosClient.put(`/manager/${manager.id}`, payload);
+
+            const resp =
+                await axiosClient.get<ApiResponse<ManagerView>>("/manager/me");
+            setManager(resp.data.data);
+
+            setEditMode(false);
+            setNewManager(null);
+        } catch (err: any) {
+            const msg =
+                err?.response?.data?.message ||
+                err?.message ||
+                "BÅ‚Ä…d podczas zapisywania danych";
+            setError(msg);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (authLoading || loading) {
         return (
-            <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
+            <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                height="60vh"
+            >
                 <CircularProgress />
             </Box>
         );
     }
 
-    if (!user) return <Box m={2}><Alert severity="warning">Zaloguj siê, aby zobaczyæ swoje dane.</Alert></Box>;
-    if (error) return <Box m={2}><Alert severity="error">B³¹d: {error}</Alert></Box>;
-    if (!manager) return <Box m={2}><Typography>Nie znaleziono danych u¿ytkownika.</Typography></Box>;
+    if (!user) {
+        return (
+            <Box m={2}>
+                <Alert severity="warning">
+                    Zaloguj siÄ™, aby zobaczyÄ‡ swoje dane.
+                </Alert>
+            </Box>
+        );
+    }
 
-    const rows = [
-        { label: 'Imiê i Nazwisko', value: `${manager.firstName} ${manager.lastName}` },
-        { label: 'Stanowisko', value: manager.position },
-        { label: 'Okres oceny', value: manager.period },
-        { label: 'Wynik koñcowy', value: manager.finalScore },
-        { label: 'Podsumowanie osi¹gniêæ', value: manager.achievementsSummary },
-    ];
+    if (error) {
+        return (
+            <Box m={2}>
+                <Alert severity="error">BÅ‚Ä…d: {error}</Alert>
+            </Box>
+        );
+    }
+
+    if (!manager) {
+        return (
+            <Box m={2}>
+                <Typography>Nie znaleziono danych uÅ¼ytkownika.</Typography>
+            </Box>
+        );
+    }
+
+    const currentManager = editMode && newManager ? newManager : manager;
 
     return (
-        <Box p={3} maxWidth="800px" mx="auto">
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-                Informacje
+        <Box>
+            <Typography variant="h5" fontWeight="600">
+                MÃ³j Profil
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                ZarzÄ…dzaj swoimi danymi osobowymi
             </Typography>
 
-            <TableContainer component={Paper} elevation={3}>
-                <Table>
-                    <TableBody>
-                        {rows.map((row) => (
-                            <TableRow key={row.label} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                <TableCell component="th" scope="row" sx={{ fontWeight: 'bold', width: '30%', backgroundColor: '#f5f5f5' }}>
-                                    {row.label}
-                                </TableCell>
-                                <TableCell sx={{ whiteSpace: 'pre-line' }}>
-                                    {row.value}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
+            )}
+
+            <Paper sx={{ p: 3, mb: 3 }}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 2,
+                    }}
+                >
+                    <Typography variant="subtitle1" fontWeight="600">
+                        Dane osobowe
+                    </Typography>
+
+                    {!editMode && (
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                                setNewManager(manager);
+                                setEditMode(true);
+                                setError(null);
+                            }}
+                        >
+                            Edytuj
+                        </Button>
+                    )}
+                </Box>
+
+                <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField
+                            fullWidth
+                            label="Nazwa uÅ¼ytkownika"
+                            value={currentManager.userName ?? ""}
+                            disabled={!editMode}
+                            size="small"
+                            onChange={(e) =>
+                                setNewManager((prev) =>
+                                    prev
+                                        ? { ...prev, userName: e.target.value }
+                                        : prev,
+                                )
+                            }
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField
+                            fullWidth
+                            label="E-mail"
+                            value={currentManager.email ?? ""}
+                            disabled={!editMode}
+                            size="small"
+                            onChange={(e) =>
+                                setNewManager((prev) =>
+                                    prev
+                                        ? { ...prev, email: e.target.value }
+                                        : prev,
+                                )
+                            }
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField
+                            fullWidth
+                            label="ImiÄ™"
+                            value={currentManager.firstName}
+                            disabled={!editMode}
+                            size="small"
+                            onChange={(e) =>
+                                setNewManager((prev) =>
+                                    prev
+                                        ? { ...prev, firstName: e.target.value }
+                                        : prev,
+                                )
+                            }
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField
+                            fullWidth
+                            label="Nazwisko"
+                            value={currentManager.lastName}
+                            disabled={!editMode}
+                            size="small"
+                            onChange={(e) =>
+                                setNewManager((prev) =>
+                                    prev
+                                        ? { ...prev, lastName: e.target.value }
+                                        : prev,
+                                )
+                            }
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12 }}>
+                        <TextField
+                            fullWidth
+                            label="Podsumowanie osiÄ…gniÄ™Ä‡"
+                            value={currentManager.achievementsSummary ?? ""}
+                            disabled={!editMode}
+                            size="small"
+                            multiline
+                            rows={4}
+                            onChange={(e) =>
+                                setNewManager((prev) =>
+                                    prev
+                                        ? {
+                                              ...prev,
+                                              achievementsSummary:
+                                                  e.target.value,
+                                          }
+                                        : prev,
+                                )
+                            }
+                        />
+                    </Grid>
+                </Grid>
+
+                {editMode && (
+                    <Box
+                        mt={3}
+                        display="flex"
+                        justifyContent="flex-end"
+                        gap={2}
+                    >
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                setEditMode(false);
+                                setNewManager(null);
+                                setError(null);
+                            }}
+                            disabled={saving}
+                        >
+                            Anuluj
+                        </Button>
+
+                        <Button
+                            variant="contained"
+                            onClick={handleSave}
+                            disabled={saving}
+                        >
+                            {saving ? "Zapisywanie..." : "Zapisz"}
+                        </Button>
+                    </Box>
+                )}
+            </Paper>
         </Box>
     );
 }

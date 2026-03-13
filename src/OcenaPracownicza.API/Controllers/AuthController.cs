@@ -3,18 +3,14 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
-using OcenaPracownicza.API.Services;
 using OcenaPracownicza.API.Views;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace OcenaPracownicza.API.Controllers;
-  
+
 [ApiController]
 [Route("api/auth")]
 public class AuthController(IAuthService authService) : ControllerBase
@@ -28,7 +24,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         Response.Cookies.Append("jwt", token.ToString(), new CookieOptions
         {
             HttpOnly = true,
-            Secure = true, 
+            Secure = true,
             SameSite = SameSiteMode.None,
             Expires = DateTime.UtcNow.AddHours(1)
         });
@@ -42,6 +38,31 @@ public class AuthController(IAuthService authService) : ControllerBase
         {
             Data = dto
         });
+    }
+
+    [HttpGet("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("jwt", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+
+        return Ok(new { Message = "Wylogowano pomyślnie" });
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult GetMyInfo()
+    {
+        var userName = User.Identity?.Name;
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        return Ok(new { userId, userName, email, role });
     }
 
     [HttpGet("google-login")]
