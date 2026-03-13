@@ -60,11 +60,6 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                         to="/settings"
                         IconComponent={SettingsIcon}
                     />
-                    <SidebarItem
-                        text="Osiągnięcia"
-                        to="/achievements"
-                        IconComponent={PeopleIcon}
-                    />
                 </List>
             </Box>
         </Drawer>

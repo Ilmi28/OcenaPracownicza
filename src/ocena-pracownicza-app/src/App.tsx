@@ -11,8 +11,6 @@ import EmployeeDashboard from "./pages/EmployeeDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import { AuthProvider } from "./hooks/AuthProvider";
 import Register from "./pages/Register";
-import AddAchievementForm from "./pages/AddAchievementForm";
-import AchievementList from "./pages/AchievementList";
 
 function App() {
     return (
@@ -26,14 +24,7 @@ function App() {
                             <Route path="settings" element={<Settings />} />
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
-                            <Route
-                                path="/achievement/add"
-                                element={<AddAchievementForm />}
-                            />
-                            <Route
-                                path="/achievements"
-                                element={<AchievementList />}
-                            />
+
                             <Route
                                 path="/reset-password"
                                 element={<ResetPassword />}
