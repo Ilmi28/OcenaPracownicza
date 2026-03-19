@@ -8,6 +8,7 @@ import {
     Paper,
     Grid,
     Button,
+    Chip,
 } from "@mui/material";
 import axiosClient from "../services/axiosClient";
 import { useAuth } from "../hooks/AuthProvider";
@@ -129,6 +130,13 @@ export default function EmployeeDashboard() {
     };
 
     const currentEmployee = editMode && newEmployee ? newEmployee : employee;
+    const statusLabel: Record<number, string> = {
+        0: "Szkic",
+        1: "Oczekuje na etap 2",
+        2: "Zatwierdzona",
+        3: "Odrzucona",
+    };
+    const isApproved = currentEmployee.stage2Status === 2;
 
     return (
         <Box>
@@ -157,10 +165,26 @@ export default function EmployeeDashboard() {
                     <Typography variant="subtitle1" fontWeight="600">
                         Dane osobowe
                     </Typography>
+                    <Chip
+                        size="small"
+                        variant="outlined"
+                        color={
+                            currentEmployee.stage2Status === 2
+                                ? "success"
+                                : currentEmployee.stage2Status === 3
+                                  ? "error"
+                                  : "warning"
+                        }
+                        label={
+                            statusLabel[currentEmployee.stage2Status ?? 0] ??
+                            "Nieznany status"
+                        }
+                    />
                     {!editMode && (
                         <Button
                             variant="outlined"
                             size="small"
+                            disabled={isApproved}
                             onClick={() => {
                                 setNewEmployee(employee);
                                 setEditMode(true);

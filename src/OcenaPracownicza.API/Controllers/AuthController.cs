@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
@@ -60,9 +60,10 @@ public class AuthController(IAuthService authService) : ControllerBase
         var userName = User.Identity?.Name;
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var email = User.FindFirst(ClaimTypes.Email)?.Value;
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var roles = User.FindAll(ClaimTypes.Role).Select(x => x.Value).ToList();
+        var role = roles.FirstOrDefault();
 
-        return Ok(new { userId, userName, email, role });
+        return Ok(new { userId, userName, email, role, roles });
     }
 
     [HttpGet("google-login")]
@@ -105,7 +106,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     [HttpGet("admin")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Roles = "Admin")]
     public IActionResult Admin()
     {
         return Ok("Dostęp tylko dla administratorów");

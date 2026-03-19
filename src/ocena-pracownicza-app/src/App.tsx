@@ -11,6 +11,8 @@ import EmployeeDashboard from "./pages/EmployeeDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import { AuthProvider } from "./hooks/AuthProvider";
 import Register from "./pages/Register";
+import Stage2ReviewQueue from "./pages/Stage2ReviewQueue";
+import Stage2ReviewDetails from "./pages/Stage2ReviewDetails";
 
 function App() {
     return (
@@ -37,6 +39,14 @@ function App() {
                             <Route
                                 path="/manager"
                                 element={<ManagerDashboard />}
+                            />
+                            <Route
+                                path="/evaluation/stage2"
+                                element={<Stage2ReviewQueue />}
+                            />
+                            <Route
+                                path="/evaluation/stage2/:employeeId"
+                                element={<Stage2ReviewDetails />}
                             />
                         </Route>
                     </Routes>

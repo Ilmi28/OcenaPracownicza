@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OcenaPracownicza.API.Data;
 using OcenaPracownicza.API.Entities;
+using OcenaPracownicza.API.Enums;
 using OcenaPracownicza.API.Requests;
 
 namespace OcenaPracownicza.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/achievement")]
 public class AchievementController(ApplicationDbContext context) : ControllerBase
 {
@@ -25,10 +28,21 @@ public class AchievementController(ApplicationDbContext context) : ControllerBas
             Description = request.Description,
             Date = request.Date,
             EmployeeId = request.EmployeeId,
-            Category = request.Category
+            Category = request.Category,
+            Stage2Status = EvaluationStageStatus.PendingStage2
 
         };
         await context.Achievements.AddAsync(achievement);
+
+        var employee = await context.Employees.FindAsync(request.EmployeeId);
+        if (employee != null)
+        {
+            employee.Stage2Status = EvaluationStageStatus.PendingStage2;
+            employee.Stage2Comment = null;
+            employee.Stage2ReviewedByUserId = null;
+            employee.Stage2ReviewedAtUtc = null;
+        }
+
         await context.SaveChangesAsync();
         return Ok(achievement);
     }
