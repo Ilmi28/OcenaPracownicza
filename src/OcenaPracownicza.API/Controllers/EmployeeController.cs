@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
 
@@ -6,6 +7,7 @@ using OcenaPracownicza.API.Requests;
 namespace OcenaPracownicza.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/employee")]
 public class EmployeeController(IEmployeeService employeeService) : ControllerBase
 {

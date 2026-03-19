@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +32,7 @@ public static class ServiceExtensions
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IManagerService, ManagerService>();
+        services.AddScoped<IStage2ReviewService, Stage2ReviewService>();
     }
 
     public static void AddRepositories(this IServiceCollection services)

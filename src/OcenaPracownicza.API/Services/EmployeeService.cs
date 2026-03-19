@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using OcenaPracownicza.API.Entities;
+using OcenaPracownicza.API.Enums;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Interfaces.Repositories;
@@ -61,6 +62,10 @@ public class EmployeeService : IEmployeeService
                     Period = entity.Period,
                     FinalScore = entity.FinalScore,
                     AchievementsSummary = entity.AchievementsSummary,
+                    Stage2Status = (int)entity.Stage2Status,
+                    Stage2Comment = entity.Stage2Comment,
+                    Stage2ReviewedByUserId = entity.Stage2ReviewedByUserId,
+                    Stage2ReviewedAtUtc = entity.Stage2ReviewedAtUtc,
                     UserId = entity.IdentityUserId
                 });
             }
@@ -96,6 +101,7 @@ public class EmployeeService : IEmployeeService
                 Period = request.Period,
                 FinalScore = request.FinalScore,
                 AchievementsSummary = request.AchievementsSummary,
+                Stage2Status = EvaluationStageStatus.Draft,
                 IdentityUserId = identityUser.Id
             };
 
@@ -120,6 +126,8 @@ public class EmployeeService : IEmployeeService
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
         if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
             throw new ForbiddenException();
+        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && entity.Stage2Status == EvaluationStageStatus.Stage2Approved)
+            throw new ForbiddenException("Ocena została zatwierdzona i nie może być edytowana przez pracownika.");
 
         user.UserName = request.UserName;
         user.Email = request.Email;
@@ -132,6 +140,10 @@ public class EmployeeService : IEmployeeService
         entity.Period = request.Period;
         entity.FinalScore = request.FinalScore;
         entity.AchievementsSummary = request.AchievementsSummary;
+        entity.Stage2Status = EvaluationStageStatus.PendingStage2;
+        entity.Stage2Comment = null;
+        entity.Stage2ReviewedByUserId = null;
+        entity.Stage2ReviewedAtUtc = null;
 
         var updated = await _employeeRepository.Update(entity);
         return MapToResponse(updated, user);
@@ -188,7 +200,11 @@ public class EmployeeService : IEmployeeService
                 Position = entity.Position,
                 Period = entity.Period,
                 FinalScore = entity.FinalScore,
-                AchievementsSummary = entity.AchievementsSummary
+                AchievementsSummary = entity.AchievementsSummary,
+                Stage2Status = (int)entity.Stage2Status,
+                Stage2Comment = entity.Stage2Comment,
+                Stage2ReviewedByUserId = entity.Stage2ReviewedByUserId,
+                Stage2ReviewedAtUtc = entity.Stage2ReviewedAtUtc
             }
         };
     }

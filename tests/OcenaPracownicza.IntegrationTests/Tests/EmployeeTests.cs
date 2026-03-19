@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using OcenaPracownicza.API.Enums;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
@@ -29,6 +30,20 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         {
             var user = context.Users.Find("7");
             var jwtToken = tokenService.GenerateToken(user, new List<string> { "Admin" });
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
+        }
+
+        private void LoginAsManager()
+        {
+            var user = context.Users.Find("3");
+            var jwtToken = tokenService.GenerateToken(user, new List<string> { "Manager" });
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
+        }
+
+        private void LoginAsEmployee()
+        {
+            var user = context.Users.Find("1");
+            var jwtToken = tokenService.GenerateToken(user, new List<string> { "Employee" });
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
         }
 
@@ -122,7 +137,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 
             var employees = new List<Employee>
             {
-                new Employee { Id = _emp1Id, FirstName = "Jan", LastName = "Kowalski", Position = "Dev", Period = "2024", FinalScore = "8", AchievementsSummary = "Good", IdentityUserId = "1" },
+                new Employee { Id = _emp1Id, FirstName = "Jan", LastName = "Kowalski", Position = "Dev", Period = "2024", FinalScore = "8", AchievementsSummary = "Good", IdentityUserId = "1", Stage2Status = EvaluationStageStatus.PendingStage2 },
                 new Employee { Id = _emp2Id, FirstName = "Anna", LastName = "Nowak", Position = "QA", Period = "2024", FinalScore = "7", AchievementsSummary = "Solid", IdentityUserId = "2" },
                 new Employee { Id = _emp3Id, FirstName = "Piotr", LastName = "Zielinski", Position = "PM", Period = "2024", FinalScore = "9", AchievementsSummary = "Excellent", IdentityUserId = "3" },
                 new Employee { Id = _emp4Id, FirstName = "To", LastName = "Delete", Position = "Temp", Period = "2024", FinalScore = "5", AchievementsSummary = "Remove me", IdentityUserId = "4" },
@@ -139,6 +154,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 new IdentityUserRole<string> { RoleId = "role_employee", UserId = "2" },
                 new IdentityUserRole<string> { RoleId = "role_employee", UserId = "3" },
                 new IdentityUserRole<string> { RoleId = "role_employee", UserId = "4" },
+                new IdentityUserRole<string> { RoleId = "role_manager", UserId = "3" },
                 new IdentityUserRole<string> { RoleId = "role_admin", UserId = "7" }
             );
 
@@ -262,6 +278,52 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 
             var userExists = await context.Users.AnyAsync(u => u.Id == "4");
             Assert.False(userExists);
+        }
+
+        [Fact]
+        public async Task Stage2Pending_ReturnsItems_ForManager()
+        {
+            LoginAsManager();
+
+            var response = await client.GetAsync("/api/evaluation/stage2/pending");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var payload = await response.Content.ReadFromJsonAsync<BaseResponse<List<Stage2ReviewItemView>>>();
+            Assert.NotNull(payload);
+            Assert.Contains(payload!.Data, x => x.EmployeeId == _emp1Id);
+        }
+
+        [Fact]
+        public async Task Stage2Reject_RequiresComment()
+        {
+            LoginAsManager();
+
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/reject", new { comment = "" });
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task Stage2Approve_ChangesStatus()
+        {
+            LoginAsManager();
+
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/approve", new { comment = "OK" });
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            context.ChangeTracker.Clear();
+            var employee = await context.Employees.AsNoTracking().FirstAsync(e => e.Id == _emp1Id);
+            Assert.Equal(EvaluationStageStatus.Stage2Approved, employee.Stage2Status);
+        }
+
+        [Fact]
+        public async Task Stage2Endpoints_Forbidden_ForEmployeeRole()
+        {
+            LoginAsEmployee();
+
+            var response = await client.GetAsync("/api/evaluation/stage2/pending");
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
     }
 }
