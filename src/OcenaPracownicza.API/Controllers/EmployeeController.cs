@@ -52,4 +52,13 @@ public class EmployeeController(IEmployeeService employeeService) : ControllerBa
         var response = await employeeService.GetCurrent();
         return Ok(response);
     }
+
+    [HttpPut("{id}/edit-by-manager")]
+    [Authorize(Roles = "Manager,Admin")]
+    public async Task<IActionResult> EditByManager(Guid id, UpdateEmployeeByManagerRequest request)
+    {
+        var response = await employeeService.EditByManager(id, request);
+        return Ok(response);
+    }
+
 }

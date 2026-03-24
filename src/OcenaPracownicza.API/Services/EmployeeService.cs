@@ -208,4 +208,42 @@ public class EmployeeService : IEmployeeService
             }
         };
     }
+
+    public async Task<EmployeeResponse> EditByManager(Guid id, UpdateEmployeeByManagerRequest request)
+    {
+        if (!_userManager.IsCurrentUserManager() && !_userManager.IsCurrentUserAdmin())
+            throw new ForbiddenException();
+
+        var employee = await _employeeRepository.GetById(id);
+        if (employee == null)
+            throw new NotFoundException();
+
+        
+        if (!string.IsNullOrWhiteSpace(request.FirstName))
+            employee.FirstName = request.FirstName;
+
+        if (!string.IsNullOrWhiteSpace(request.LastName))
+            employee.LastName = request.LastName;
+
+        if (!string.IsNullOrWhiteSpace(request.Position))
+            employee.Position = request.Position;
+
+        if (!string.IsNullOrWhiteSpace(request.Period))
+            employee.Period = request.Period;
+
+        if (!string.IsNullOrWhiteSpace(request.FinalScore))
+            employee.FinalScore = request.FinalScore;
+
+        if (!string.IsNullOrWhiteSpace(request.AchievementsSummary))
+            employee.AchievementsSummary = request.AchievementsSummary;
+
+        if (!string.IsNullOrWhiteSpace(request.Comment))
+            employee.Stage2Comment = request.Comment; //  Stage2Comment jako komentarz przełożonego
+
+        var updated = await _employeeRepository.Update(employee);
+        var user = await _userManager.FindByIdAsync(employee.IdentityUserId);
+
+        return MapToResponse(updated, user);
+    }
+
 }

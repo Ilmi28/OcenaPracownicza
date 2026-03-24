@@ -11,4 +11,6 @@ public interface IEmployeeService
     Task<EmployeeResponse> Update(Guid id, UpdateEmployeeRequest request);
     Task<EmployeeResponse> Delete(Guid id);
     Task<EmployeeResponse> GetCurrent();
+
+    Task<EmployeeResponse> EditByManager(Guid id, UpdateEmployeeByManagerRequest request);
 }
