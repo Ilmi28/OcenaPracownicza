@@ -135,7 +135,6 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         foreach (var achievement in achievements)
         {
             achievement.Stage2Status = EvaluationStageStatus.Closed;
-            achievement.Stage2Comment = employee.Stage2Comment;
         }
 
         await context.SaveChangesAsync();
@@ -159,7 +158,6 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         foreach (var achievement in achievements)
         {
             achievement.Stage2Status = EvaluationStageStatus.Archived;
-            achievement.Stage2Comment = employee.Stage2Comment;
         }
 
         await context.SaveChangesAsync();

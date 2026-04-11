@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
     Alert,
@@ -39,7 +39,7 @@ export default function Stage2ReviewDetails() {
     const [comment, setComment] = useState("");
     const [error, setError] = useState<string | null>(null);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         if (!employeeId) return;
         setLoading(true);
         setError(null);
@@ -56,11 +56,11 @@ export default function Stage2ReviewDetails() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [employeeId]);
 
     useEffect(() => {
         load();
-    }, [employeeId]);
+    }, [load]);
 
     const onApprove = async () => {
         if (!employeeId) return;

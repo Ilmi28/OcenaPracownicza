@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     Alert,
     Box,
@@ -33,7 +33,7 @@ export default function Stage2ReviewQueue() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -50,11 +50,11 @@ export default function Stage2ReviewQueue() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showArchived]);
 
     useEffect(() => {
         load();
-    }, [showArchived]);
+    }, [load]);
 
     if (loading) {
         return (
