@@ -126,8 +126,12 @@ public class EmployeeService : IEmployeeService
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
         if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
             throw new ForbiddenException();
-        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && entity.Stage2Status == EvaluationStageStatus.Stage2Approved)
-            throw new ForbiddenException("Ocena została zatwierdzona i nie może być edytowana przez pracownika.");
+        if (!_userManager.IsCurrentUserAdmin() &&
+            !_userManager.IsCurrentUserManager() &&
+            (entity.Stage2Status == EvaluationStageStatus.Stage2Approved ||
+             entity.Stage2Status == EvaluationStageStatus.Closed ||
+             entity.Stage2Status == EvaluationStageStatus.Archived))
+            throw new ForbiddenException("Ocena została sfinalizowana i nie może być edytowana przez pracownika.");
 
         user.UserName = request.UserName;
         user.Email = request.Email;

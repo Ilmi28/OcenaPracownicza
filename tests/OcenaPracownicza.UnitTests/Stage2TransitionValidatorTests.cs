@@ -25,4 +25,30 @@ public class Stage2TransitionValidatorTests
         Assert.Throws<ForbiddenException>(() =>
             Stage2TransitionValidator.EnsureRejectComment(" "));
     }
+
+    [Fact]
+    public void EnsureCanClose_AllowsApproved()
+    {
+        Stage2TransitionValidator.EnsureCanClose(EvaluationStageStatus.Stage2Approved);
+    }
+
+    [Fact]
+    public void EnsureCanClose_ThrowsForPending()
+    {
+        Assert.Throws<ForbiddenException>(() =>
+            Stage2TransitionValidator.EnsureCanClose(EvaluationStageStatus.PendingStage2));
+    }
+
+    [Fact]
+    public void EnsureCanArchive_AllowsClosed()
+    {
+        Stage2TransitionValidator.EnsureCanArchive(EvaluationStageStatus.Closed);
+    }
+
+    [Fact]
+    public void EnsureCanArchive_ThrowsWhenNotClosed()
+    {
+        Assert.Throws<ForbiddenException>(() =>
+            Stage2TransitionValidator.EnsureCanArchive(EvaluationStageStatus.Stage2Approved));
+    }
 }

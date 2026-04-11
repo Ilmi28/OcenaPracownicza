@@ -325,5 +325,70 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
+
+        [Fact]
+        public async Task Stage2Close_ChangesStatus_ForAdmin()
+        {
+            var employee = await context.Employees.FirstAsync(e => e.Id == _emp1Id);
+            employee.Stage2Status = EvaluationStageStatus.Stage2Approved;
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear();
+
+            LoginAsAdmin();
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/close", new { });
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            context.ChangeTracker.Clear();
+            var refreshed = await context.Employees.AsNoTracking().FirstAsync(e => e.Id == _emp1Id);
+            Assert.Equal(EvaluationStageStatus.Closed, refreshed.Stage2Status);
+        }
+
+        [Fact]
+        public async Task Stage2Archive_ChangesStatus_ForAdmin()
+        {
+            var employee = await context.Employees.FirstAsync(e => e.Id == _emp1Id);
+            employee.Stage2Status = EvaluationStageStatus.Closed;
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear();
+
+            LoginAsAdmin();
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/archive", new { });
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            context.ChangeTracker.Clear();
+            var refreshed = await context.Employees.AsNoTracking().FirstAsync(e => e.Id == _emp1Id);
+            Assert.Equal(EvaluationStageStatus.Archived, refreshed.Stage2Status);
+        }
+
+        [Fact]
+        public async Task Stage2Close_Forbidden_ForManager()
+        {
+            var employee = await context.Employees.FirstAsync(e => e.Id == _emp1Id);
+            employee.Stage2Status = EvaluationStageStatus.Stage2Approved;
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear();
+
+            LoginAsManager();
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/close", new { });
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task Stage2Archived_ReturnsArchivedItems()
+        {
+            var employee = await context.Employees.FirstAsync(e => e.Id == _emp1Id);
+            employee.Stage2Status = EvaluationStageStatus.Archived;
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear();
+
+            LoginAsAdmin();
+            var response = await client.GetAsync("/api/evaluation/stage2/archived");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var payload = await response.Content.ReadFromJsonAsync<BaseResponse<List<Stage2ReviewItemView>>>();
+            Assert.NotNull(payload);
+            Assert.Contains(payload!.Data, x => x.EmployeeId == _emp1Id);
+        }
     }
 }

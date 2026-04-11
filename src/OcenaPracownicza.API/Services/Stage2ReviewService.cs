@@ -33,6 +33,28 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         };
     }
 
+    public async Task<BaseResponse<List<Stage2ReviewItemView>>> GetArchivedAsync()
+    {
+        var items = await context.Employees
+            .Where(e => e.Stage2Status == EvaluationStageStatus.Archived)
+            .Select(e => new Stage2ReviewItemView
+            {
+                EmployeeId = e.Id,
+                FullName = $"{e.FirstName} {e.LastName}",
+                Position = e.Position,
+                Period = e.Period,
+                FinalScore = e.FinalScore,
+                Stage2Status = (int)e.Stage2Status,
+                AchievementsCount = context.Achievements.Count(a => a.EmployeeId == e.Id)
+            })
+            .ToListAsync();
+
+        return new BaseResponse<List<Stage2ReviewItemView>>
+        {
+            Data = items
+        };
+    }
+
     public async Task<BaseResponse<Stage2ReviewDetailsView>> GetDetailsAsync(Guid employeeId)
     {
         var details = await BuildDetails(employeeId);
@@ -96,6 +118,54 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         return new BaseResponse<Stage2ReviewDetailsView> { Data = await BuildDetails(employeeId) };
     }
 
+    public async Task<BaseResponse<Stage2ReviewDetailsView>> CloseAsync(Guid employeeId)
+    {
+        EnsureAdminRole();
+
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId);
+        if (employee == null)
+        {
+            throw new NotFoundException("Nie znaleziono pracownika.");
+        }
+
+        Stage2TransitionValidator.EnsureCanClose(employee.Stage2Status);
+
+        employee.Stage2Status = EvaluationStageStatus.Closed;
+        var achievements = await context.Achievements.Where(a => a.EmployeeId == employeeId).ToListAsync();
+        foreach (var achievement in achievements)
+        {
+            achievement.Stage2Status = EvaluationStageStatus.Closed;
+            achievement.Stage2Comment = employee.Stage2Comment;
+        }
+
+        await context.SaveChangesAsync();
+        return new BaseResponse<Stage2ReviewDetailsView> { Data = await BuildDetails(employeeId) };
+    }
+
+    public async Task<BaseResponse<Stage2ReviewDetailsView>> ArchiveAsync(Guid employeeId)
+    {
+        EnsureAdminRole();
+
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId);
+        if (employee == null)
+        {
+            throw new NotFoundException("Nie znaleziono pracownika.");
+        }
+
+        Stage2TransitionValidator.EnsureCanArchive(employee.Stage2Status);
+
+        employee.Stage2Status = EvaluationStageStatus.Archived;
+        var achievements = await context.Achievements.Where(a => a.EmployeeId == employeeId).ToListAsync();
+        foreach (var achievement in achievements)
+        {
+            achievement.Stage2Status = EvaluationStageStatus.Archived;
+            achievement.Stage2Comment = employee.Stage2Comment;
+        }
+
+        await context.SaveChangesAsync();
+        return new BaseResponse<Stage2ReviewDetailsView> { Data = await BuildDetails(employeeId) };
+    }
+
     private async Task<Stage2ReviewDetailsView> BuildDetails(Guid employeeId)
     {
         var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId);
@@ -132,5 +202,13 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 Stage2Comment = a.Stage2Comment
             }).ToList()
         };
+    }
+
+    private void EnsureAdminRole()
+    {
+        if (!userManager.IsCurrentUserAdmin())
+        {
+            throw new ForbiddenException("Tylko administrator może wykonać tę operację.");
+        }
     }
 }

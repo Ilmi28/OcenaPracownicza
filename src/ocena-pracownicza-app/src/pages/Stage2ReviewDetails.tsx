@@ -18,17 +18,21 @@ import {
 } from "@mui/material";
 import { Stage2ReviewDetailsView } from "../utils/types";
 import { evaluationService } from "../services/evaluationService";
+import { useAuth } from "../hooks/AuthProvider";
 
 const STATUS_LABELS: Record<number, string> = {
     0: "Szkic",
     1: "Oczekuje na etap 2",
     2: "Zatwierdzona",
     3: "Odrzucona",
+    4: "Zamknięta",
+    5: "Zarchiwizowana",
 };
 
 export default function Stage2ReviewDetails() {
     const { employeeId } = useParams<{ employeeId: string }>();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [data, setData] = useState<Stage2ReviewDetailsView | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -86,6 +90,34 @@ export default function Stage2ReviewDetails() {
         }
     };
 
+    const onClose = async () => {
+        if (!employeeId) return;
+        setSaving(true);
+        setError(null);
+        try {
+            const updated = await evaluationService.close(employeeId);
+            setData(updated);
+        } catch (err: any) {
+            setError(err?.response?.data?.message ?? "Nie udało się zamknąć oceny.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const onArchive = async () => {
+        if (!employeeId) return;
+        setSaving(true);
+        setError(null);
+        try {
+            const updated = await evaluationService.archive(employeeId);
+            setData(updated);
+        } catch (err: any) {
+            setError(err?.response?.data?.message ?? "Nie udało się zarchiwizować oceny.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" mt={8}>
@@ -99,6 +131,9 @@ export default function Stage2ReviewDetails() {
     }
 
     const canDecide = data.stage2Status === 1;
+    const isAdmin = user?.role === "Admin";
+    const canClose = isAdmin && (data.stage2Status === 2 || data.stage2Status === 3);
+    const canArchive = isAdmin && data.stage2Status === 4;
 
     return (
         <Box>
@@ -201,6 +236,12 @@ export default function Stage2ReviewDetails() {
                     </Button>
                     <Button variant="contained" disabled={saving || !canDecide} onClick={onApprove}>
                         Zatwierdź
+                    </Button>
+                    <Button variant="outlined" disabled={saving || !canClose} onClick={onClose}>
+                        Zamknij ocenę
+                    </Button>
+                    <Button variant="contained" color="secondary" disabled={saving || !canArchive} onClick={onArchive}>
+                        Archiwizuj ocenę
                     </Button>
                 </Box>
             </Paper>
