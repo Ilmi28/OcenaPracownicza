@@ -13,6 +13,23 @@ public static class Stage2TransitionValidator
         }
     }
 
+    public static void EnsureCanClose(EvaluationStageStatus currentStatus)
+    {
+        if (currentStatus != EvaluationStageStatus.Stage2Approved &&
+            currentStatus != EvaluationStageStatus.Stage2Rejected)
+        {
+            throw new ForbiddenException("Rekord może zostać zamknięty wyłącznie po decyzji etapu 2.");
+        }
+    }
+
+    public static void EnsureCanArchive(EvaluationStageStatus currentStatus)
+    {
+        if (currentStatus != EvaluationStageStatus.Closed)
+        {
+            throw new ForbiddenException("Rekord może zostać zarchiwizowany wyłącznie po zamknięciu.");
+        }
+    }
+
     public static void EnsureRejectComment(string? comment)
     {
         if (string.IsNullOrWhiteSpace(comment))

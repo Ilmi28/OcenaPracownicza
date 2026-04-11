@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     Alert,
     Box,
@@ -22,34 +22,39 @@ const STATUS_LABELS: Record<number, string> = {
     1: "Oczekuje na etap 2",
     2: "Zatwierdzona",
     3: "Odrzucona",
+    4: "Zamknięta",
+    5: "Zarchiwizowana",
 };
 
 export default function Stage2ReviewQueue() {
     const navigate = useNavigate();
     const [data, setData] = useState<Stage2ReviewItemView[]>([]);
+    const [showArchived, setShowArchived] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await evaluationService.getPending();
+            const response = showArchived
+                ? await evaluationService.getArchived()
+                : await evaluationService.getPending();
             setData(response);
         } catch (err: any) {
             const msg =
                 err?.response?.data?.message ??
                 err?.message ??
-                "Nie udało się pobrać kolejki etapu 2.";
+                "Nie udało się pobrać listy ocen.";
             setError(msg);
         } finally {
             setLoading(false);
         }
-    };
+    }, [showArchived]);
 
     useEffect(() => {
         load();
-    }, []);
+    }, [load]);
 
     if (loading) {
         return (
@@ -62,10 +67,12 @@ export default function Stage2ReviewQueue() {
     return (
         <Box>
             <Typography variant="h5" fontWeight={600} mb={1}>
-                Kolejka etapu 2
+                {showArchived ? "Archiwum ocen" : "Kolejka etapu 2"}
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={3}>
-                Weryfikacja oceny i osiągnięć przez Manager/Admin.
+                {showArchived
+                    ? "Zarchiwizowane oceny dostępne do podglądu."
+                    : "Weryfikacja oceny i osiągnięć przez Manager/Admin."}
             </Typography>
             {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
@@ -73,7 +80,13 @@ export default function Stage2ReviewQueue() {
                 </Alert>
             )}
             <Paper>
-                <Box display="flex" justifyContent="flex-end" p={2}>
+                <Box display="flex" justifyContent="flex-end" gap={1} p={2}>
+                    <Button
+                        variant={showArchived ? "contained" : "outlined"}
+                        onClick={() => setShowArchived((prev) => !prev)}
+                    >
+                        {showArchived ? "Pokaż kolejkę" : "Pokaż archiwum"}
+                    </Button>
                     <Button variant="outlined" onClick={load}>
                         Odśwież
                     </Button>
@@ -104,7 +117,15 @@ export default function Stage2ReviewQueue() {
                                             STATUS_LABELS[item.stage2Status] ??
                                             "Nieznany"
                                         }
-                                        color="warning"
+                                        color={
+                                            item.stage2Status === 2
+                                                ? "success"
+                                                : item.stage2Status === 3
+                                                  ? "error"
+                                                  : item.stage2Status >= 4
+                                                    ? "default"
+                                                    : "warning"
+                                        }
                                         variant="outlined"
                                     />
                                 </TableCell>
@@ -127,7 +148,9 @@ export default function Stage2ReviewQueue() {
                         {data.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={7} align="center">
-                                    Brak rekordów oczekujących na etap 2.
+                                    {showArchived
+                                        ? "Brak zarchiwizowanych ocen."
+                                        : "Brak rekordów oczekujących na etap 2."}
                                 </TableCell>
                             </TableRow>
                         )}

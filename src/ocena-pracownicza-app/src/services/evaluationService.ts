@@ -14,6 +14,12 @@ export const evaluationService = {
         );
         return res.data.data;
     },
+    getArchived: async () => {
+        const res = await axiosClient.get<ApiResponse<Stage2ReviewItemView[]>>(
+            "/evaluation/stage2/archived",
+        );
+        return res.data.data;
+    },
     getDetails: async (employeeId: string) => {
         const res = await axiosClient.get<ApiResponse<Stage2ReviewDetailsView>>(
             `/evaluation/stage2/${employeeId}`,
@@ -31,6 +37,18 @@ export const evaluationService = {
         const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
             `/evaluation/stage2/${employeeId}/reject`,
             { comment },
+        );
+        return res.data.data;
+    },
+    close: async (employeeId: string) => {
+        const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
+            `/evaluation/stage2/${employeeId}/close`,
+        );
+        return res.data.data;
+    },
+    archive: async (employeeId: string) => {
+        const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
+            `/evaluation/stage2/${employeeId}/archive`,
         );
         return res.data.data;
     },

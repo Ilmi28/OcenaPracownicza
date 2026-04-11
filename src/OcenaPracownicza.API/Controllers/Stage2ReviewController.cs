@@ -17,6 +17,13 @@ public class Stage2ReviewController(IStage2ReviewService stage2ReviewService) : 
         return Ok(response);
     }
 
+    [HttpGet("archived")]
+    public async Task<IActionResult> GetArchived()
+    {
+        var response = await stage2ReviewService.GetArchivedAsync();
+        return Ok(response);
+    }
+
     [HttpGet("{employeeId:guid}")]
     public async Task<IActionResult> GetDetails(Guid employeeId)
     {
@@ -35,6 +42,20 @@ public class Stage2ReviewController(IStage2ReviewService stage2ReviewService) : 
     public async Task<IActionResult> Reject(Guid employeeId, [FromBody] Stage2DecisionRequest request)
     {
         var response = await stage2ReviewService.RejectAsync(employeeId, request.Comment);
+        return Ok(response);
+    }
+
+    [HttpPost("{employeeId:guid}/close")]
+    public async Task<IActionResult> Close(Guid employeeId)
+    {
+        var response = await stage2ReviewService.CloseAsync(employeeId);
+        return Ok(response);
+    }
+
+    [HttpPost("{employeeId:guid}/archive")]
+    public async Task<IActionResult> Archive(Guid employeeId)
+    {
+        var response = await stage2ReviewService.ArchiveAsync(employeeId);
         return Ok(response);
     }
 }
