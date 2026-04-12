@@ -17,6 +17,13 @@ public class Stage2ReviewController(IStage2ReviewService stage2ReviewService) : 
         return Ok(response);
     }
 
+    [HttpGet("approved")]
+    public async Task<IActionResult> GetApproved()
+    {
+        var response = await stage2ReviewService.GetApprovedAsync();
+        return Ok(response);
+    }
+
     [HttpGet("archived")]
     public async Task<IActionResult> GetArchived()
     {

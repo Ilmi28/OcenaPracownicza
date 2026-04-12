@@ -414,5 +414,31 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             Assert.NotNull(payload);
             Assert.Contains(payload!.Data, x => x.AchievementId == _achievement1Id);
         }
+
+        [Fact]
+        public async Task Stage2Approved_ReturnsApprovedItems_ForAdmin()
+        {
+            var achievement = await context.Achievements.FirstAsync(a => a.Id == _achievement1Id);
+            achievement.Stage2Status = EvaluationStageStatus.Stage2Approved;
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear();
+
+            LoginAsAdmin();
+            var response = await client.GetAsync("/api/evaluation/stage2/approved");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var payload = await response.Content.ReadFromJsonAsync<BaseResponse<List<Stage2ReviewItemView>>>();
+            Assert.NotNull(payload);
+            Assert.Contains(payload!.Data, x => x.AchievementId == _achievement1Id);
+        }
+
+        [Fact]
+        public async Task Stage2Approved_Forbidden_ForManager()
+        {
+            LoginAsManager();
+            var response = await client.GetAsync("/api/evaluation/stage2/approved");
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
     }
 }

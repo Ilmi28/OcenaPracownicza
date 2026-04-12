@@ -14,6 +14,12 @@ export const evaluationService = {
         );
         return res.data.data;
     },
+    getApproved: async () => {
+        const res = await axiosClient.get<ApiResponse<Stage2ReviewItemView[]>>(
+            "/evaluation/stage2/approved",
+        );
+        return res.data.data;
+    },
     getArchived: async () => {
         const res = await axiosClient.get<ApiResponse<Stage2ReviewItemView[]>>(
             "/evaluation/stage2/archived",

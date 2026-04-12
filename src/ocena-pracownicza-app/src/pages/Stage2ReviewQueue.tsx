@@ -16,6 +16,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Stage2ReviewItemView } from "../utils/types";
 import { evaluationService } from "../services/evaluationService";
+import { useAuth } from "../hooks/AuthProvider";
 
 const STATUS_LABELS: Record<number, string> = {
     0: "Szkic",
@@ -28,8 +29,9 @@ const STATUS_LABELS: Record<number, string> = {
 
 export default function Stage2ReviewQueue() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [data, setData] = useState<Stage2ReviewItemView[]>([]);
-    const [showArchived, setShowArchived] = useState(false);
+    const [viewMode, setViewMode] = useState<"pending" | "approved" | "archived">("pending");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -37,9 +39,12 @@ export default function Stage2ReviewQueue() {
         setLoading(true);
         setError(null);
         try {
-            const response = showArchived
-                ? await evaluationService.getArchived()
-                : await evaluationService.getPending();
+            const response =
+                viewMode === "approved"
+                    ? await evaluationService.getApproved()
+                    : viewMode === "archived"
+                      ? await evaluationService.getArchived()
+                      : await evaluationService.getPending();
             setData(response);
         } catch (err: any) {
             const msg =
@@ -50,7 +55,7 @@ export default function Stage2ReviewQueue() {
         } finally {
             setLoading(false);
         }
-    }, [showArchived]);
+    }, [viewMode]);
 
     useEffect(() => {
         load();
@@ -67,12 +72,18 @@ export default function Stage2ReviewQueue() {
     return (
         <Box>
             <Typography variant="h5" fontWeight={600} mb={1}>
-                {showArchived ? "Archiwum ocen" : "Kolejka etapu 2"}
+                {viewMode === "approved"
+                    ? "Zatwierdzone oceny"
+                    : viewMode === "archived"
+                      ? "Archiwum ocen"
+                      : "Kolejka etapu 2"}
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={3}>
-                {showArchived
-                    ? "Zarchiwizowane oceny dostępne do podglądu."
-                    : "Weryfikacja oceny i osiągnięć przez Manager/Admin."}
+                {viewMode === "approved"
+                    ? "Zatwierdzone oceny pracowników dostępne dla administratora."
+                    : viewMode === "archived"
+                      ? "Zarchiwizowane oceny dostępne do podglądu."
+                      : "Weryfikacja oceny i osiągnięć przez Manager/Admin."}
             </Typography>
             {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
@@ -82,10 +93,24 @@ export default function Stage2ReviewQueue() {
             <Paper>
                 <Box display="flex" justifyContent="flex-end" gap={1} p={2}>
                     <Button
-                        variant={showArchived ? "contained" : "outlined"}
-                        onClick={() => setShowArchived((prev) => !prev)}
+                        variant={viewMode === "pending" ? "contained" : "outlined"}
+                        onClick={() => setViewMode("pending")}
                     >
-                        {showArchived ? "Pokaż kolejkę" : "Pokaż archiwum"}
+                        Kolejka
+                    </Button>
+                    {user?.role === "Admin" && (
+                        <Button
+                            variant={viewMode === "approved" ? "contained" : "outlined"}
+                            onClick={() => setViewMode("approved")}
+                        >
+                            Zatwierdzone
+                        </Button>
+                    )}
+                    <Button
+                        variant={viewMode === "archived" ? "contained" : "outlined"}
+                        onClick={() => setViewMode("archived")}
+                    >
+                        Archiwum
                     </Button>
                     <Button variant="outlined" onClick={load}>
                         Odśwież
@@ -148,9 +173,11 @@ export default function Stage2ReviewQueue() {
                         {data.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={7} align="center">
-                                    {showArchived
-                                        ? "Brak zarchiwizowanych ocen."
-                                        : "Brak rekordów oczekujących na etap 2."}
+                                    {viewMode === "approved"
+                                        ? "Brak zatwierdzonych ocen."
+                                        : viewMode === "archived"
+                                          ? "Brak zarchiwizowanych ocen."
+                                          : "Brak rekordów oczekujących na etap 2."}
                                 </TableCell>
                             </TableRow>
                         )}
