@@ -8,7 +8,6 @@ import {
     Paper,
     Grid,
     Button,
-    Chip,
 } from "@mui/material";
 import axiosClient from "../services/axiosClient";
 import { useAuth } from "../hooks/AuthProvider";
@@ -105,9 +104,6 @@ export default function EmployeeDashboard() {
                 firstName: newEmployee.firstName,
                 lastName: newEmployee.lastName,
                 position: newEmployee.position,
-                period: newEmployee.period,
-                finalScore: newEmployee.finalScore,
-                achievementsSummary: newEmployee.achievementsSummary,
             };
             await axiosClient.put(`/employee/${employee.id}`, payload);
 
@@ -130,13 +126,6 @@ export default function EmployeeDashboard() {
     };
 
     const currentEmployee = editMode && newEmployee ? newEmployee : employee;
-    const statusLabel: Record<number, string> = {
-        0: "Szkic",
-        1: "Oczekuje na etap 2",
-        2: "Zatwierdzona",
-        3: "Odrzucona",
-    };
-    const isApproved = currentEmployee.stage2Status === 2;
 
     return (
         <Box>
@@ -165,26 +154,10 @@ export default function EmployeeDashboard() {
                     <Typography variant="subtitle1" fontWeight="600">
                         Dane osobowe
                     </Typography>
-                    <Chip
-                        size="small"
-                        variant="outlined"
-                        color={
-                            currentEmployee.stage2Status === 2
-                                ? "success"
-                                : currentEmployee.stage2Status === 3
-                                  ? "error"
-                                  : "warning"
-                        }
-                        label={
-                            statusLabel[currentEmployee.stage2Status ?? 0] ??
-                            "Nieznany status"
-                        }
-                    />
                     {!editMode && (
                         <Button
                             variant="outlined"
                             size="small"
-                            disabled={isApproved}
                             onClick={() => {
                                 setNewEmployee(employee);
                                 setEditMode(true);
@@ -273,63 +246,6 @@ export default function EmployeeDashboard() {
                                 setNewEmployee((prev) =>
                                     prev
                                         ? { ...prev, position: e.target.value }
-                                        : prev,
-                                )
-                            }
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                            fullWidth
-                            label="Okres oceny"
-                            value={currentEmployee.period}
-                            disabled={!editMode}
-                            size="small"
-                            onChange={(e) =>
-                                setNewEmployee((prev) =>
-                                    prev
-                                        ? { ...prev, period: e.target.value }
-                                        : prev,
-                                )
-                            }
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                            fullWidth
-                            label="Wynik końcowy"
-                            value={currentEmployee.finalScore}
-                            disabled={!editMode}
-                            size="small"
-                            onChange={(e) =>
-                                setNewEmployee((prev) =>
-                                    prev
-                                        ? {
-                                              ...prev,
-                                              finalScore: e.target.value,
-                                          }
-                                        : prev,
-                                )
-                            }
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12 }}>
-                        <TextField
-                            fullWidth
-                            label="Podsumowanie osiągnięć"
-                            value={currentEmployee.achievementsSummary}
-                            disabled={!editMode}
-                            size="small"
-                            multiline
-                            rows={4}
-                            onChange={(e) =>
-                                setNewEmployee((prev) =>
-                                    prev
-                                        ? {
-                                              ...prev,
-                                              achievementsSummary:
-                                                  e.target.value,
-                                          }
                                         : prev,
                                 )
                             }

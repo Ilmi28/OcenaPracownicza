@@ -9,6 +9,9 @@ export type AchievementModel = {
     date: string;
     employeeId: string;
     category: number;
+    period: string;
+    finalScore: string;
+    achievementsSummary: string;
 };
 
 interface EmployeeOption {
@@ -51,6 +54,9 @@ const AddAchievementForm: React.FC<Props> = ({
         date: new Date().toISOString(),
         employeeId: initialEmployeeId,
         category: 1,
+        period: "",
+        finalScore: "",
+        achievementsSummary: "",
     });
 
     useEffect(() => {
@@ -212,6 +218,42 @@ const AddAchievementForm: React.FC<Props> = ({
                         </option>
                     ))}
                 </select>
+            </div>
+
+            <div className="form-group">
+                <label htmlFor="period">Okres oceny</label>
+                <input
+                    id="period"
+                    name="period"
+                    type="text"
+                    value={form.period}
+                    onChange={handleChange}
+                    required
+                />
+            </div>
+
+            <div className="form-group">
+                <label htmlFor="finalScore">Wynik końcowy</label>
+                <input
+                    id="finalScore"
+                    name="finalScore"
+                    type="text"
+                    value={form.finalScore}
+                    onChange={handleChange}
+                    required
+                />
+            </div>
+
+            <div className="form-group">
+                <label htmlFor="achievementsSummary">Podsumowanie osiągnięć</label>
+                <textarea
+                    id="achievementsSummary"
+                    name="achievementsSummary"
+                    value={form.achievementsSummary}
+                    onChange={handleChange}
+                    required
+                    rows={3}
+                />
             </div>
 
             <button

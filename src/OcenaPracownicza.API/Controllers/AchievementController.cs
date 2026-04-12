@@ -29,19 +29,13 @@ public class AchievementController(ApplicationDbContext context) : ControllerBas
             Date = request.Date,
             EmployeeId = request.EmployeeId,
             Category = request.Category,
+            Period = request.Period,
+            FinalScore = request.FinalScore,
+            AchievementsSummary = request.AchievementsSummary,
             Stage2Status = EvaluationStageStatus.PendingStage2
 
         };
         await context.Achievements.AddAsync(achievement);
-
-        var employee = await context.Employees.FindAsync(request.EmployeeId);
-        if (employee != null)
-        {
-            employee.Stage2Status = EvaluationStageStatus.PendingStage2;
-            employee.Stage2Comment = null;
-            employee.Stage2ReviewedByUserId = null;
-            employee.Stage2ReviewedAtUtc = null;
-        }
 
         await context.SaveChangesAsync();
         return Ok(achievement);

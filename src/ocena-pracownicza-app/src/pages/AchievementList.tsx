@@ -8,6 +8,11 @@ export interface AchievementListItem {
     description: string;
     date: string;
     category: number;
+    period: string;
+    finalScore: string;
+    achievementsSummary: string;
+    stage2Status: number;
+    stage2Comment?: string | null;
     employeeId: string;
     createdAt: string;
 }
@@ -72,8 +77,11 @@ const AchievementList: React.FC = () => {
                         <tr>
                             <th>Data</th>
                             <th>Kategoria</th>
+                            <th>Okres</th>
+                            <th>Wynik</th>
                             <th>Nazwa</th>
                             <th>Opis</th>
+                            <th>Podsumowanie</th>
                             <th>Pracownik</th>
                             <th style={{ textAlign: "right" }}>Akcje</th>
                         </tr>
@@ -100,12 +108,20 @@ const AchievementList: React.FC = () => {
                                             {kat.nazwa}
                                         </span>
                                     </td>
+                                    <td>{item.period}</td>
+                                    <td>{item.finalScore}</td>
                                     <td className="col-name">{item.name}</td>
                                     <td
                                         className="col-desc"
                                         title={item.description}
                                     >
                                         {item.description}
+                                    </td>
+                                    <td
+                                        className="col-desc"
+                                        title={item.achievementsSummary}
+                                    >
+                                        {item.achievementsSummary}
                                     </td>
                                     <td className="col-emp">
                                         <code>

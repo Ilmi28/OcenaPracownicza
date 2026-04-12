@@ -32,13 +32,7 @@ namespace Ocenapracownicza.API.Services
                     {
                         column.Item().Text($"Imię i nazwisko: {employee.FirstName} {employee.LastName}");
                         column.Item().Text($"Stanowisko: {employee.Position}");
-                        column.Item().Text($"Okres oceny: {employee.Period}");
-                        column.Item().Text($"Ocena końcowa: {employee.FinalScore}");
-
-                        column.Item().LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
-
-                        column.Item().Text("Podsumowanie osiągnięć:");
-                        column.Item().Text(employee.AchievementsSummary);
+                        column.Item().Text("Oceny i podsumowania są prowadzone per osiągnięcie w tabeli osiągnięć.");
                     });
 
                     page.Footer()

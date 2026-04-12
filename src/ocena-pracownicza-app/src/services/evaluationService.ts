@@ -20,35 +20,35 @@ export const evaluationService = {
         );
         return res.data.data;
     },
-    getDetails: async (employeeId: string) => {
+    getDetails: async (achievementId: string) => {
         const res = await axiosClient.get<ApiResponse<Stage2ReviewDetailsView>>(
-            `/evaluation/stage2/${employeeId}`,
+            `/evaluation/stage2/${achievementId}`,
         );
         return res.data.data;
     },
-    approve: async (employeeId: string, comment?: string) => {
+    approve: async (achievementId: string, comment?: string) => {
         const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
-            `/evaluation/stage2/${employeeId}/approve`,
+            `/evaluation/stage2/${achievementId}/approve`,
             { comment: comment ?? null },
         );
         return res.data.data;
     },
-    reject: async (employeeId: string, comment: string) => {
+    reject: async (achievementId: string, comment: string) => {
         const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
-            `/evaluation/stage2/${employeeId}/reject`,
+            `/evaluation/stage2/${achievementId}/reject`,
             { comment },
         );
         return res.data.data;
     },
-    close: async (employeeId: string) => {
+    close: async (achievementId: string) => {
         const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
-            `/evaluation/stage2/${employeeId}/close`,
+            `/evaluation/stage2/${achievementId}/close`,
         );
         return res.data.data;
     },
-    archive: async (employeeId: string) => {
+    archive: async (achievementId: string) => {
         const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
-            `/evaluation/stage2/${employeeId}/archive`,
+            `/evaluation/stage2/${achievementId}/archive`,
         );
         return res.data.data;
     },

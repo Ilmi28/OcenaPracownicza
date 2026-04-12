@@ -17,6 +17,7 @@ public class EmployeeServiceTests
     private readonly Mock<IUserManager> _userManagerMock;
     private readonly Mock<IEmployeeRepository> _employeeRepoMock;
     private readonly Mock<IUserService> _userServiceMock;
+    private readonly Mock<IAchievementRepository> _achievementRepoMock;
     private readonly EmployeeService _service;
 
     public EmployeeServiceTests()
@@ -24,7 +25,11 @@ public class EmployeeServiceTests
         _userManagerMock = new Mock<IUserManager>();
         _employeeRepoMock = new Mock<IEmployeeRepository>();
         _userServiceMock = new Mock<IUserService>();
-        _service = new EmployeeService(_userManagerMock.Object, _employeeRepoMock.Object, _userServiceMock.Object);
+        _achievementRepoMock = new Mock<IAchievementRepository>();
+        _service = new EmployeeService(_userManagerMock.Object, _employeeRepoMock.Object, _achievementRepoMock.Object, _userServiceMock.Object);
+        _achievementRepoMock
+            .Setup(r => r.GetByEmployeeIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new List<Achievement>());
     }
 
     [Fact]
@@ -37,9 +42,6 @@ public class EmployeeServiceTests
             FirstName = "Jan",
             LastName = "Kowalski",
             Position = "Developer",
-            Period = "Q1 2024",
-            FinalScore = "85.0",
-            AchievementsSummary = "Good performance",
             IdentityUserId = "user123"
         };
 
@@ -66,9 +68,6 @@ public class EmployeeServiceTests
             FirstName = "Jan",
             LastName = "Kowalski",
             Position = "Developer",
-            Period = "Q1 2024",
-            FinalScore = "85.0",
-            AchievementsSummary = "Good performance",
             IdentityUserId = "user123"
         };
 
@@ -95,9 +94,6 @@ public class EmployeeServiceTests
             FirstName = "Jan",
             LastName = "Kowalski",
             Position = "Developer",
-            Period = "Q1 2024",
-            FinalScore = "85.0",
-            AchievementsSummary = "Good performance",
             IdentityUserId = "user123"
         };
 
@@ -124,9 +120,6 @@ public class EmployeeServiceTests
             LastName = "Smith",
             Position = "Teacher",
             Id = empId,
-            Period = "Q1 2024",
-            FinalScore = "80.0",
-            AchievementsSummary = "Average",
             IdentityUserId = "user123"
         };
 
@@ -153,8 +146,8 @@ public class EmployeeServiceTests
     {
         var employees = new List<Employee>
         {
-            new() { IdentityUserId = "user123", Id = Guid.NewGuid(), FirstName = "Jan", LastName = "Kowalski", Position = "Developer", Period = "Q1", FinalScore = "85", AchievementsSummary = "Good" },
-            new() { IdentityUserId = "user1234", Id = Guid.NewGuid(), FirstName = "Anna", LastName = "Nowak", Position = "Manager", Period = "Q1", FinalScore = "90", AchievementsSummary = "Excellent" }
+            new() { IdentityUserId = "user123", Id = Guid.NewGuid(), FirstName = "Jan", LastName = "Kowalski", Position = "Developer" },
+            new() { IdentityUserId = "user1234", Id = Guid.NewGuid(), FirstName = "Anna", LastName = "Nowak", Position = "Manager" }
         };
 
         _employeeRepoMock.Setup(r => r.GetAll()).ReturnsAsync(employees);
@@ -176,7 +169,7 @@ public class EmployeeServiceTests
     {
         var employees = new List<Employee>
         {
-            new() { IdentityUserId = "user123", Position = "Teacher", Id = Guid.NewGuid(), FirstName = "Piotr", LastName = "Zając", Period = "Q2", FinalScore = "87", AchievementsSummary = "Very good" }
+            new() { IdentityUserId = "user123", Position = "Teacher", Id = Guid.NewGuid(), FirstName = "Piotr", LastName = "Zając" }
         };
 
         _employeeRepoMock.Setup(r => r.GetAll()).ReturnsAsync(employees);
@@ -218,9 +211,6 @@ public class EmployeeServiceTests
             FirstName = "Jan",
             LastName = "Kowalski",
             Position = "Developer",
-            Period = "Q1 2024",
-            FinalScore = "85.0",
-            AchievementsSummary = "Good performance",
             IdentityUserId = "newUserId"
         };
 
@@ -257,9 +247,6 @@ public class EmployeeServiceTests
             Id = Guid.NewGuid(),
             FirstName = "Anna",
             LastName = "Nowak",
-            Period = "Q2 2024",
-            FinalScore = "88.0",
-            AchievementsSummary = "Great work",
             Position = ""
         };
 
@@ -325,9 +312,6 @@ public class EmployeeServiceTests
             FirstName = "Piotr",
             LastName = "Zając",
             Position = "Senior Developer",
-            Period = "Q1 2024",
-            FinalScore = "95.5",
-            AchievementsSummary = "Excellent performance"
         };
 
         _userManagerMock.Setup(u => u.IsCurrentUserAdmin()).Returns(true);
@@ -343,9 +327,6 @@ public class EmployeeServiceTests
         Assert.Equal("Piotr", result.Data.FirstName);
         Assert.Equal("Zając", result.Data.LastName);
         Assert.Equal("Senior Developer", result.Data.Position);
-        Assert.Equal("Q1 2024", result.Data.Period);
-        Assert.Equal("95.5", result.Data.FinalScore);
-        Assert.Equal("Excellent performance", result.Data.AchievementsSummary);
     }
 
     [Fact]
@@ -355,13 +336,10 @@ public class EmployeeServiceTests
         var existing = new Employee
         {
             Position = "Teacher",
-            Period = "Q2 2024",
-            FinalScore = "88.0",
             Id = empId,
             FirstName = "Old",
             LastName = "Name",
             IdentityUserId = "user123",
-            AchievementsSummary = "Excellent performance"
         };
         var identityUser = new IdentityUser { Id = "user123", UserName = "oldname", Email = "old@mail.com" };
         var request = new UpdateEmployeeRequest
@@ -371,9 +349,6 @@ public class EmployeeServiceTests
             FirstName = "New",
             LastName = "Name",
             Position = existing.Position,
-            Period = existing.Period,
-            FinalScore = existing.FinalScore,
-            AchievementsSummary = existing.AchievementsSummary
         };
 
         _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
@@ -400,9 +375,6 @@ public class EmployeeServiceTests
             LastName = "Smith",
             Position = "Teacher",
             Id = empId,
-            Period = "Q1",
-            FinalScore = "75.0",
-            AchievementsSummary = "Summary",
             IdentityUserId = "user123"
         };
         var identityUser = new IdentityUser { Id = "user123" };
@@ -413,9 +385,6 @@ public class EmployeeServiceTests
             UserName = "u",
             Email = "e",
             Position = existing.Position,
-            Period = existing.Period,
-            FinalScore = existing.FinalScore,
-            AchievementsSummary = existing.AchievementsSummary
         };
 
         _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
@@ -441,9 +410,6 @@ public class EmployeeServiceTests
             LastName = "Smith",
             Position = "Teacher",
             Id = empId,
-            Period = "Q3",
-            FinalScore = "82.0",
-            AchievementsSummary = "Good",
             IdentityUserId = "user123"
         };
         var identityUser = new IdentityUser { Id = "user123" };
@@ -454,9 +420,6 @@ public class EmployeeServiceTests
             UserName = "u",
             Email = "e",
             Position = existing.Position,
-            Period = existing.Period,
-            FinalScore = existing.FinalScore,
-            AchievementsSummary = existing.AchievementsSummary
         };
 
         _employeeRepoMock.Setup(r => r.GetById(empId)).ReturnsAsync(existing);
@@ -492,9 +455,6 @@ public class EmployeeServiceTests
             LastName = "Smith",
             Position = "Teacher",
             Id = empId,
-            Period = "Q1",
-            FinalScore = "70.0",
-            AchievementsSummary = "Test",
             IdentityUserId = "user123"
         };
 
@@ -516,9 +476,6 @@ public class EmployeeServiceTests
             LastName = "Smith",
             Position = "Teacher",
             Id = empId,
-            Period = "Q2",
-            FinalScore = "78.0",
-            AchievementsSummary = "Average",
             IdentityUserId = "user123"
         };
         var identityUser = new IdentityUser { Id = "user123" };
@@ -544,9 +501,6 @@ public class EmployeeServiceTests
             Position = "Teacher",
             Id = empId,
             FirstName = "Jan",
-            Period = "Q1",
-            FinalScore = "85.0",
-            AchievementsSummary = "Good",
             IdentityUserId = "user123"
         };
 
@@ -574,9 +528,6 @@ public class EmployeeServiceTests
             Position = "Teacher",
             Id = empId,
             FirstName = "Anna",
-            Period = "Q2",
-            FinalScore = "90.0",
-            AchievementsSummary = "Excellent",
             IdentityUserId = "user456"
         };
 
@@ -603,9 +554,6 @@ public class EmployeeServiceTests
             Position = "Teacher",
             Id = empId,
             FirstName = "Anna",
-            Period = "Q2",
-            FinalScore = "90.0",
-            AchievementsSummary = "Excellent",
             IdentityUserId = "user456"
         };
 
@@ -641,9 +589,6 @@ public class EmployeeServiceTests
             LastName = "Smith",
             Position = "Teacher",
             Id = empId,
-            Period = "Q1",
-            FinalScore = "80.0",
-            AchievementsSummary = "Average",
             IdentityUserId = "user123"
         };
 
@@ -666,9 +611,6 @@ public class EmployeeServiceTests
             FirstName = "Jan",
             LastName = "Kowalski",
             Position = "Developer",
-            Period = "Q1 2024",
-            FinalScore = "85.0",
-            AchievementsSummary = "Good performance",
             IdentityUserId = userId
         };
 
@@ -689,9 +631,6 @@ public class EmployeeServiceTests
         Assert.Equal("Jan", result.Data.FirstName);
         Assert.Equal("Kowalski", result.Data.LastName);
         Assert.Equal("Developer", result.Data.Position);
-        Assert.Equal("Q1 2024", result.Data.Period);
-        Assert.Equal("85.0", result.Data.FinalScore);
-        Assert.Equal("Good performance", result.Data.AchievementsSummary);
         Assert.Equal("jan", result.Data.UserName);
         Assert.Equal("jan@mail.com", result.Data.Email);
     }

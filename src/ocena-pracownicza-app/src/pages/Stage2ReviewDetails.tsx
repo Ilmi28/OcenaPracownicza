@@ -30,7 +30,7 @@ const STATUS_LABELS: Record<number, string> = {
 };
 
 export default function Stage2ReviewDetails() {
-    const { employeeId } = useParams<{ employeeId: string }>();
+    const { employeeId: achievementId } = useParams<{ employeeId: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
     const [data, setData] = useState<Stage2ReviewDetailsView | null>(null);
@@ -40,11 +40,11 @@ export default function Stage2ReviewDetails() {
     const [error, setError] = useState<string | null>(null);
 
     const load = useCallback(async () => {
-        if (!employeeId) return;
+        if (!achievementId) return;
         setLoading(true);
         setError(null);
         try {
-            const response = await evaluationService.getDetails(employeeId);
+            const response = await evaluationService.getDetails(achievementId);
             setData(response);
             setComment(response.stage2Comment ?? "");
         } catch (err: any) {
@@ -56,18 +56,18 @@ export default function Stage2ReviewDetails() {
         } finally {
             setLoading(false);
         }
-    }, [employeeId]);
+    }, [achievementId]);
 
     useEffect(() => {
         load();
     }, [load]);
 
     const onApprove = async () => {
-        if (!employeeId) return;
+        if (!achievementId) return;
         setSaving(true);
         setError(null);
         try {
-            const updated = await evaluationService.approve(employeeId, comment);
+            const updated = await evaluationService.approve(achievementId, comment);
             setData(updated);
         } catch (err: any) {
             setError(err?.response?.data?.message ?? "Nie udało się zatwierdzić.");
@@ -77,11 +77,11 @@ export default function Stage2ReviewDetails() {
     };
 
     const onReject = async () => {
-        if (!employeeId) return;
+        if (!achievementId) return;
         setSaving(true);
         setError(null);
         try {
-            const updated = await evaluationService.reject(employeeId, comment);
+            const updated = await evaluationService.reject(achievementId, comment);
             setData(updated);
         } catch (err: any) {
             setError(err?.response?.data?.message ?? "Nie udało się odrzucić.");
@@ -91,11 +91,11 @@ export default function Stage2ReviewDetails() {
     };
 
     const onClose = async () => {
-        if (!employeeId) return;
+        if (!achievementId) return;
         setSaving(true);
         setError(null);
         try {
-            const updated = await evaluationService.close(employeeId);
+            const updated = await evaluationService.close(achievementId);
             setData(updated);
         } catch (err: any) {
             setError(err?.response?.data?.message ?? "Nie udało się zamknąć oceny.");
@@ -105,11 +105,11 @@ export default function Stage2ReviewDetails() {
     };
 
     const onArchive = async () => {
-        if (!employeeId) return;
+        if (!achievementId) return;
         setSaving(true);
         setError(null);
         try {
-            const updated = await evaluationService.archive(employeeId);
+            const updated = await evaluationService.archive(achievementId);
             setData(updated);
         } catch (err: any) {
             setError(err?.response?.data?.message ?? "Nie udało się zarchiwizować oceny.");
@@ -160,6 +160,12 @@ export default function Stage2ReviewDetails() {
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Typography variant="body2" color="text.secondary">
+                            Osiągnięcie
+                        </Typography>
+                        <Typography>{data.achievementName}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <Typography variant="body2" color="text.secondary">
                             Status
                         </Typography>
                         <Chip
@@ -200,7 +206,10 @@ export default function Stage2ReviewDetails() {
                             <TableCell>Data</TableCell>
                             <TableCell>Nazwa</TableCell>
                             <TableCell>Opis</TableCell>
+                            <TableCell>Okres</TableCell>
+                            <TableCell>Wynik</TableCell>
                             <TableCell>Status</TableCell>
+                            <TableCell>Komentarz</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -209,7 +218,10 @@ export default function Stage2ReviewDetails() {
                                 <TableCell>{new Date(item.date).toLocaleDateString("pl-PL")}</TableCell>
                                 <TableCell>{item.name}</TableCell>
                                 <TableCell>{item.description}</TableCell>
+                                <TableCell>{item.period}</TableCell>
+                                <TableCell>{item.finalScore}</TableCell>
                                 <TableCell>{STATUS_LABELS[item.stage2Status] ?? "Nieznany"}</TableCell>
+                                <TableCell>{item.stage2Comment ?? "-"}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

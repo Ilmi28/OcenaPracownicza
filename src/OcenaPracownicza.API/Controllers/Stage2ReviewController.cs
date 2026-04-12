@@ -24,38 +24,38 @@ public class Stage2ReviewController(IStage2ReviewService stage2ReviewService) : 
         return Ok(response);
     }
 
-    [HttpGet("{employeeId:guid}")]
-    public async Task<IActionResult> GetDetails(Guid employeeId)
+    [HttpGet("{achievementId:guid}")]
+    public async Task<IActionResult> GetDetails(Guid achievementId)
     {
-        var response = await stage2ReviewService.GetDetailsAsync(employeeId);
+        var response = await stage2ReviewService.GetDetailsAsync(achievementId);
         return Ok(response);
     }
 
-    [HttpPost("{employeeId:guid}/approve")]
-    public async Task<IActionResult> Approve(Guid employeeId, [FromBody] Stage2DecisionRequest request)
+    [HttpPost("{achievementId:guid}/approve")]
+    public async Task<IActionResult> Approve(Guid achievementId, [FromBody] Stage2DecisionRequest request)
     {
-        var response = await stage2ReviewService.ApproveAsync(employeeId, request.Comment);
+        var response = await stage2ReviewService.ApproveAsync(achievementId, request.Comment);
         return Ok(response);
     }
 
-    [HttpPost("{employeeId:guid}/reject")]
-    public async Task<IActionResult> Reject(Guid employeeId, [FromBody] Stage2DecisionRequest request)
+    [HttpPost("{achievementId:guid}/reject")]
+    public async Task<IActionResult> Reject(Guid achievementId, [FromBody] Stage2DecisionRequest request)
     {
-        var response = await stage2ReviewService.RejectAsync(employeeId, request.Comment);
+        var response = await stage2ReviewService.RejectAsync(achievementId, request.Comment);
         return Ok(response);
     }
 
-    [HttpPost("{employeeId:guid}/close")]
-    public async Task<IActionResult> Close(Guid employeeId)
+    [HttpPost("{achievementId:guid}/close")]
+    public async Task<IActionResult> Close(Guid achievementId)
     {
-        var response = await stage2ReviewService.CloseAsync(employeeId);
+        var response = await stage2ReviewService.CloseAsync(achievementId);
         return Ok(response);
     }
 
-    [HttpPost("{employeeId:guid}/archive")]
-    public async Task<IActionResult> Archive(Guid employeeId)
+    [HttpPost("{achievementId:guid}/archive")]
+    public async Task<IActionResult> Archive(Guid achievementId)
     {
-        var response = await stage2ReviewService.ArchiveAsync(employeeId);
+        var response = await stage2ReviewService.ArchiveAsync(achievementId);
         return Ok(response);
     }
 }

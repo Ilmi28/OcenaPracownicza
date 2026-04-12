@@ -13,24 +13,18 @@ export interface EmployeeView {
     firstName: string;
     lastName: string;
     position: string;
-    period: string;
-    finalScore: string;
-    achievementsSummary: string;
-    stage2Status?: number;
-    stage2Comment?: string | null;
-    stage2ReviewedByUserId?: string | null;
-    stage2ReviewedAtUtc?: string | null;
     userId: string;
 }
 
 export interface Stage2ReviewItemView {
+    achievementId: string;
     employeeId: string;
     fullName: string;
     position: string;
+    achievementName: string;
     period: string;
     finalScore: string;
     stage2Status: number;
-    achievementsCount: number;
 }
 
 export interface AchievementStage2View {
@@ -39,14 +33,21 @@ export interface AchievementStage2View {
     description: string;
     date: string;
     category: number;
+    period: string;
+    finalScore: string;
+    achievementsSummary: string;
     stage2Status: number;
     stage2Comment?: string | null;
+    stage2ReviewedByUserId?: string | null;
+    stage2ReviewedAtUtc?: string | null;
 }
 
 export interface Stage2ReviewDetailsView {
+    achievementId: string;
     employeeId: string;
     fullName: string;
     position: string;
+    achievementName: string;
     period: string;
     finalScore: string;
     achievementsSummary: string;
