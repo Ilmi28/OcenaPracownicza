@@ -13,6 +13,8 @@ import { AuthProvider } from "./hooks/AuthProvider";
 import Register from "./pages/Register";
 import Stage2ReviewQueue from "./pages/Stage2ReviewQueue";
 import Stage2ReviewDetails from "./pages/Stage2ReviewDetails";
+import AddAchievementForm from "./pages/AddAchievementForm";
+import AchievementList from "./pages/AchievementList";
 
 function App() {
     return (
@@ -47,6 +49,14 @@ function App() {
                             <Route
                                 path="/evaluation/stage2/:employeeId"
                                 element={<Stage2ReviewDetails />}
+                            />
+                            <Route
+                                path="/achievement/add"
+                                element={<AddAchievementForm />}
+                            />
+                            <Route
+                                path="/achievements"
+                                element={<AchievementList />}
                             />
                         </Route>
                     </Routes>
