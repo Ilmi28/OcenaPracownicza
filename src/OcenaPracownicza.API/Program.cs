@@ -159,11 +159,7 @@ public class Program
             FirstName = "Jan",
             LastName = "Testowy",
             Position = "Programista",
-            Period = "2026-Q1",
-            FinalScore = "8.5",
-            AchievementsSummary = "Dowiezione kluczowe funkcje backendu.",
-            IdentityUserId = employeeUser1.Id,
-            Stage2Status = EvaluationStageStatus.PendingStage2
+            IdentityUserId = employeeUser1.Id
         };
 
         var employee2 = new Employee
@@ -171,14 +167,7 @@ public class Program
             FirstName = "Anna",
             LastName = "Przykładowa",
             Position = "Tester",
-            Period = "2026-Q1",
-            FinalScore = "7.9",
-            AchievementsSummary = "Zwiększenie pokrycia testami regresji.",
-            IdentityUserId = employeeUser2.Id,
-            Stage2Status = EvaluationStageStatus.Stage2Approved,
-            Stage2ReviewedByUserId = managerUser.Id,
-            Stage2ReviewedAtUtc = DateTime.UtcNow.AddDays(-2),
-            Stage2Comment = "Ocena zatwierdzona przez komisję."
+            IdentityUserId = employeeUser2.Id
         };
 
         var existingEmployee1 = await db.Employees.FirstOrDefaultAsync(e => e.IdentityUserId == employeeUser1.Id);
@@ -191,13 +180,6 @@ public class Program
             existingEmployee1.FirstName = employee1.FirstName;
             existingEmployee1.LastName = employee1.LastName;
             existingEmployee1.Position = employee1.Position;
-            existingEmployee1.Period = employee1.Period;
-            existingEmployee1.FinalScore = employee1.FinalScore;
-            existingEmployee1.AchievementsSummary = employee1.AchievementsSummary;
-            existingEmployee1.Stage2Status = EvaluationStageStatus.PendingStage2;
-            existingEmployee1.Stage2Comment = null;
-            existingEmployee1.Stage2ReviewedByUserId = null;
-            existingEmployee1.Stage2ReviewedAtUtc = null;
         }
 
         var existingEmployee2 = await db.Employees.FirstOrDefaultAsync(e => e.IdentityUserId == employeeUser2.Id);
@@ -210,13 +192,6 @@ public class Program
             existingEmployee2.FirstName = employee2.FirstName;
             existingEmployee2.LastName = employee2.LastName;
             existingEmployee2.Position = employee2.Position;
-            existingEmployee2.Period = employee2.Period;
-            existingEmployee2.FinalScore = employee2.FinalScore;
-            existingEmployee2.AchievementsSummary = employee2.AchievementsSummary;
-            existingEmployee2.Stage2Status = employee2.Stage2Status;
-            existingEmployee2.Stage2Comment = employee2.Stage2Comment;
-            existingEmployee2.Stage2ReviewedByUserId = employee2.Stage2ReviewedByUserId;
-            existingEmployee2.Stage2ReviewedAtUtc = employee2.Stage2ReviewedAtUtc;
         }
 
         await db.SaveChangesAsync();
@@ -233,6 +208,9 @@ public class Program
                 Date = DateTime.UtcNow.AddDays(-20),
                 Category = AchievementCategory.ProcessImprovement,
                 EmployeeId = employee1Id,
+                Period = "2026-Q1",
+                FinalScore = "8.5",
+                AchievementsSummary = "Dowiezione kluczowe funkcje backendu.",
                 Stage2Status = EvaluationStageStatus.PendingStage2
             });
         }
@@ -246,8 +224,13 @@ public class Program
                 Date = DateTime.UtcNow.AddDays(-14),
                 Category = AchievementCategory.TechnicalGrowth,
                 EmployeeId = employee2Id,
+                Period = "2026-Q1",
+                FinalScore = "7.9",
+                AchievementsSummary = "Zwiększenie pokrycia testami regresji.",
                 Stage2Status = EvaluationStageStatus.Stage2Approved,
-                Stage2Comment = "Zatwierdzone wraz z oceną."
+                Stage2Comment = "Zatwierdzone wraz z oceną.",
+                Stage2ReviewedByUserId = managerUser.Id,
+                Stage2ReviewedAtUtc = DateTime.UtcNow.AddDays(-2)
             });
         }
 

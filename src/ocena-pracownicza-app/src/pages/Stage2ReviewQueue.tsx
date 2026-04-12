@@ -96,18 +96,19 @@ export default function Stage2ReviewQueue() {
                         <TableRow>
                             <TableCell>Pracownik</TableCell>
                             <TableCell>Stanowisko</TableCell>
+                            <TableCell>Osiągnięcie</TableCell>
                             <TableCell>Okres</TableCell>
                             <TableCell>Wynik</TableCell>
                             <TableCell>Status</TableCell>
-                            <TableCell>Osiągnięcia</TableCell>
                             <TableCell align="right">Akcje</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {data.map((item) => (
-                            <TableRow key={item.employeeId}>
+                            <TableRow key={item.achievementId}>
                                 <TableCell>{item.fullName}</TableCell>
                                 <TableCell>{item.position}</TableCell>
+                                <TableCell>{item.achievementName}</TableCell>
                                 <TableCell>{item.period}</TableCell>
                                 <TableCell>{item.finalScore}</TableCell>
                                 <TableCell>
@@ -129,14 +130,13 @@ export default function Stage2ReviewQueue() {
                                         variant="outlined"
                                     />
                                 </TableCell>
-                                <TableCell>{item.achievementsCount}</TableCell>
                                 <TableCell align="right">
                                     <Button
                                         size="small"
                                         variant="contained"
                                         onClick={() =>
                                             navigate(
-                                                `/evaluation/stage2/${item.employeeId}`,
+                                                `/evaluation/stage2/${item.achievementId}`,
                                             )
                                         }
                                     >

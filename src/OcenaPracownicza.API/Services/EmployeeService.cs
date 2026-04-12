@@ -15,12 +15,18 @@ public class EmployeeService : IEmployeeService
 {
     private readonly IUserManager _userManager;
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly IAchievementRepository _achievementRepository;
     private readonly IUserService _userService;
 
-    public EmployeeService(IUserManager userManager, IEmployeeRepository employeeRepository, IUserService userService)
+    public EmployeeService(
+        IUserManager userManager,
+        IEmployeeRepository employeeRepository,
+        IAchievementRepository achievementRepository,
+        IUserService userService)
     {
         _userManager = userManager;
         _employeeRepository = employeeRepository;
+        _achievementRepository = achievementRepository;
         _userService = userService;
     }
 
@@ -59,13 +65,6 @@ public class EmployeeService : IEmployeeService
                     FirstName = entity.FirstName,
                     LastName = entity.LastName,
                     Position = entity.Position,
-                    Period = entity.Period,
-                    FinalScore = entity.FinalScore,
-                    AchievementsSummary = entity.AchievementsSummary,
-                    Stage2Status = (int)entity.Stage2Status,
-                    Stage2Comment = entity.Stage2Comment,
-                    Stage2ReviewedByUserId = entity.Stage2ReviewedByUserId,
-                    Stage2ReviewedAtUtc = entity.Stage2ReviewedAtUtc,
                     UserId = entity.IdentityUserId
                 });
             }
@@ -98,10 +97,6 @@ public class EmployeeService : IEmployeeService
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Position = request.Position,
-                Period = request.Period,
-                FinalScore = request.FinalScore,
-                AchievementsSummary = request.AchievementsSummary,
-                Stage2Status = EvaluationStageStatus.Draft,
                 IdentityUserId = identityUser.Id
             };
 
@@ -126,12 +121,15 @@ public class EmployeeService : IEmployeeService
         var isAccountOwner = _userManager.IsUserAccountOwner(entity.IdentityUserId);
         if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager() && !isAccountOwner)
             throw new ForbiddenException();
-        if (!_userManager.IsCurrentUserAdmin() &&
-            !_userManager.IsCurrentUserManager() &&
-            (entity.Stage2Status == EvaluationStageStatus.Stage2Approved ||
-             entity.Stage2Status == EvaluationStageStatus.Closed ||
-             entity.Stage2Status == EvaluationStageStatus.Archived))
-            throw new ForbiddenException("Ocena została sfinalizowana i nie może być edytowana przez pracownika.");
+        if (!_userManager.IsCurrentUserAdmin() && !_userManager.IsCurrentUserManager())
+        {
+            var achievements = await _achievementRepository.GetByEmployeeIdAsync(entity.Id);
+            if (achievements.Any(a =>
+                    a.Stage2Status == EvaluationStageStatus.Stage2Approved ||
+                    a.Stage2Status == EvaluationStageStatus.Closed ||
+                    a.Stage2Status == EvaluationStageStatus.Archived))
+                throw new ForbiddenException("Ocena została sfinalizowana i nie może być edytowana przez pracownika.");
+        }
 
         user.UserName = request.UserName;
         user.Email = request.Email;
@@ -141,13 +139,6 @@ public class EmployeeService : IEmployeeService
         entity.FirstName = request.FirstName;
         entity.LastName = request.LastName;
         entity.Position = request.Position;
-        entity.Period = request.Period;
-        entity.FinalScore = request.FinalScore;
-        entity.AchievementsSummary = request.AchievementsSummary;
-        entity.Stage2Status = EvaluationStageStatus.PendingStage2;
-        entity.Stage2Comment = null;
-        entity.Stage2ReviewedByUserId = null;
-        entity.Stage2ReviewedAtUtc = null;
 
         var updated = await _employeeRepository.Update(entity);
         return MapToResponse(updated, user);
@@ -202,13 +193,7 @@ public class EmployeeService : IEmployeeService
                 FirstName = entity.FirstName,
                 LastName = entity.LastName,
                 Position = entity.Position,
-                Period = entity.Period,
-                FinalScore = entity.FinalScore,
-                AchievementsSummary = entity.AchievementsSummary,
-                Stage2Status = (int)entity.Stage2Status,
-                Stage2Comment = entity.Stage2Comment,
-                Stage2ReviewedByUserId = entity.Stage2ReviewedByUserId,
-                Stage2ReviewedAtUtc = entity.Stage2ReviewedAtUtc
+                UserId = entity.IdentityUserId
             }
         };
     }
@@ -232,17 +217,18 @@ public class EmployeeService : IEmployeeService
         if (!string.IsNullOrWhiteSpace(request.Position))
             employee.Position = request.Position;
 
-        if (!string.IsNullOrWhiteSpace(request.Period))
-            employee.Period = request.Period;
-
-        if (!string.IsNullOrWhiteSpace(request.FinalScore))
-            employee.FinalScore = request.FinalScore;
-
-        if (!string.IsNullOrWhiteSpace(request.AchievementsSummary))
-            employee.AchievementsSummary = request.AchievementsSummary;
-
         if (!string.IsNullOrWhiteSpace(request.Comment))
-            employee.Stage2Comment = request.Comment; //  Stage2Comment jako komentarz przełożonego
+        {
+            var latestAchievement = (await _achievementRepository.GetByEmployeeIdAsync(employee.Id))
+                .OrderByDescending(a => a.Date)
+                .FirstOrDefault();
+
+            if (latestAchievement != null)
+            {
+                latestAchievement.Stage2Comment = request.Comment;
+                await _achievementRepository.Update(latestAchievement);
+            }
+        }
 
         var updated = await _employeeRepository.Update(employee);
         var user = await _userManager.FindByIdAsync(employee.IdentityUserId);

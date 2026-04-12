@@ -21,6 +21,8 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         private readonly Guid _emp4Id = Guid.Parse("00000000-0000-0000-0000-000000000004");
         private readonly Guid _emp5Id = Guid.Parse("00000000-0000-0000-0000-000000000005");
         private readonly Guid _emp6Id = Guid.Parse("00000000-0000-0000-0000-000000000006");
+        private readonly Guid _achievement1Id = Guid.Parse("10000000-0000-0000-0000-000000000001");
+        private readonly Guid _achievement2Id = Guid.Parse("10000000-0000-0000-0000-000000000002");
 
         public EmployeeTests(EmployeeWebApplicationFactory factory) : base(factory)
         {
@@ -137,17 +139,48 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 
             var employees = new List<Employee>
             {
-                new Employee { Id = _emp1Id, FirstName = "Jan", LastName = "Kowalski", Position = "Dev", Period = "2024", FinalScore = "8", AchievementsSummary = "Good", IdentityUserId = "1", Stage2Status = EvaluationStageStatus.PendingStage2 },
-                new Employee { Id = _emp2Id, FirstName = "Anna", LastName = "Nowak", Position = "QA", Period = "2024", FinalScore = "7", AchievementsSummary = "Solid", IdentityUserId = "2" },
-                new Employee { Id = _emp3Id, FirstName = "Piotr", LastName = "Zielinski", Position = "PM", Period = "2024", FinalScore = "9", AchievementsSummary = "Excellent", IdentityUserId = "3" },
-                new Employee { Id = _emp4Id, FirstName = "To", LastName = "Delete", Position = "Temp", Period = "2024", FinalScore = "5", AchievementsSummary = "Remove me", IdentityUserId = "4" },
-                new Employee { Id = _emp5Id, FirstName = "A", LastName = "Alpha", Position = "X", Period = "2024", FinalScore = "6", AchievementsSummary = "A", IdentityUserId = "5" },
-                new Employee { Id = _emp6Id, FirstName = "B", LastName = "Beta", Position = "Y", Period = "2024", FinalScore = "6", AchievementsSummary = "B", IdentityUserId = "6" }
+                new Employee { Id = _emp1Id, FirstName = "Jan", LastName = "Kowalski", Position = "Dev", IdentityUserId = "1" },
+                new Employee { Id = _emp2Id, FirstName = "Anna", LastName = "Nowak", Position = "QA", IdentityUserId = "2" },
+                new Employee { Id = _emp3Id, FirstName = "Piotr", LastName = "Zielinski", Position = "PM", IdentityUserId = "3" },
+                new Employee { Id = _emp4Id, FirstName = "To", LastName = "Delete", Position = "Temp", IdentityUserId = "4" },
+                new Employee { Id = _emp5Id, FirstName = "A", LastName = "Alpha", Position = "X", IdentityUserId = "5" },
+                new Employee { Id = _emp6Id, FirstName = "B", LastName = "Beta", Position = "Y", IdentityUserId = "6" }
+            };
+
+            var achievements = new List<Achievement>
+            {
+                new Achievement
+                {
+                    Id = _achievement1Id,
+                    Name = "Core API Improvements",
+                    Description = "Critical backend improvements",
+                    Date = DateTime.UtcNow.AddDays(-7),
+                    Category = AchievementCategory.ProcessImprovement,
+                    EmployeeId = _emp1Id,
+                    Period = "2024",
+                    FinalScore = "8",
+                    AchievementsSummary = "Good",
+                    Stage2Status = EvaluationStageStatus.PendingStage2
+                },
+                new Achievement
+                {
+                    Id = _achievement2Id,
+                    Name = "QA Automation",
+                    Description = "Automation for regression suite",
+                    Date = DateTime.UtcNow.AddDays(-6),
+                    Category = AchievementCategory.TechnicalGrowth,
+                    EmployeeId = _emp2Id,
+                    Period = "2024",
+                    FinalScore = "7",
+                    AchievementsSummary = "Solid",
+                    Stage2Status = EvaluationStageStatus.Draft
+                }
             };
 
             context.Roles.AddRange(roles);
             context.Users.AddRange(users);
             context.Employees.AddRange(employees);
+            context.Achievements.AddRange(achievements);
 
             context.UserRoles.AddRange(
                 new IdentityUserRole<string> { RoleId = "role_employee", UserId = "1" },
@@ -200,10 +233,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 Password = "Password123!",
                 FirstName = "New",
                 LastName = "Employee",
-                Position = "DevOps",
-                Period = "2025",
-                FinalScore = "10",
-                AchievementsSummary = "Created in test"
+                Position = "DevOps"
             };
 
             var response = await client.PostAsJsonAsync("/api/employee", request);
@@ -229,10 +259,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 Email = "updated@example.com",
                 FirstName = "AnnaUpdated",
                 LastName = "Xyz",
-                Position = "NewPos",
-                Period = "2030",
-                FinalScore = "15",
-                AchievementsSummary = "Updated summary"
+                Position = "NewPos"
             };
 
             var response = await client.PutAsJsonAsync($"/api/employee/{_emp2Id}", updateRequest);
@@ -256,10 +283,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 Email = "ghost@example.com",
                 FirstName = "DoesNot",
                 LastName = "Exist",
-                Position = "None",
-                Period = "2025",
-                FinalScore = "0",
-                AchievementsSummary = "N/A"
+                Position = "None"
             };
 
             var response = await client.PutAsJsonAsync($"/api/employee/{Guid.NewGuid()}", updateRequest);
@@ -290,7 +314,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var payload = await response.Content.ReadFromJsonAsync<BaseResponse<List<Stage2ReviewItemView>>>();
             Assert.NotNull(payload);
-            Assert.Contains(payload!.Data, x => x.EmployeeId == _emp1Id);
+            Assert.Contains(payload!.Data, x => x.AchievementId == _achievement1Id);
         }
 
         [Fact]
@@ -298,7 +322,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         {
             LoginAsManager();
 
-            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/reject", new { comment = "" });
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_achievement1Id}/reject", new { comment = "" });
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
@@ -308,12 +332,12 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         {
             LoginAsManager();
 
-            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/approve", new { comment = "OK" });
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_achievement1Id}/approve", new { comment = "OK" });
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             context.ChangeTracker.Clear();
-            var employee = await context.Employees.AsNoTracking().FirstAsync(e => e.Id == _emp1Id);
-            Assert.Equal(EvaluationStageStatus.Stage2Approved, employee.Stage2Status);
+            var achievement = await context.Achievements.AsNoTracking().FirstAsync(a => a.Id == _achievement1Id);
+            Assert.Equal(EvaluationStageStatus.Stage2Approved, achievement.Stage2Status);
         }
 
         [Fact]
@@ -329,47 +353,47 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task Stage2Close_ChangesStatus_ForAdmin()
         {
-            var employee = await context.Employees.FirstAsync(e => e.Id == _emp1Id);
-            employee.Stage2Status = EvaluationStageStatus.Stage2Approved;
+            var achievement = await context.Achievements.FirstAsync(a => a.Id == _achievement1Id);
+            achievement.Stage2Status = EvaluationStageStatus.Stage2Approved;
             await context.SaveChangesAsync();
             context.ChangeTracker.Clear();
 
             LoginAsAdmin();
-            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/close", new { });
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_achievement1Id}/close", new { });
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             context.ChangeTracker.Clear();
-            var refreshed = await context.Employees.AsNoTracking().FirstAsync(e => e.Id == _emp1Id);
+            var refreshed = await context.Achievements.AsNoTracking().FirstAsync(a => a.Id == _achievement1Id);
             Assert.Equal(EvaluationStageStatus.Closed, refreshed.Stage2Status);
         }
 
         [Fact]
         public async Task Stage2Archive_ChangesStatus_ForAdmin()
         {
-            var employee = await context.Employees.FirstAsync(e => e.Id == _emp1Id);
-            employee.Stage2Status = EvaluationStageStatus.Closed;
+            var achievement = await context.Achievements.FirstAsync(a => a.Id == _achievement1Id);
+            achievement.Stage2Status = EvaluationStageStatus.Closed;
             await context.SaveChangesAsync();
             context.ChangeTracker.Clear();
 
             LoginAsAdmin();
-            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/archive", new { });
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_achievement1Id}/archive", new { });
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             context.ChangeTracker.Clear();
-            var refreshed = await context.Employees.AsNoTracking().FirstAsync(e => e.Id == _emp1Id);
+            var refreshed = await context.Achievements.AsNoTracking().FirstAsync(a => a.Id == _achievement1Id);
             Assert.Equal(EvaluationStageStatus.Archived, refreshed.Stage2Status);
         }
 
         [Fact]
         public async Task Stage2Close_Forbidden_ForManager()
         {
-            var employee = await context.Employees.FirstAsync(e => e.Id == _emp1Id);
-            employee.Stage2Status = EvaluationStageStatus.Stage2Approved;
+            var achievement = await context.Achievements.FirstAsync(a => a.Id == _achievement1Id);
+            achievement.Stage2Status = EvaluationStageStatus.Stage2Approved;
             await context.SaveChangesAsync();
             context.ChangeTracker.Clear();
 
             LoginAsManager();
-            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_emp1Id}/close", new { });
+            var response = await client.PostAsJsonAsync($"/api/evaluation/stage2/{_achievement1Id}/close", new { });
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
@@ -377,8 +401,8 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         [Fact]
         public async Task Stage2Archived_ReturnsArchivedItems()
         {
-            var employee = await context.Employees.FirstAsync(e => e.Id == _emp1Id);
-            employee.Stage2Status = EvaluationStageStatus.Archived;
+            var achievement = await context.Achievements.FirstAsync(a => a.Id == _achievement1Id);
+            achievement.Stage2Status = EvaluationStageStatus.Archived;
             await context.SaveChangesAsync();
             context.ChangeTracker.Clear();
 
@@ -388,7 +412,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var payload = await response.Content.ReadFromJsonAsync<BaseResponse<List<Stage2ReviewItemView>>>();
             Assert.NotNull(payload);
-            Assert.Contains(payload!.Data, x => x.EmployeeId == _emp1Id);
+            Assert.Contains(payload!.Data, x => x.AchievementId == _achievement1Id);
         }
     }
 }

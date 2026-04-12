@@ -26,8 +26,6 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ open, onClose, activeTab, o
         firstName: '',
         lastName: '',
         position: '',
-        period: '2025',
-        finalScore: '0',
         achievementsSummary: ''
     };
 
@@ -53,10 +51,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ open, onClose, activeTab, o
             if (activeTab === 0) { // CreateEmployeeRequest
                 payload = {
                     ...payload,
-                    position: formData.position,
-                    period: formData.period,
-                    finalScore: formData.finalScore,
-                    achievementsSummary: formData.achievementsSummary
+                    position: formData.position
                 };
             } else if (activeTab === 1) { // CreateManagerRequest
                 payload = {
@@ -108,14 +103,11 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ open, onClose, activeTab, o
                             <Grid size={{ xs: 6 }}>
                                 <TextField fullWidth label="Stanowisko" size="small" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} />
                             </Grid>
-                            <Grid size={{ xs: 6 }}>
-                                <TextField fullWidth label="Okres" size="small" value={formData.period} onChange={e => setFormData({...formData, period: e.target.value})} />
-                            </Grid>
                         </>
                     )}
 
-                    {/* Pole Achievements (Employee i Manager) */}
-                    {(activeTab === 0 || activeTab === 1) && (
+                    {/* Pole Achievements (Manager) */}
+                    {activeTab === 1 && (
                         <Grid size={{ xs: 12 }}>
                             <TextField
                                 fullWidth
