@@ -36,6 +36,33 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         };
     }
 
+    public async Task<BaseResponse<List<Stage2ReviewItemView>>> GetApprovedAsync()
+    {
+        EnsureAdminRole();
+
+        var items = await context.Achievements
+            .Include(a => a.Employee)
+            .Where(a => a.Stage2Status == EvaluationStageStatus.Stage2Approved)
+            .Select(a => new Stage2ReviewItemView
+            {
+                AchievementId = a.Id,
+                EmployeeId = a.EmployeeId,
+                FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
+                Position = a.Employee.Position,
+                AchievementName = a.Name,
+                Period = a.Period,
+                FinalScore = a.FinalScore,
+                Stage2Status = (int)a.Stage2Status
+            })
+            .OrderByDescending(a => a.Period)
+            .ToListAsync();
+
+        return new BaseResponse<List<Stage2ReviewItemView>>
+        {
+            Data = items
+        };
+    }
+
     public async Task<BaseResponse<List<Stage2ReviewItemView>>> GetArchivedAsync()
     {
         var items = await context.Achievements
