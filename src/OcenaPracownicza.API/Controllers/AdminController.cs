@@ -58,4 +58,11 @@ public class AdminController : ControllerBase
         var response = await _adminService.GetCurrent();
         return Ok(response);
     }
+    
+    [HttpPost("generate-sheets")]
+    public async Task<IActionResult> TriggerSheetGeneration([FromServices] IEvaluationSheetGeneratorService generatorService)
+    {
+        await generatorService.GenerateSheetsForCurrentPeriodAsync();
+        return Ok(new { message = "Wygenerowano brakujące arkusze oceny dla wszystkich pracowników." });
+    }
 }

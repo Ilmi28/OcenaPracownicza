@@ -34,6 +34,8 @@ public static class ServiceExtensions
         services.AddScoped<IManagerService, ManagerService>();
         services.AddScoped<IStage2ReviewService, Stage2ReviewService>();
         services.AddScoped<IEvaluationProgressService, EvaluationProgressService>();
+        services.AddScoped<IEvaluationSheetGeneratorService, EvaluationSheetGeneratorService>();
+        services.AddHostedService<EvaluationPeriodBackgroundService>();
     }
 
     public static void AddRepositories(this IServiceCollection services)
