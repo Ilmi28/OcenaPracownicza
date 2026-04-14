@@ -8,10 +8,24 @@ import {
     Grid,
     CircularProgress,
     Alert,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Divider,
 } from "@mui/material";
 import axiosClient from "../services/axiosClient";
 import { useAuth } from "../hooks/AuthProvider";
 import { AdminView } from "../utils/types";
+
+interface EvaluationPeriod {
+    id?: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+}
 
 interface ApiResponse<T> {
     success: boolean;
@@ -23,46 +37,50 @@ const AdminProfile = () => {
     const { user, loading: authLoading } = useAuth();
 
     const [admin, setAdmin] = useState<AdminView | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
     const [editMode, setEditMode] = useState(false);
     const [newAdmin, setNewAdmin] = useState<AdminView | null>(null);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        const fetchAdminData = async () => {
-            try {
-                const resp =
-                    await axiosClient.get<ApiResponse<AdminView>>(`/admin/me`);
-                setAdmin(resp.data.data);
-            } catch (err: any) {
-                const msg =
-                    err?.response?.data?.message ||
-                    err?.message ||
-                    "Błąd pobierania danych";
-                setError(msg);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const [periods, setPeriods] = useState<EvaluationPeriod[]>([]);
+    const [newPeriod, setNewPeriod] = useState<EvaluationPeriod>({ name: "", startDate: "", endDate: "" });
+    const [savingPeriod, setSavingPeriod] = useState(false);
 
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [adminResp, periodsResp] = await Promise.all([
+                axiosClient.get<ApiResponse<AdminView>>(`/admin/me`),
+                axiosClient.get<EvaluationPeriod[] | ApiResponse<EvaluationPeriod[]>>("/evaluation-periods")
+            ]);
+
+            setAdmin(adminResp.data.data);
+
+            const periodsData = Array.isArray(periodsResp.data)
+                ? periodsResp.data
+                : (periodsResp.data as ApiResponse<EvaluationPeriod[]>).data;
+            setPeriods(periodsData || []);
+
+        } catch (err: any) {
+            setError(err?.response?.data?.message || err?.message || "Błąd pobierania danych");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (!authLoading && user) {
-            fetchAdminData();
+            fetchData();
         } else if (!authLoading && !user) {
             setLoading(false);
         }
     }, [user, authLoading]);
 
-    const handleSave = async () => {
-        if (!newAdmin || !admin?.id) {
-            setError("Brak danych do zapisania");
-            return;
-        }
-
+    const handleSaveProfile = async () => {
+        if (!newAdmin || !admin?.id) return;
         setSaving(true);
-        setError(null);
-
         try {
             const payload = {
                 userName: newAdmin.userName || "",
@@ -70,61 +88,37 @@ const AdminProfile = () => {
                 firstName: newAdmin.firstName,
                 lastName: newAdmin.lastName,
             };
-
             await axiosClient.put(`/admin/${admin.id}`, payload);
-
-            const resp =
-                await axiosClient.get<ApiResponse<AdminView>>("/admin/me");
-            setAdmin(resp.data.data);
-
+            await fetchData();
             setEditMode(false);
-            setNewAdmin(null);
         } catch (err: any) {
-            const msg =
-                err?.response?.data?.message ||
-                err?.message ||
-                "Błąd podczas zapisywania danych";
-            setError(msg);
+            setError("Błąd podczas zapisywania profilu");
         } finally {
             setSaving(false);
         }
     };
 
+    const handleCreatePeriod = async () => {
+        if (!newPeriod.name || !newPeriod.startDate || !newPeriod.endDate) {
+            setError("Wypełnij wszystkie pola okresu");
+            return;
+        }
+        setSavingPeriod(true);
+        try {
+            await axiosClient.post("/evaluation-periods", newPeriod);
+            setNewPeriod({ name: "", startDate: "", endDate: "" });
+            await fetchData();
+        } catch (err: any) {
+            setError("Błąd podczas tworzenia okresu");
+        } finally {
+            setSavingPeriod(false);
+        }
+    };
+
     if (authLoading || loading) {
         return (
-            <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                height="60vh"
-            >
+            <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
                 <CircularProgress />
-            </Box>
-        );
-    }
-
-    if (!user) {
-        return (
-            <Box m={2}>
-                <Alert severity="warning">
-                    Zaloguj się, aby zobaczyć swoje dane.
-                </Alert>
-            </Box>
-        );
-    }
-
-    if (error) {
-        return (
-            <Box m={2}>
-                <Alert severity="error">Błąd: {error}</Alert>
-            </Box>
-        );
-    }
-
-    if (!admin) {
-        return (
-            <Box m={2}>
-                <Typography>Nie znaleziono danych użytkownika.</Typography>
             </Box>
         );
     }
@@ -132,149 +126,117 @@ const AdminProfile = () => {
     const currentAdmin = editMode && newAdmin ? newAdmin : admin;
 
     return (
-        <Box>
-            <Typography variant="h5" fontWeight="600">
-                Mój Profil
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Zarządzaj swoimi danymi osobowymi
+        <Box sx={{ maxWidth: 1000, mx: "auto", py: 4 }}>
+            <Typography variant="h5" fontWeight="600" gutterBottom>
+                Panel Administratora
             </Typography>
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-            <Paper sx={{ p: 3 }}>
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 2,
-                    }}
-                >
-                    <Typography variant="subtitle1" fontWeight="600">
-                        Dane osobowe
-                    </Typography>
-
+            <Paper sx={{ p: 3, mb: 4 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+                    <Typography variant="subtitle1" fontWeight="600">Dane osobowe</Typography>
                     {!editMode && (
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => {
-                                setNewAdmin(admin);
-                                setEditMode(true);
-                                setError(null);
-                            }}
-                        >
-                            Edytuj
+                        <Button variant="outlined" size="small" onClick={() => { setNewAdmin(admin); setEditMode(true); }}>
+                            Edytuj Profil
                         </Button>
                     )}
                 </Box>
 
                 <Grid container spacing={3}>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                            fullWidth
-                            label="Nazwa użytkownika"
-                            value={currentAdmin.userName ?? ""}
-                            disabled={!editMode}
-                            size="small"
-                            onChange={(e) =>
-                                setNewAdmin((prev) =>
-                                    prev
-                                        ? { ...prev, userName: e.target.value }
-                                        : prev,
-                                )
-                            }
-                        />
+                        <TextField fullWidth label="Nazwa użytkownika" value={currentAdmin?.userName ?? ""} disabled={!editMode} size="small"
+                            onChange={(e) => setNewAdmin(prev => prev ? { ...prev, userName: e.target.value } : null)} />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField fullWidth label="E-mail" value={currentAdmin?.email ?? ""} disabled={!editMode} size="small"
+                            onChange={(e) => setNewAdmin(prev => prev ? { ...prev, email: e.target.value } : null)} />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField fullWidth label="Imię" value={currentAdmin?.firstName ?? ""} disabled={!editMode} size="small"
+                            onChange={(e) => setNewAdmin(prev => prev ? { ...prev, firstName: e.target.value } : null)} />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                        <TextField fullWidth label="Nazwisko" value={currentAdmin?.lastName ?? ""} disabled={!editMode} size="small"
+                            onChange={(e) => setNewAdmin(prev => prev ? { ...prev, lastName: e.target.value } : null)} />
                     </Grid>
 
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                            fullWidth
-                            label="E-mail"
-                            value={currentAdmin.email ?? ""}
-                            disabled={!editMode}
-                            size="small"
-                            onChange={(e) =>
-                                setNewAdmin((prev) =>
-                                    prev
-                                        ? { ...prev, email: e.target.value }
-                                        : prev,
-                                )
-                            }
-                        />
-                    </Grid>
-
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                            fullWidth
-                            label="Imię"
-                            value={currentAdmin.firstName}
-                            disabled={!editMode}
-                            size="small"
-                            onChange={(e) =>
-                                setNewAdmin((prev) =>
-                                    prev
-                                        ? {
-                                              ...prev,
-                                              firstName: e.target.value,
-                                          }
-                                        : prev,
-                                )
-                            }
-                        />
-                    </Grid>
-
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                            fullWidth
-                            label="Nazwisko"
-                            value={currentAdmin.lastName}
-                            disabled={!editMode}
-                            size="small"
-                            onChange={(e) =>
-                                setNewAdmin((prev) =>
-                                    prev
-                                        ? { ...prev, lastName: e.target.value }
-                                        : prev,
-                                )
-                            }
-                        />
-                    </Grid>
+                    {editMode && (
+                        <Grid size={{ xs: 12 }} sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 1 }}>
+                            <Button variant="outlined" onClick={() => setEditMode(false)}>Anuluj</Button>
+                            <Button variant="contained" onClick={handleSaveProfile} disabled={saving}>Zapisz</Button>
+                        </Grid>
+                    )}
                 </Grid>
+            </Paper>
 
-                {editMode && (
-                    <Box
-                        mt={3}
-                        display="flex"
-                        justifyContent="flex-end"
-                        gap={2}
-                    >
-                        <Button
-                            variant="outlined"
-                            onClick={() => {
-                                setEditMode(false);
-                                setNewAdmin(null);
-                                setError(null);
-                            }}
-                            disabled={saving}
-                        >
-                            Anuluj
-                        </Button>
+            <Divider sx={{ mb: 4 }} />
 
-                        <Button
-                            variant="contained"
-                            onClick={handleSave}
-                            disabled={saving}
-                        >
-                            {saving ? "Zapisywanie..." : "Zapisz"}
-                        </Button>
-                    </Box>
-                )}
+            <Paper sx={{ p: 3 }}>
+                <Typography variant="subtitle1" fontWeight="600" gutterBottom>
+                    Okresy Oceny Pracowniczej
+                </Typography>
+
+                <Box sx={{ bgcolor: "grey.50", p: 2, borderRadius: 1, mb: 4, mt: 2 }}>
+                    <Grid container spacing={2} alignItems="flex-end">
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                            <TextField fullWidth size="small" label="Nazwa okresu" value={newPeriod.name}
+                                onChange={(e) => setNewPeriod({ ...newPeriod, name: e.target.value })} />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 3 }}>
+                            <TextField fullWidth size="small" type="date" label="Start" InputLabelProps={{ shrink: true }}
+                                value={newPeriod.startDate} onChange={(e) => setNewPeriod({ ...newPeriod, startDate: e.target.value })} />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 3 }}>
+                            <TextField fullWidth size="small" type="date" label="Koniec" InputLabelProps={{ shrink: true }}
+                                value={newPeriod.endDate} onChange={(e) => setNewPeriod({ ...newPeriod, endDate: e.target.value })} />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 2 }}>
+                            <Button fullWidth variant="contained" onClick={handleCreatePeriod} disabled={savingPeriod} sx={{ height: '40px' }}>
+                                Dodaj
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Box>
+
+                <TableContainer>
+                    <Table size="small">
+                        <TableHead sx={{ bgcolor: "grey.100" }}>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 700 }}>Nazwa Okresu</TableCell>
+                                <TableCell sx={{ fontWeight: 700 }}>Data Startu</TableCell>
+                                <TableCell sx={{ fontWeight: 700 }}>Data Końca</TableCell>
+                                <TableCell sx={{ fontWeight: 700 }} align="right">Status</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {periods.map((p) => {
+                                const isPast = new Date(p.endDate) < new Date();
+                                return (
+                                    <TableRow key={p.id} hover>
+                                        <TableCell sx={{ fontWeight: 500 }}>{p.name}</TableCell>
+                                        <TableCell>{new Date(p.startDate).toLocaleDateString()}</TableCell>
+                                        <TableCell>{new Date(p.endDate).toLocaleDateString()}</TableCell>
+                                        <TableCell align="right">
+                                            <Box component="span" sx={{
+                                                px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 700,
+                                                bgcolor: isPast ? "error.light" : "success.light",
+                                                color: isPast ? "error.dark" : "success.dark"
+                                            }}>
+                                                {isPast ? "ZAKOŃCZONY" : "AKTYWNY"}
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                            {periods.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 3 }}>Brak zdefiniowanych okresów.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             </Paper>
         </Box>
     );
