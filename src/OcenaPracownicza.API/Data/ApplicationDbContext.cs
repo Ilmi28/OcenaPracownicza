@@ -17,6 +17,9 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Admin> Admins { get; set; }
     public DbSet<Manager> Managers { get; set; }
     public DbSet<Achievement> Achievements { get; set; }
+    public DbSet<EvaluationPeriod> EvaluationPeriods { get; set; }
+    public DbSet<EvaluationCriterion> EvaluationCriteria { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
