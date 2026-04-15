@@ -36,6 +36,8 @@ public static class ServiceExtensions
         services.AddScoped<IEvaluationProgressService, EvaluationProgressService>();
         services.AddScoped<IEvaluationSheetGeneratorService, EvaluationSheetGeneratorService>();
         services.AddHostedService<EvaluationPeriodBackgroundService>();
+        services.AddScoped<IEvaluationPeriodService, EvaluationPeriodService>();
+
     }
 
     public static void AddRepositories(this IServiceCollection services)
@@ -46,6 +48,7 @@ public static class ServiceExtensions
         services.AddScoped<IAdminRepository, AdminRepository>();
         services.AddScoped<IManagerRepository, ManagerRepository>();
         services.AddScoped<IAchievementRepository, AchievementRepository>();
+        services.AddScoped<IEvaluationPeriodRepository, EvaluationPeriodRepository>();
     }
 
     public static void AddAppDbContextWithIdentity(this IServiceCollection services, IConfiguration config)
