@@ -36,6 +36,34 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             Data = items
         };
     }
+    
+    public async Task<BaseResponse<List<Stage2HistoryItemView>>> GetMyHistoryAsync()
+    {
+        var currentEmployeeId = await GetCurrentEmployeeIdAsync();
+        var items = await context.Achievements
+            .Include(a => a.Employee)
+            .Where(a => a.EmployeeId == currentEmployeeId)
+            .Select(a => new Stage2HistoryItemView
+            {
+                AchievementId = a.Id,
+                EmployeeId = a.EmployeeId,
+                FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
+                Position = a.Employee.Position,
+                AchievementName = a.Name,
+                Period = a.Period,
+                FinalScore = a.FinalScore,
+                Stage2Status = (int)a.Stage2Status,
+                Date = a.Date,
+                Stage2ReviewedAtUtc = a.Stage2ReviewedAtUtc
+            })
+            .OrderByDescending(a => a.Date)
+            .ToListAsync();
+
+        return new BaseResponse<List<Stage2HistoryItemView>>
+        {
+            Data = items
+        };
+    }
 
     public async Task<BaseResponse<List<Stage2ReviewItemView>>> GetPendingAsync()
     {
@@ -119,6 +147,13 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         var details = await BuildDetails(achievementId);
         return new BaseResponse<Stage2ReviewDetailsView> { Data = details };
     }
+    
+    public async Task<BaseResponse<Stage2ReviewDetailsView>> GetMyDetailsAsync(Guid achievementId)
+    {
+        var currentEmployeeId = await GetCurrentEmployeeIdAsync();
+        var details = await BuildDetails(achievementId, currentEmployeeId);
+        return new BaseResponse<Stage2ReviewDetailsView> { Data = details };
+    }
 
     public async Task<BaseResponse<Stage2ReviewDetailsView>> ApproveAsync(Guid achievementId, string? comment)
     {
@@ -199,11 +234,13 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         return new BaseResponse<Stage2ReviewDetailsView> { Data = await BuildDetails(achievementId) };
     }
 
-    private async Task<Stage2ReviewDetailsView> BuildDetails(Guid achievementId)
+    private async Task<Stage2ReviewDetailsView> BuildDetails(Guid achievementId, Guid? requiredEmployeeId = null)
     {
         var selectedAchievement = await context.Achievements
             .Include(a => a.Employee)
-            .FirstOrDefaultAsync(a => a.Id == achievementId);
+            .FirstOrDefaultAsync(a =>
+                a.Id == achievementId &&
+                (!requiredEmployeeId.HasValue || a.EmployeeId == requiredEmployeeId.Value));
         if (selectedAchievement == null)
         {
             throw new NotFoundException("Nie znaleziono osiągnięcia.");
@@ -244,6 +281,22 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 Stage2ReviewedAtUtc = a.Stage2ReviewedAtUtc
             }).ToList()
         };
+    }
+    
+    private async Task<Guid> GetCurrentEmployeeIdAsync()
+    {
+        var currentUserId = userManager.GetCurrentUserId() ?? throw new UnauthorizedAccessException();
+        var currentEmployeeId = await context.Employees
+            .Where(e => e.IdentityUserId == currentUserId)
+            .Select(e => e.Id)
+            .FirstOrDefaultAsync();
+
+        if (currentEmployeeId == Guid.Empty)
+        {
+            throw new NotFoundException("Nie znaleziono profilu pracownika.");
+        }
+
+        return currentEmployeeId;
     }
 
     private void EnsureAdminRole()
