@@ -10,6 +10,13 @@ namespace OcenaPracownicza.API.Controllers;
 [Route("api/evaluation/stage2")]
 public class Stage2ReviewController(IStage2ReviewService stage2ReviewService) : ControllerBase
 {
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory()
+    {
+        var response = await stage2ReviewService.GetHistoryAsync();
+        return Ok(response);
+    }
+
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
     {

@@ -11,6 +11,32 @@ namespace OcenaPracownicza.API.Services;
 
 public class Stage2ReviewService(ApplicationDbContext context, IUserManager userManager) : IStage2ReviewService
 {
+    public async Task<BaseResponse<List<Stage2HistoryItemView>>> GetHistoryAsync()
+    {
+        var items = await context.Achievements
+            .Include(a => a.Employee)
+            .Select(a => new Stage2HistoryItemView
+            {
+                AchievementId = a.Id,
+                EmployeeId = a.EmployeeId,
+                FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
+                Position = a.Employee.Position,
+                AchievementName = a.Name,
+                Period = a.Period,
+                FinalScore = a.FinalScore,
+                Stage2Status = (int)a.Stage2Status,
+                Date = a.Date,
+                Stage2ReviewedAtUtc = a.Stage2ReviewedAtUtc
+            })
+            .OrderByDescending(a => a.Date)
+            .ToListAsync();
+
+        return new BaseResponse<List<Stage2HistoryItemView>>
+        {
+            Data = items
+        };
+    }
+
     public async Task<BaseResponse<List<Stage2ReviewItemView>>> GetPendingAsync()
     {
         var items = await context.Achievements

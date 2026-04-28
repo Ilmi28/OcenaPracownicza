@@ -1,5 +1,9 @@
 import axiosClient from "./axiosClient";
-import { Stage2ReviewDetailsView, Stage2ReviewItemView } from "../utils/types";
+import {
+    Stage2HistoryItemView,
+    Stage2ReviewDetailsView,
+    Stage2ReviewItemView,
+} from "../utils/types";
 
 interface ApiResponse<T> {
     success: boolean;
@@ -8,6 +12,12 @@ interface ApiResponse<T> {
 }
 
 export const evaluationService = {
+    getStage2History: async () => {
+        const res = await axiosClient.get<ApiResponse<Stage2HistoryItemView[]>>(
+            "/evaluation/stage2/history",
+        );
+        return res.data.data;
+    },
     getPending: async () => {
         const res = await axiosClient.get<ApiResponse<Stage2ReviewItemView[]>>(
             "/evaluation/stage2/pending",

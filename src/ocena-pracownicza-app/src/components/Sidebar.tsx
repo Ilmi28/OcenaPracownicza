@@ -7,6 +7,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import HistoryIcon from "@mui/icons-material/History";
 import { useAuth } from "../hooks/AuthProvider";
 
 // Zakładam, że masz hook useAuth. Jeśli nie, na razie podaję wersję z symulacją.
@@ -61,6 +62,13 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                             text="Etap 2"
                             to="/evaluation/stage2"
                             IconComponent={FactCheckIcon}
+                        />
+                    )}
+                    {(user?.role === "Admin" || user?.role === "Manager") && (
+                        <SidebarItem
+                            text="Historia ocen"
+                            to="/evaluation/history"
+                            IconComponent={HistoryIcon}
                         />
                     )}
                     {user?.role === "Employee" && (
