@@ -18,6 +18,12 @@ export const evaluationService = {
         );
         return res.data.data;
     },
+    getMyStage2History: async () => {
+        const res = await axiosClient.get<ApiResponse<Stage2HistoryItemView[]>>(
+            "/evaluation/stage2/history/me",
+        );
+        return res.data.data;
+    },
     getPending: async () => {
         const res = await axiosClient.get<ApiResponse<Stage2ReviewItemView[]>>(
             "/evaluation/stage2/pending",
@@ -39,6 +45,12 @@ export const evaluationService = {
     getDetails: async (achievementId: string) => {
         const res = await axiosClient.get<ApiResponse<Stage2ReviewDetailsView>>(
             `/evaluation/stage2/${achievementId}`,
+        );
+        return res.data.data;
+    },
+    getMyDetails: async (achievementId: string) => {
+        const res = await axiosClient.get<ApiResponse<Stage2ReviewDetailsView>>(
+            `/evaluation/stage2/history/me/${achievementId}`,
         );
         return res.data.data;
     },

@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { Stage2ReviewDetailsView } from "../utils/types";
 import { evaluationService } from "../services/evaluationService";
+import { useAuth } from "../hooks/AuthProvider";
 
 const STATUS_LABELS: Record<number, string> = {
     0: "Szkic",
@@ -30,6 +31,7 @@ const STATUS_LABELS: Record<number, string> = {
 export default function EmployeeEvaluationHistoryDetails() {
     const { achievementId } = useParams<{ achievementId: string }>();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [data, setData] = useState<Stage2ReviewDetailsView | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,10 @@ export default function EmployeeEvaluationHistoryDetails() {
         setLoading(true);
         setError(null);
         try {
-            const response = await evaluationService.getDetails(achievementId);
+            const response =
+                user?.role === "Employee"
+                    ? await evaluationService.getMyDetails(achievementId)
+                    : await evaluationService.getDetails(achievementId);
             setData(response);
         } catch (err: any) {
             const msg =
@@ -51,7 +56,7 @@ export default function EmployeeEvaluationHistoryDetails() {
         } finally {
             setLoading(false);
         }
-    }, [achievementId]);
+    }, [achievementId, user?.role]);
 
     useEffect(() => {
         load();

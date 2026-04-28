@@ -21,8 +21,10 @@ const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
             sx={{
                 width: "100%",
                 bgcolor: "background.paper",
-                borderBottom: "1px solid #D1D5DB",
+                borderBottom: "1px solid",
+                borderColor: "divider",
                 zIndex: (theme) => theme.zIndex.drawer + 1,
+                backdropFilter: "blur(8px)",
             }}
         >
             <Toolbar disableGutters>
@@ -32,22 +34,24 @@ const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
                         display: "flex",
                         alignItems: "center",
                         height: "100%",
-                        px: 2,
-                        borderRight: "1px solid #D1D5DB",
+                        px: 2.5,
+                        borderRight: "1px solid",
+                        borderColor: "divider",
                     }}
                 >
                     <DashboardIcon
                         color="primary"
                         sx={{ mr: 1, fontSize: 24 }}
                     />
-                    <Typography
-                        variant="h6"
-                        noWrap
-                        color="text.primary"
-                        fontWeight="600"
-                    >
-                        Ocena Pracownicza
-                    </Typography>
+                        <Typography
+                            variant="h6"
+                            noWrap
+                            color="text.primary"
+                            fontWeight={700}
+                            letterSpacing={0.2}
+                        >
+                            Ocena Pracownicza
+                        </Typography>
                 </Box>
 
                 <Box
@@ -56,7 +60,8 @@ const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
                         display: "flex",
                         justifyContent: "flex-end",
                         alignItems: "center",
-                        px: 2,
+                        px: 3,
+                        gap: 1.5,
                     }}
                 >
                     {!user ? (

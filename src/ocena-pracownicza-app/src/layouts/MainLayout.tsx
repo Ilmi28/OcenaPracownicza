@@ -30,13 +30,20 @@ const MainLayout = () => {
                     sx={{
                         flexGrow: 1,
                         bgcolor: "background.default",
-                        p: 3,
+                        p: { xs: 2, md: 3 },
                         width: `calc(100% - ${DRAWER_WIDTH}px)`,
                     }}
                 >
                     <Toolbar />
 
-                    <Container maxWidth="lg" sx={{ flexGrow: 1, mb: 3 }}>
+                    <Container
+                        maxWidth="xl"
+                        sx={{
+                            flexGrow: 1,
+                            mb: 3,
+                            px: { xs: 0, sm: 1 },
+                        }}
+                    >
                         <Outlet />
                     </Container>
 

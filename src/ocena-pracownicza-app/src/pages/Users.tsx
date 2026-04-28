@@ -19,6 +19,7 @@ interface UserData {
     email: string;
     userName: string;
     position?: string;
+    achievementsSummary?: string;
     department?: string;
     status?: string;
 }
@@ -28,7 +29,9 @@ const Users = () => {
     const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false); // Stan modala
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+    const [editingUser, setEditingUser] = useState<UserData | null>(null);
 
     const getEndpoint = useCallback((tabIndex: number) => {
         switch (tabIndex) {
@@ -74,6 +77,18 @@ const Users = () => {
             }
         }
     };
+    
+    const handleEdit = (user: UserData) => {
+        setEditingUser(user);
+        setModalMode("edit");
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingUser(null);
+        setModalMode("create");
+    };
 
     const filteredUsers = users.filter(user =>
         `${user.firstName} ${user.lastName} ${user.email}`.toLowerCase().includes(searchTerm.toLowerCase())
@@ -94,7 +109,11 @@ const Users = () => {
                     variant="contained"
                     startIcon={<AddIcon />}
                     sx={{ textTransform: 'none', borderRadius: '8px' }}
-                    onClick={() => setIsModalOpen(true)} // Otwieranie modala
+                    onClick={() => {
+                        setModalMode("create");
+                        setEditingUser(null);
+                        setIsModalOpen(true);
+                    }}
                 >
                     Dodaj użytkownika
                 </Button>
@@ -164,7 +183,7 @@ const Users = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredUsers.length > 0 ? filteredUsers.map((user: any) => (
+                            {filteredUsers.length > 0 ? filteredUsers.map((user) => (
                                 <TableRow key={user.id} hover>
                                     <TableCell>{user.firstName}</TableCell>
                                     <TableCell>{user.lastName}</TableCell>
@@ -180,7 +199,9 @@ const Users = () => {
                                         />
                                     </TableCell>
                                     <TableCell align="right">
-                                        <IconButton size="small"><EditIcon fontSize="small" color="action" /></IconButton>
+                                        <IconButton size="small" onClick={() => handleEdit(user)}>
+                                            <EditIcon fontSize="small" color="action" />
+                                        </IconButton>
                                         <IconButton size="small" onClick={() => handleDelete(user.id)}><DeleteIcon fontSize="small" color="error" /></IconButton>
                                     </TableCell>
                                 </TableRow>
@@ -192,12 +213,13 @@ const Users = () => {
                 )}
             </TableContainer>
 
-            {/* Komponent Modala */}
             <AddUserModal
                 open={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={handleCloseModal}
                 activeTab={activeTab}
                 onSuccess={fetchUsers}
+                mode={modalMode}
+                userToEdit={editingUser}
             />
         </Box>
     );

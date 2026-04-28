@@ -31,12 +31,13 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                     width: drawerWidth,
                     boxSizing: "border-box",
                     bgcolor: "background.paper",
-                    borderRight: "1px solid #D1D5DB",
+                    borderRight: "1px solid",
+                    borderColor: "divider",
                 },
             }}
         >
             <Toolbar />
-            <Box sx={{ overflow: "auto", p: 2 }}>
+            <Box sx={{ overflow: "auto", p: 2.5 }}>
                 <List>
                     <SidebarItem
                         text="Dashboard"
@@ -64,7 +65,7 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                             IconComponent={FactCheckIcon}
                         />
                     )}
-                    {(user?.role === "Admin" || user?.role === "Manager") && (
+                    {(user?.role === "Admin" || user?.role === "Manager" || user?.role === "Employee") && (
                         <SidebarItem
                             text="Historia ocen"
                             to="/evaluation/history"
