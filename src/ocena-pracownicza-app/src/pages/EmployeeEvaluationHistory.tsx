@@ -17,6 +17,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { evaluationService } from "../services/evaluationService";
 import { Stage2HistoryItemView } from "../utils/types";
+import { useAuth } from "../hooks/AuthProvider";
 
 const STATUS_LABELS: Record<number, string> = {
     0: "Szkic",
@@ -29,6 +30,7 @@ const STATUS_LABELS: Record<number, string> = {
 
 export default function EmployeeEvaluationHistory() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [data, setData] = useState<Stage2HistoryItemView[]>([]);
     const [employeeFilter, setEmployeeFilter] = useState("");
     const [positionFilter, setPositionFilter] = useState("");
@@ -55,7 +57,10 @@ export default function EmployeeEvaluationHistory() {
         setLoading(true);
         setError(null);
         try {
-            const response = await evaluationService.getStage2History();
+            const response =
+                user?.role === "Employee"
+                    ? await evaluationService.getMyStage2History()
+                    : await evaluationService.getStage2History();
             setData(response);
         } catch (err: any) {
             const msg =
@@ -66,7 +71,7 @@ export default function EmployeeEvaluationHistory() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user?.role]);
 
     useEffect(() => {
         load();
@@ -83,10 +88,14 @@ export default function EmployeeEvaluationHistory() {
     return (
         <Box>
             <Typography variant="h5" fontWeight={600} mb={1}>
-                Historia ocen pracowników
+                {user?.role === "Employee"
+                    ? "Moja historia ocen"
+                    : "Historia ocen pracowników"}
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={3}>
-                Lista wszystkich rekordów ocen dostępnych do wglądu na etapie 2.
+                {user?.role === "Employee"
+                    ? "Przeglądaj historię swoich ocen wraz z punktacją i komentarzami."
+                    : "Lista wszystkich rekordów ocen dostępnych do wglądu na etapie 2."}
             </Typography>
 
             {error && (
@@ -97,29 +106,33 @@ export default function EmployeeEvaluationHistory() {
 
             <Paper>
                 <Box display="flex" gap={2} p={2} flexWrap="wrap">
-                    <TextField
-                        size="small"
-                        label="Pracownik"
-                        value={employeeFilter}
-                        onChange={(e) => setEmployeeFilter(e.target.value)}
-                    />
-                    <TextField
-                        size="small"
-                        label="Stanowisko"
-                        value={positionFilter}
-                        onChange={(e) => setPositionFilter(e.target.value)}
-                    />
+                    {user?.role !== "Employee" && (
+                        <TextField
+                            size="small"
+                            label="Pracownik"
+                            value={employeeFilter}
+                            onChange={(e) => setEmployeeFilter(e.target.value)}
+                        />
+                    )}
+                    {user?.role !== "Employee" && (
+                        <TextField
+                            size="small"
+                            label="Stanowisko"
+                            value={positionFilter}
+                            onChange={(e) => setPositionFilter(e.target.value)}
+                        />
+                    )}
                     <Box ml="auto">
-                    <Button variant="outlined" onClick={load}>
-                        Odśwież
-                    </Button>
+                        <Button variant="outlined" onClick={load}>
+                            Odśwież
+                        </Button>
                     </Box>
                 </Box>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Pracownik</TableCell>
-                            <TableCell>Stanowisko</TableCell>
+                            {user?.role !== "Employee" && <TableCell>Pracownik</TableCell>}
+                            {user?.role !== "Employee" && <TableCell>Stanowisko</TableCell>}
                             <TableCell>Osiągnięcie</TableCell>
                             <TableCell>Okres</TableCell>
                             <TableCell>Wynik</TableCell>
@@ -131,8 +144,8 @@ export default function EmployeeEvaluationHistory() {
                     <TableBody>
                         {filteredData.map((item) => (
                             <TableRow key={item.achievementId}>
-                                <TableCell>{item.fullName}</TableCell>
-                                <TableCell>{item.position}</TableCell>
+                                {user?.role !== "Employee" && <TableCell>{item.fullName}</TableCell>}
+                                {user?.role !== "Employee" && <TableCell>{item.position}</TableCell>}
                                 <TableCell>{item.achievementName}</TableCell>
                                 <TableCell>{item.period}</TableCell>
                                 <TableCell>{item.finalScore}</TableCell>
@@ -175,7 +188,7 @@ export default function EmployeeEvaluationHistory() {
                         ))}
                         {filteredData.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={8} align="center">
+                                <TableCell colSpan={user?.role === "Employee" ? 6 : 8} align="center">
                                     {data.length === 0
                                         ? "Brak rekordów historii ocen."
                                         : "Brak rekordów spełniających kryteria filtrowania."}
