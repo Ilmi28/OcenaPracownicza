@@ -27,6 +27,19 @@ export interface Stage2ReviewItemView {
     stage2Status: number;
 }
 
+export interface Stage2HistoryItemView {
+    achievementId: string;
+    employeeId: string;
+    fullName: string;
+    position: string;
+    achievementName: string;
+    period: string;
+    finalScore: string;
+    stage2Status: number;
+    date: string;
+    stage2ReviewedAtUtc?: string | null;
+}
+
 export interface AchievementStage2View {
     id: string;
     name: string;

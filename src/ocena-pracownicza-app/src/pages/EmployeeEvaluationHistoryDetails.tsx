@@ -4,6 +4,7 @@ import {
     Alert,
     Box,
     Button,
+    Chip,
     CircularProgress,
     Grid,
     Paper,
@@ -12,13 +13,10 @@ import {
     TableCell,
     TableHead,
     TableRow,
-    TextField,
     Typography,
-    Chip,
 } from "@mui/material";
 import { Stage2ReviewDetailsView } from "../utils/types";
 import { evaluationService } from "../services/evaluationService";
-import { useAuth } from "../hooks/AuthProvider";
 
 const STATUS_LABELS: Record<number, string> = {
     0: "Szkic",
@@ -29,29 +27,26 @@ const STATUS_LABELS: Record<number, string> = {
     5: "Zarchiwizowana",
 };
 
-export default function Stage2ReviewDetails() {
+export default function EmployeeEvaluationHistoryDetails() {
     const { achievementId } = useParams<{ achievementId: string }>();
     const navigate = useNavigate();
-    const { user } = useAuth();
     const [data, setData] = useState<Stage2ReviewDetailsView | null>(null);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [comment, setComment] = useState("");
     const [error, setError] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         if (!achievementId) return;
+
         setLoading(true);
         setError(null);
         try {
             const response = await evaluationService.getDetails(achievementId);
             setData(response);
-            setComment(response.stage2Comment ?? "");
         } catch (err: any) {
             const msg =
                 err?.response?.data?.message ??
                 err?.message ??
-                "Nie udało się pobrać szczegółów.";
+                "Nie udało się pobrać szczegółów historii oceny.";
             setError(msg);
         } finally {
             setLoading(false);
@@ -61,62 +56,6 @@ export default function Stage2ReviewDetails() {
     useEffect(() => {
         load();
     }, [load]);
-
-    const onApprove = async () => {
-        if (!achievementId) return;
-        setSaving(true);
-        setError(null);
-        try {
-            const updated = await evaluationService.approve(achievementId, comment);
-            setData(updated);
-        } catch (err: any) {
-            setError(err?.response?.data?.message ?? "Nie udało się zatwierdzić.");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const onReject = async () => {
-        if (!achievementId) return;
-        setSaving(true);
-        setError(null);
-        try {
-            const updated = await evaluationService.reject(achievementId, comment);
-            setData(updated);
-        } catch (err: any) {
-            setError(err?.response?.data?.message ?? "Nie udało się odrzucić.");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const onClose = async () => {
-        if (!achievementId) return;
-        setSaving(true);
-        setError(null);
-        try {
-            const updated = await evaluationService.close(achievementId);
-            setData(updated);
-        } catch (err: any) {
-            setError(err?.response?.data?.message ?? "Nie udało się zamknąć oceny.");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const onArchive = async () => {
-        if (!achievementId) return;
-        setSaving(true);
-        setError(null);
-        try {
-            const updated = await evaluationService.archive(achievementId);
-            setData(updated);
-        } catch (err: any) {
-            setError(err?.response?.data?.message ?? "Nie udało się zarchiwizować oceny.");
-        } finally {
-            setSaving(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -130,19 +69,14 @@ export default function Stage2ReviewDetails() {
         return <Alert severity="warning">Brak danych rekordu.</Alert>;
     }
 
-    const canDecide = data.stage2Status === 1;
-    const isAdmin = user?.role === "Admin";
-    const canClose = isAdmin && (data.stage2Status === 2 || data.stage2Status === 3);
-    const canArchive = isAdmin && data.stage2Status === 4;
-
     return (
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5" fontWeight={600}>
-                    Weryfikacja etapu 2
+                    Szczegóły historii oceny
                 </Typography>
-                <Button variant="outlined" onClick={() => navigate("/evaluation/stage2")}>
-                    Wróć do kolejki
+                <Button variant="outlined" onClick={() => navigate("/evaluation/history")}>
+                    Wróć do historii
                 </Button>
             </Box>
             {error && (
@@ -230,32 +164,20 @@ export default function Stage2ReviewDetails() {
 
             <Paper sx={{ p: 3 }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>
-                    Decyzja komisji
+                    Informacje o decyzji
                 </Typography>
-                <TextField
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    label="Komentarz (wymagany przy odrzuceniu)"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    disabled={saving || !canDecide}
-                    sx={{ mb: 2 }}
-                />
-                <Box display="flex" gap={2} justifyContent="flex-end">
-                    <Button variant="outlined" color="error" disabled={saving || !canDecide} onClick={onReject}>
-                        Odrzuć
-                    </Button>
-                    <Button variant="contained" disabled={saving || !canDecide} onClick={onApprove}>
-                        Zatwierdź
-                    </Button>
-                    <Button variant="outlined" disabled={saving || !canClose} onClick={onClose}>
-                        Zamknij ocenę
-                    </Button>
-                    <Button variant="contained" color="secondary" disabled={saving || !canArchive} onClick={onArchive}>
-                        Archiwizuj ocenę
-                    </Button>
-                </Box>
+                <Typography variant="body2" color="text.secondary">
+                    Komentarz
+                </Typography>
+                <Typography mb={2}>{data.stage2Comment ?? "-"}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Data oceny
+                </Typography>
+                <Typography>
+                    {data.stage2ReviewedAtUtc
+                        ? new Date(data.stage2ReviewedAtUtc).toLocaleString("pl-PL")
+                        : "-"}
+                </Typography>
             </Paper>
         </Box>
     );

@@ -13,6 +13,8 @@ import { AuthProvider } from "./hooks/AuthProvider";
 import Register from "./pages/Register";
 import Stage2ReviewQueue from "./pages/Stage2ReviewQueue";
 import Stage2ReviewDetails from "./pages/Stage2ReviewDetails";
+import EmployeeEvaluationHistory from "./pages/EmployeeEvaluationHistory";
+import EmployeeEvaluationHistoryDetails from "./pages/EmployeeEvaluationHistoryDetails";
 import AddAchievementForm from "./pages/AddAchievementForm";
 import AchievementList from "./pages/AchievementList";
 
@@ -47,8 +49,16 @@ function App() {
                                 element={<Stage2ReviewQueue />}
                             />
                             <Route
-                                path="/evaluation/stage2/:employeeId"
+                                path="/evaluation/stage2/:achievementId"
                                 element={<Stage2ReviewDetails />}
+                            />
+                            <Route
+                                path="/evaluation/history"
+                                element={<EmployeeEvaluationHistory />}
+                            />
+                            <Route
+                                path="/evaluation/history/:achievementId"
+                                element={<EmployeeEvaluationHistoryDetails />}
                             />
                             <Route
                                 path="/achievement/add"

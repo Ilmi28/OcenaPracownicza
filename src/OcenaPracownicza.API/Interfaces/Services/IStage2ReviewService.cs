@@ -5,6 +5,7 @@ namespace OcenaPracownicza.API.Interfaces.Services;
 
 public interface IStage2ReviewService
 {
+    Task<BaseResponse<List<Stage2HistoryItemView>>> GetHistoryAsync();
     Task<BaseResponse<List<Stage2ReviewItemView>>> GetPendingAsync();
     Task<BaseResponse<List<Stage2ReviewItemView>>> GetApprovedAsync();
     Task<BaseResponse<List<Stage2ReviewItemView>>> GetArchivedAsync();
