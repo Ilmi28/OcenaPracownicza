@@ -1,68 +1,125 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
 export const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2D6CDF', 
+    shape: {
+        borderRadius: 12,
     },
-    secondary: {
-      main: '#4B5563', 
-    },
-    error: {
-      main: '#D93025', 
-    },
-    success: {
-      main: '#1AA260',
-    },
-    background: {
-      default: '#F7F7F7',
-      paper: '#FFFFFF',
-    },
-    text: {
-      primary: '#1A1A1A',
-      secondary: '#6B7280',
-    },
-  },
-
-  typography: {
-    fontFamily: [
-      'system-ui',
-      'Inter',
-      'Avenir',
-      'Sans-serif',
-    ].join(','),
-    h1: { fontWeight: 600 }, 
-    h2: { fontWeight: 600 },
-    h3: { fontWeight: 600 },
-    h4: { fontWeight: 600 },
-    h5: { fontWeight: 600 },
-    h6: { fontWeight: 600 },
-  },
-
-  
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8, 
-          textTransform: 'none', 
+    palette: {
+        mode: "light",
+        primary: {
+            main: "#2563eb",
         },
-      },
-    },
-    MuiOutlinedInput: {
-      styleOverrides: {
-        notchedOutline: {
-          borderColor: '#D1D5DB', 
+        secondary: {
+            main: "#475569",
         },
-      },
-    },
-    MuiPaper: { 
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
+        error: {
+            main: "#dc2626",
         },
-      },
+        success: {
+            main: "#16a34a",
+        },
+        warning: {
+            main: "#d97706",
+        },
+        background: {
+            default: "#f4f7fb",
+            paper: "#ffffff",
+        },
+        text: {
+            primary: "#0f172a",
+            secondary: "#475569",
+        },
+        divider: "#e2e8f0",
     },
-  },
+    typography: {
+        fontFamily: ["Inter", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"].join(","),
+        h1: { fontWeight: 700 },
+        h2: { fontWeight: 700 },
+        h3: { fontWeight: 700 },
+        h4: { fontWeight: 700 },
+        h5: { fontWeight: 700 },
+        h6: { fontWeight: 700 },
+        button: { fontWeight: 600 },
+    },
+    components: {
+        MuiCssBaseline: {
+            styleOverrides: {
+                html: {
+                    width: "100%",
+                    height: "100%",
+                },
+                body: {
+                    width: "100%",
+                    minHeight: "100%",
+                    margin: 0,
+                    background: "linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%)",
+                },
+                "#root": {
+                    width: "100%",
+                    minHeight: "100vh",
+                },
+            },
+        },
+        MuiButton: {
+            defaultProps: {
+                disableElevation: true,
+            },
+            styleOverrides: {
+                root: {
+                    borderRadius: 10,
+                    textTransform: "none",
+                    minHeight: 40,
+                    paddingInline: 16,
+                },
+                containedPrimary: {
+                    boxShadow: "0 6px 16px rgba(37, 99, 235, 0.20)",
+                    "&:hover": {
+                        boxShadow: "0 8px 20px rgba(37, 99, 235, 0.25)",
+                    },
+                },
+            },
+        },
+        MuiPaper: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 14,
+                    border: "1px solid #e2e8f0",
+                    boxShadow: "0 10px 28px rgba(15, 23, 42, 0.06)",
+                },
+            },
+        },
+        MuiOutlinedInput: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: "#ffffff",
+                },
+                notchedOutline: {
+                    borderColor: "#cbd5e1",
+                },
+            },
+        },
+        MuiTableHead: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: "#f8fafc",
+                },
+            },
+        },
+        MuiTableCell: {
+            styleOverrides: {
+                head: {
+                    fontWeight: 700,
+                    color: "#0f172a",
+                },
+            },
+        },
+        MuiChip: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 8,
+                    fontWeight: 600,
+                },
+            },
+        },
+    },
 });
