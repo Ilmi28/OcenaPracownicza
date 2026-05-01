@@ -39,6 +39,16 @@ public class Stage2ReviewServiceTests
             Position = "Tester"
         };
 
+        var period2026 = new EvaluationPeriod
+        {
+            Id = Guid.NewGuid(),
+            Name = "2026-Q1",
+            StartDate = new DateTime(2026, 1, 1),
+            EndDate = new DateTime(2026, 3, 31),
+            RegulationVersion = "1.0"
+        };
+        context.EvaluationPeriods.Add(period2026);
+
         context.Employees.AddRange(currentEmployee, otherEmployee);
         context.Achievements.AddRange(
             new Achievement
@@ -49,7 +59,7 @@ public class Stage2ReviewServiceTests
                 Description = "A",
                 Date = new DateTime(2026, 1, 1),
                 Category = AchievementCategory.ProjectDelivery,
-                Period = "2026-Q1",
+                EvaluationPeriodId = period2026.Id,
                 FinalScore = "9.0",
                 AchievementsSummary = "A",
                 Stage2Status = EvaluationStageStatus.Stage2Approved,
@@ -63,7 +73,7 @@ public class Stage2ReviewServiceTests
                 Description = "B",
                 Date = new DateTime(2026, 2, 1),
                 Category = AchievementCategory.ProjectDelivery,
-                Period = "2026-Q1",
+                EvaluationPeriodId = period2026.Id,
                 FinalScore = "7.0",
                 AchievementsSummary = "B",
                 Stage2Status = EvaluationStageStatus.Stage2Approved,
@@ -112,7 +122,15 @@ public class Stage2ReviewServiceTests
         };
 
         var otherAchievementId = Guid.NewGuid();
-
+        var period2026 = new EvaluationPeriod
+        {
+            Id = Guid.NewGuid(),
+            Name = "2026-Q1",
+            StartDate = new DateTime(2026, 1, 1),
+            EndDate = new DateTime(2026, 3, 31),
+            RegulationVersion = "1.0"
+        };
+        context.EvaluationPeriods.Add(period2026);
         context.Employees.AddRange(currentEmployee, otherEmployee);
         context.Achievements.Add(new Achievement
         {
@@ -122,7 +140,7 @@ public class Stage2ReviewServiceTests
             Description = "B",
             Date = new DateTime(2026, 2, 1),
             Category = AchievementCategory.ProjectDelivery,
-            Period = "2026-Q1",
+            EvaluationPeriodId = period2026.Id,
             FinalScore = "7.0",
             AchievementsSummary = "B",
             Stage2Status = EvaluationStageStatus.Stage2Approved,

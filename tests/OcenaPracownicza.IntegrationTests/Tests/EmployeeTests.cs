@@ -23,6 +23,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
         private readonly Guid _emp6Id = Guid.Parse("00000000-0000-0000-0000-000000000006");
         private readonly Guid _achievement1Id = Guid.Parse("10000000-0000-0000-0000-000000000001");
         private readonly Guid _achievement2Id = Guid.Parse("10000000-0000-0000-0000-000000000002");
+        private readonly Guid _period2024Id = Guid.Parse("20000000-0000-0000-0000-000000002024");
 
         public EmployeeTests(EmployeeWebApplicationFactory factory) : base(factory)
         {
@@ -147,6 +148,18 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                 new Employee { Id = _emp6Id, FirstName = "B", LastName = "Beta", Position = "Y", IdentityUserId = "6" }
             };
 
+            var periods = new List<EvaluationPeriod>
+            {
+                new EvaluationPeriod
+                {
+                    Id = _period2024Id,
+                    Name = "2024",
+                    StartDate = new DateTime(2024, 1, 1),
+                    EndDate = new DateTime(2024, 12, 31),
+                    RegulationVersion = "1.0"
+                }
+            };
+
             var achievements = new List<Achievement>
             {
                 new Achievement
@@ -157,7 +170,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                     Date = DateTime.UtcNow.AddDays(-7),
                     Category = AchievementCategory.ProcessImprovement,
                     EmployeeId = _emp1Id,
-                    Period = "2024",
+                    EvaluationPeriodId = _period2024Id,
                     FinalScore = "8",
                     AchievementsSummary = "Good",
                     Stage2Status = EvaluationStageStatus.PendingStage2
@@ -170,7 +183,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
                     Date = DateTime.UtcNow.AddDays(-6),
                     Category = AchievementCategory.TechnicalGrowth,
                     EmployeeId = _emp2Id,
-                    Period = "2024",
+                    EvaluationPeriodId = _period2024Id,
                     FinalScore = "7",
                     AchievementsSummary = "Solid",
                     Stage2Status = EvaluationStageStatus.Draft
