@@ -192,6 +192,7 @@ namespace OcenaPracownicza.IntegrationTests.Tests
 
             context.Roles.AddRange(roles);
             context.Users.AddRange(users);
+            context.EvaluationPeriods.AddRange(periods);
             context.Employees.AddRange(employees);
             context.Achievements.AddRange(achievements);
 
