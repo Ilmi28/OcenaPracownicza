@@ -17,6 +17,14 @@ export interface AchievementListItem {
     createdAt: string;
 }
 
+interface UserInfo {
+    userId: string;
+    userName: string;
+    email: string;
+    role: string;
+    roles: string[];
+}
+
 const KATEGORIE: Record<number, { nazwa: string; kolor: string }> = {
     1: { nazwa: "Sukces projektowy", kolor: "#007bff" },
     2: { nazwa: "Rozwój techniczny", kolor: "#6f42c1" },
@@ -28,14 +36,17 @@ const KATEGORIE: Record<number, { nazwa: string; kolor: string }> = {
 const AchievementList: React.FC = () => {
     const [achievements, setAchievements] = useState<AchievementListItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isEmployee, setIsEmployee] = useState(false); // Stan przechowujący informację o roli
     const navigate = useNavigate();
 
-    const fetchAchievements = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const resp =
-                await axiosClient.get<AchievementListItem[]>("/achievement");
-            setAchievements(resp.data);
+            const userResp = await axiosClient.get<UserInfo>("/auth/me");
+            setIsEmployee(userResp.data.role === "Employee");
+
+            const achievementsResp = await axiosClient.get<AchievementListItem[]>("/achievement");
+            setAchievements(achievementsResp.data);
         } catch (err: any) {
             console.error("Błąd pobierania danych.", err);
         } finally {
@@ -44,7 +55,7 @@ const AchievementList: React.FC = () => {
     };
 
     useEffect(() => {
-        fetchAchievements();
+        fetchData();
     }, []);
 
     if (loading) return <div className="loader-table">Ładowanie danych...</div>;
@@ -59,7 +70,7 @@ const AchievementList: React.FC = () => {
                     </span>
                 </div>
                 <div className="table-actions">
-                    <button onClick={fetchAchievements} className="btn-refresh">
+                    <button onClick={fetchData} className="btn-refresh">
                         Odśwież
                     </button>
                     <button
@@ -75,27 +86,25 @@ const AchievementList: React.FC = () => {
                 <table className="achievement-table">
                     <thead>
                         <tr>
-                            <th>Data</th>
-                            <th>Kategoria</th>
-                            <th>Okres</th>
-                            <th>Wynik</th>
-                            <th>Nazwa</th>
-                            <th>Opis</th>
-                            <th>Podsumowanie</th>
-                            <th>Pracownik</th>
-                            <th style={{ textAlign: "right" }}>Akcje</th>
+                            <th className="th-date">Data</th>
+                            <th className="th-cat">Kategoria</th>
+                            <th className="th-period">Okres</th>
+                            <th className="th-score">Wynik</th>
+                            <th className="th-name">Nazwa</th>
+                            <th className="th-desc">Opis</th>
+                            <th className="th-summary">Podsumowanie</th>
+                            {/* Kolumna Pracownik widoczna TYLKO jeśli NIE JESTEŚ Employee */}
+                            {!isEmployee && <th className="th-emp">Pracownik</th>}
+                            <th className="th-actions" style={{ textAlign: "right" }}>Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
                         {achievements.map((item) => {
-                            const kat =
-                                KATEGORIE[item.category] || KATEGORIE[5];
+                            const kat = KATEGORIE[item.category] || KATEGORIE[5];
                             return (
                                 <tr key={item.id}>
                                     <td className="col-date">
-                                        {new Date(item.date).toLocaleDateString(
-                                            "pl-PL",
-                                        )}
+                                        {new Date(item.date).toLocaleDateString("pl-PL")}
                                     </td>
                                     <td>
                                         <span
@@ -111,27 +120,26 @@ const AchievementList: React.FC = () => {
                                     <td>{item.period}</td>
                                     <td>{item.finalScore}</td>
                                     <td className="col-name">{item.name}</td>
-                                    <td
-                                        className="col-desc"
-                                        title={item.description}
-                                    >
-                                        {item.description}
+                                    <td>
+                                        <div className="col-desc" title={item.description}>
+                                            {item.description}
+                                        </div>
                                     </td>
-                                    <td
-                                        className="col-desc"
-                                        title={item.achievementsSummary}
-                                    >
-                                        {item.achievementsSummary}
+                                    <td>
+                                        <div className="col-desc" title={item.achievementsSummary}>
+                                            {item.achievementsSummary}
+                                        </div>
                                     </td>
-                                    <td className="col-emp">
-                                        <code>
-                                            {item.employeeId.slice(0, 8)}
-                                        </code>
-                                    </td>
+                                    {/* Dane pracownika widoczne TYLKO jeśli NIE JESTEŚ Employee */}
+                                    {!isEmployee && (
+                                        <td className="col-emp">
+                                            <code>{item.employeeId.slice(0, 8)}</code>
+                                        </td>
+                                    )}
                                     <td style={{ textAlign: "right" }}>
                                         <button
                                             className="btn-view"
-                                            onClick={() => console.log(item.id)}
+                                            onClick={() => console.log("Test")}
                                         >
                                             Szczegóły
                                         </button>
@@ -170,8 +178,9 @@ const AchievementList: React.FC = () => {
                 .responsive-table-wrapper {
                     border: 1px solid #e2e8f0;
                     border-radius: 12px;
-                    overflow: hidden;
+                    overflow-x: auto;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    background: white;
                 }
 
                 .achievement-table {
@@ -179,6 +188,7 @@ const AchievementList: React.FC = () => {
                     border-collapse: collapse;
                     text-align: left;
                     font-size: 0.95rem;
+                    table-layout: fixed;
                 }
 
                 .achievement-table thead {
@@ -195,11 +205,21 @@ const AchievementList: React.FC = () => {
                     letter-spacing: 0.05em;
                 }
 
+                .th-date { width: 110px; }
+                .th-cat { width: 150px; }
+                .th-period { width: 100px; }
+                .th-score { width: 120px; }
+                .th-name { width: 180px; }
+                .th-emp { width: 100px; }
+                .th-actions { width: 110px; }
+
                 .achievement-table td {
                     padding: 16px;
                     border-bottom: 1px solid #edf2f7;
                     color: #2d3748;
-                    vertical-align: middle;
+                    vertical-align: top;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
                 }
 
                 .achievement-table tbody tr:hover {
@@ -213,17 +233,30 @@ const AchievementList: React.FC = () => {
                     font-size: 0.75rem;
                     font-weight: 700;
                     background: white;
+                    display: inline-block;
+                    white-space: nowrap;
                 }
 
-                .col-date { font-weight: 500; color: #718096; width: 100px; }
-                .col-name { font-weight: 600; width: 200px; }
+                .col-date { font-weight: 500; color: #718096; }
+                
+                .col-name { 
+                    font-weight: 600; 
+                    color: #2d3748;
+                    white-space: normal;
+                }
+
                 .col-desc { 
-                    max-width: 400px;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 3;
+                    -webkit-box-orient: vertical;
                     overflow: hidden;
                     text-overflow: ellipsis;
-                    white-space: nowrap;
+                    white-space: normal;
                     color: #718096;
+                    font-size: 0.9rem;
+                    line-height: 1.5;
                 }
+
                 .col-emp code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
 
                 .btn-view {

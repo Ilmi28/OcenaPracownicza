@@ -8,6 +8,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import HistoryIcon from "@mui/icons-material/History";
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import { useAuth } from "../hooks/AuthProvider";
 
 // Zakładam, że masz hook useAuth. Jeśli nie, na razie podaję wersję z symulacją.
@@ -77,6 +78,13 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                             text="Dodaj osiągnięcie"
                             to="/achievement/add"
                             IconComponent={EmojiEventsIcon}
+                        />
+                    )}
+                    {user?.role === "Employee" && (
+                        <SidebarItem
+                            text="Moje osiągnięcia"
+                            to="/achievements"
+                            IconComponent={FormatListNumberedIcon}
                         />
                     )}
 

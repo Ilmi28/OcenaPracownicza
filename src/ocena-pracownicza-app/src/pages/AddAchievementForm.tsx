@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Importujemy hook do nawigacji
+import { useNavigate } from "react-router-dom";
 import axiosClient from "../services/axiosClient";
 
 /** Typy */
@@ -14,10 +14,16 @@ export type AchievementModel = {
     achievementsSummary: string;
 };
 
-interface EmployeeOption {
+interface CurrentUser {
     id: string;
     firstName: string;
     lastName: string;
+}
+
+interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data: T;
 }
 
 type Props = {
@@ -39,10 +45,10 @@ const AddAchievementForm: React.FC<Props> = ({
     initialEmployeeId = "",
     onSuccess,
 }) => {
-    const navigate = useNavigate(); // Inicjalizacja nawigacji
-    const [employees, setEmployees] = useState<EmployeeOption[]>([]);
+    const navigate = useNavigate();
+    const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [loadingEmployees, setLoadingEmployees] = useState(true);
+    const [loadingUser, setLoadingUser] = useState(true);
     const [message, setMessage] = useState<{
         type: "success" | "error";
         text: string;
@@ -60,28 +66,30 @@ const AddAchievementForm: React.FC<Props> = ({
     });
 
     useEffect(() => {
-        const fetchEmployees = async () => {
+        const fetchCurrentUserInfo = async () => {
             try {
-                const resp = await axiosClient.get<EmployeeOption[]>(
-                    "/achievement/employee-dropdown",
-                );
-                setEmployees(resp.data);
+                const resp = await axiosClient.get<ApiResponse<CurrentUser>>("/employee/me");
+                const userData = resp.data.data;
+                
+                setCurrentUser(userData);
 
-                if (!initialEmployeeId && resp.data.length > 0) {
-                    setForm((prev) => ({
-                        ...prev,
-                        employeeId: resp.data[0].id,
-                    }));
-                }
-            } catch (err) {
-                console.error("Błąd pobierania pracowników:", err);
+                setForm((prev) => ({
+                    ...prev,
+                    employeeId: userData.id,
+                }));
+            } catch (err: any) {
+                console.error("Błąd pobierania profilu użytkownika:", err);
+                setMessage({ 
+                    type: "error", 
+                    text: "Nie udało się pobrać danych Twojego profilu." 
+                });
             } finally {
-                setLoadingEmployees(false);
+                setLoadingUser(false);
             }
         };
 
-        fetchEmployees();
-    }, [initialEmployeeId]);
+        fetchCurrentUserInfo();
+    }, []);
 
     const handleChange = (
         e: React.ChangeEvent<
@@ -102,8 +110,9 @@ const AddAchievementForm: React.FC<Props> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
         if (!form.employeeId) {
-            setMessage({ type: "error", text: "Proszę wybrać pracownika." });
+            setMessage({ type: "error", text: "Błąd: Brak przypisanego identyfikatora pracownika." });
             return;
         }
 
@@ -112,19 +121,15 @@ const AddAchievementForm: React.FC<Props> = ({
 
         try {
             await axiosClient.post("/achievement", form);
-
-            // 1. Wywołujemy opcjonalny callback sukcesu
             if (onSuccess) onSuccess();
-
-            // 2. Przekierowujemy na listę osiągnięć
-            // Zakładam, że ścieżka do listy to '/' lub '/achievements' - dostosuj wg potrzeb
             navigate("/achievements");
         } catch (error: any) {
             const errorMsg =
                 error.response?.data?.message ||
+                error.message ||
                 "Nie udało się zapisać osiągnięcia.";
             setMessage({ type: "error", text: errorMsg });
-            setIsSubmitting(false); // Przy błędzie przywracamy przycisk
+            setIsSubmitting(false);
         }
     };
 
@@ -146,28 +151,19 @@ const AddAchievementForm: React.FC<Props> = ({
             )}
 
             <div className="form-group">
-                <label htmlFor="employeeId">Pracownik</label>
-                <select
-                    id="employeeId"
-                    name="employeeId"
-                    value={form.employeeId}
-                    onChange={handleChange}
-                    required
-                    disabled={loadingEmployees}
-                >
-                    <option value="" disabled>
-                        {loadingEmployees
-                            ? "Ładowanie listy..."
-                            : "Wybierz pracownika"}
-                    </option>
-                    {employees.map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                            {emp.firstName} {emp.lastName}
-                        </option>
-                    ))}
-                </select>
+                {loadingUser ? (
+                    <div className="loading-placeholder">Pobieranie danych profilu...</div>
+                ) : (
+                    <div className="logged-user-info">
+                        <span className="user-name">
+                            {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "Błąd! Zaloguj się ponownie!"}
+                        </span>
+                        <input type="hidden" name="employeeId" value={form.employeeId} />
+                    </div>
+                )}
             </div>
 
+            {/* Reszta pól formularza pozostaje bez zmian */}
             <div className="form-group">
                 <label htmlFor="name">Nazwa osiągnięcia</label>
                 <input
@@ -259,12 +255,13 @@ const AddAchievementForm: React.FC<Props> = ({
             <button
                 type="submit"
                 className="submit-btn"
-                disabled={isSubmitting || loadingEmployees}
+                disabled={isSubmitting || loadingUser}
             >
                 {isSubmitting ? "Zapisywanie..." : "Zapisz i wróć do listy"}
             </button>
 
             <style>{`
+                /* Style pozostają takie same jak w Twoim poprzednim fragmencie */
                 .achievement-form {
                     max-width: 550px;
                     margin: 2rem auto;
@@ -284,17 +281,18 @@ const AddAchievementForm: React.FC<Props> = ({
                     padding: 12px; border: 1px solid #dce1e8; border-radius: 8px; 
                     background-color: #f9fbff; color: #2e3b4e; font-size: 0.95rem;
                 }
-                input:focus { outline: none; border-color: #4e73df; box-shadow: 0 0 0 3px rgba(78,115,223,0.1); }
+                .logged-user-info {
+                    padding: 12px;
+                    background-color: #edf2f7;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                }
+                .user-name { font-weight: 600; color: #2d3748; }
                 .submit-btn { 
                     margin-top: 1rem; padding: 14px; cursor: pointer; background: #4e73df; 
                     color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem;
-                    transition: all 0.2s;
                 }
-                .submit-btn:hover { background: #2e59d9; transform: translateY(-1px); }
-                .submit-btn:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; }
-                .alert { padding: 12px; border-radius: 8px; text-align: center; font-size: 0.9rem; font-weight: 600; }
-                .alert.success { background: #c6f6d5; color: #22543d; }
-                .alert.error { background: #fed7d7; color: #822727; }
+                .alert.error { background: #fed7d7; color: #822727; padding: 10px; border-radius: 5px; }
             `}</style>
         </form>
     );

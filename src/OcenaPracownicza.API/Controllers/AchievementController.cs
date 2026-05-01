@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OcenaPracownicza.API.Data;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Enums;
 using OcenaPracownicza.API.Requests;
+using System.Security.Claims;
 
 namespace OcenaPracownicza.API.Controllers;
 
@@ -13,9 +15,26 @@ namespace OcenaPracownicza.API.Controllers;
 public class AchievementController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
-    public IActionResult Get()
+    public async Task<IActionResult> Get()
     {
-        var achievements = context.Achievements.ToList();
+        var identityUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+        if (string.IsNullOrEmpty(identityUserId)) return Unauthorized();
+
+        var employee = await context.Employees
+            .FirstOrDefaultAsync(e => e.IdentityUserId == identityUserId);
+
+        var query = context.Achievements.AsQueryable();
+
+        if (userRole != "Admin" && userRole != "Manager")
+        {
+            if (employee == null) return Ok(new List<Achievement>());
+
+            query = query.Where(a => a.EmployeeId == employee.Id);
+        }
+
+        var achievements = await query.ToListAsync();
         return Ok(achievements);
     }
 
