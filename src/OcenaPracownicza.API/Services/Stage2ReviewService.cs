@@ -15,6 +15,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
     {
         var items = await context.Achievements
             .Include(a => a.Employee)
+            .Include(a => a.EvaluationPeriod)    
             .Select(a => new Stage2HistoryItemView
             {
                 AchievementId = a.Id,
@@ -22,7 +23,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
                 Position = a.Employee.Position,
                 AchievementName = a.Name,
-                Period = a.Period,
+                Period = a.EvaluationPeriod.Name,      
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status,
                 Date = a.Date,
@@ -36,12 +37,13 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             Data = items
         };
     }
-    
+
     public async Task<BaseResponse<List<Stage2HistoryItemView>>> GetMyHistoryAsync()
     {
         var currentEmployeeId = await GetCurrentEmployeeIdAsync();
         var items = await context.Achievements
             .Include(a => a.Employee)
+            .Include(a => a.EvaluationPeriod)
             .Where(a => a.EmployeeId == currentEmployeeId)
             .Select(a => new Stage2HistoryItemView
             {
@@ -50,7 +52,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
                 Position = a.Employee.Position,
                 AchievementName = a.Name,
-                Period = a.Period,
+                Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status,
                 Date = a.Date,
@@ -69,6 +71,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
     {
         var items = await context.Achievements
             .Include(a => a.Employee)
+            .Include(a => a.EvaluationPeriod)
             .Where(a => a.Stage2Status == EvaluationStageStatus.PendingStage2)
             .Select(a => new Stage2ReviewItemView
             {
@@ -77,7 +80,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
                 Position = a.Employee.Position,
                 AchievementName = a.Name,
-                Period = a.Period,
+                Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status
             })
@@ -96,6 +99,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
 
         var items = await context.Achievements
             .Include(a => a.Employee)
+            .Include(a => a.EvaluationPeriod)
             .Where(a => a.Stage2Status == EvaluationStageStatus.Stage2Approved)
             .Select(a => new Stage2ReviewItemView
             {
@@ -104,7 +108,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
                 Position = a.Employee.Position,
                 AchievementName = a.Name,
-                Period = a.Period,
+                Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status
             })
@@ -121,6 +125,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
     {
         var items = await context.Achievements
             .Include(a => a.Employee)
+            .Include(a => a.EvaluationPeriod)
             .Where(a => a.Stage2Status == EvaluationStageStatus.Archived)
             .Select(a => new Stage2ReviewItemView
             {
@@ -129,7 +134,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
                 Position = a.Employee.Position,
                 AchievementName = a.Name,
-                Period = a.Period,
+                Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status
             })
@@ -147,7 +152,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         var details = await BuildDetails(achievementId);
         return new BaseResponse<Stage2ReviewDetailsView> { Data = details };
     }
-    
+
     public async Task<BaseResponse<Stage2ReviewDetailsView>> GetMyDetailsAsync(Guid achievementId)
     {
         var currentEmployeeId = await GetCurrentEmployeeIdAsync();
@@ -238,15 +243,18 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
     {
         var selectedAchievement = await context.Achievements
             .Include(a => a.Employee)
+            .Include(a => a.EvaluationPeriod)     
             .FirstOrDefaultAsync(a =>
                 a.Id == achievementId &&
                 (!requiredEmployeeId.HasValue || a.EmployeeId == requiredEmployeeId.Value));
+
         if (selectedAchievement == null)
         {
             throw new NotFoundException("Nie znaleziono osiągnięcia.");
         }
 
         var achievements = await context.Achievements
+            .Include(a => a.EvaluationPeriod)       
             .Where(a => a.EmployeeId == selectedAchievement.EmployeeId)
             .OrderByDescending(a => a.Date)
             .ToListAsync();
@@ -258,7 +266,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             FullName = $"{selectedAchievement.Employee.FirstName} {selectedAchievement.Employee.LastName}",
             Position = selectedAchievement.Employee.Position,
             AchievementName = selectedAchievement.Name,
-            Period = selectedAchievement.Period,
+            Period = selectedAchievement.EvaluationPeriod.Name,
             FinalScore = selectedAchievement.FinalScore,
             AchievementsSummary = selectedAchievement.AchievementsSummary,
             Stage2Status = (int)selectedAchievement.Stage2Status,
@@ -272,7 +280,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 Description = a.Description,
                 Date = a.Date,
                 Category = (int)a.Category,
-                Period = a.Period,
+                Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
                 AchievementsSummary = a.AchievementsSummary,
                 Stage2Status = (int)a.Stage2Status,
@@ -282,7 +290,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             }).ToList()
         };
     }
-    
+
     private async Task<Guid> GetCurrentEmployeeIdAsync()
     {
         var currentUserId = userManager.GetCurrentUserId() ?? throw new UnauthorizedAccessException();

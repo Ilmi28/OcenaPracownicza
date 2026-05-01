@@ -9,7 +9,7 @@ public class AddAchievementRequest
     public DateTime Date { get; set; }
     public Guid EmployeeId { get; set; }
     public AchievementCategory Category { get; set; }
-    public string Period { get; set; } = null!;
+    public Guid EvaluationPeriodId { get; set; }
     public string FinalScore { get; set; } = null!;
     public string AchievementsSummary { get; set; } = null!;
 }
