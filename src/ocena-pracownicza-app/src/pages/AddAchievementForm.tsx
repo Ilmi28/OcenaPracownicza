@@ -2,14 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../services/axiosClient";
 
-/** Typy */
 export type AchievementModel = {
     name: string;
     description: string;
     date: string;
     employeeId: string;
     category: number;
-    period: string;
+    evaluationPeriodId: string;
     finalScore: string;
     achievementsSummary: string;
 };
@@ -24,6 +23,11 @@ interface ApiResponse<T> {
     success: boolean;
     message: string;
     data: T;
+}
+
+interface EvaluationPeriodBasicInfo {
+    id: string;
+    name: string;
 }
 
 type Props = {
@@ -49,6 +53,8 @@ const AddAchievementForm: React.FC<Props> = ({
     const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadingUser, setLoadingUser] = useState(true);
+    const [detectedPeriod, setDetectedPeriod] = useState<string | null>("Pobieranie...");
+
     const [message, setMessage] = useState<{
         type: "success" | "error";
         text: string;
@@ -60,7 +66,7 @@ const AddAchievementForm: React.FC<Props> = ({
         date: new Date().toISOString(),
         employeeId: initialEmployeeId,
         category: 1,
-        period: "",
+        evaluationPeriodId: "",
         finalScore: "",
         achievementsSummary: "",
     });
@@ -87,9 +93,35 @@ const AddAchievementForm: React.FC<Props> = ({
                 setLoadingUser(false);
             }
         };
-
         fetchCurrentUserInfo();
     }, []);
+
+
+useEffect(() => {
+    const fetchPeriod = async () => {
+        try {
+            const resp = await axiosClient.get<EvaluationPeriodBasicInfo>(
+                `/evaluation-periods/by-date?date=${form.date}`
+            );
+            
+            const { id, name } = resp.data;
+
+            setDetectedPeriod(name); 
+            
+            setForm(prev => ({
+                ...prev,
+                evaluationPeriodId: id             
+            }));
+        } catch (err) {
+            setDetectedPeriod(null);
+            setForm(prev => ({ ...prev, evaluationPeriodId: "" }));
+        }
+    };
+    
+    if (form.date) {
+        fetchPeriod();
+    }
+}, [form.date]);
 
     const handleChange = (
         e: React.ChangeEvent<
@@ -111,8 +143,8 @@ const AddAchievementForm: React.FC<Props> = ({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!form.employeeId) {
-            setMessage({ type: "error", text: "Błąd: Brak przypisanego identyfikatora pracownika." });
+        if (!detectedPeriod) {
+            setMessage({ type: "error", text: "Nie można zapisać: Wybrana data nie pasuje do żadnego okresu ocen." });
             return;
         }
 
@@ -163,7 +195,7 @@ const AddAchievementForm: React.FC<Props> = ({
                 )}
             </div>
 
-            {/* Reszta pól formularza pozostaje bez zmian */}
+            {                     }
             <div className="form-group">
                 <label htmlFor="name">Nazwa osiągnięcia</label>
                 <input
@@ -188,17 +220,37 @@ const AddAchievementForm: React.FC<Props> = ({
                 />
             </div>
 
-            <div className="form-group">
-                <label htmlFor="date">Data i godzina</label>
-                <input
-                    id="date"
-                    name="date"
-                    type="datetime-local"
-                    value={formatToLocal(form.date)}
-                    onChange={handleChange}
-                    required
-                />
-            </div>
+<div className="form-group">
+    <label htmlFor="date">Data i godzina</label>
+    <input
+        id="date"
+        name="date"
+        type="datetime-local"
+        value={formatToLocal(form.date)}
+        onChange={handleChange}
+        required
+    />
+    
+    {            }
+    <div style={{ 
+        marginTop: '8px', 
+        fontSize: '0.9rem', 
+        padding: '10px', 
+        borderRadius: '6px',
+        backgroundColor: detectedPeriod ? '#f0fff4' : '#fff5f5',
+        color: detectedPeriod ? '#276749' : '#c53030',
+        border: `1px solid ${detectedPeriod ? '#c6f6d5' : '#feb2b2'}`,
+        fontWeight: '600'
+    }}>
+        {detectedPeriod === "Pobieranie..." ? (
+            <span>🔍 Sprawdzanie okresu...</span>
+        ) : detectedPeriod ? (
+            <span>📅 Przypisany okres: {detectedPeriod}</span>
+        ) : (
+            <span>⚠️ Nieznany okres - zmień datę, aby móc zapisać!</span>
+        )}
+    </div>
+</div>
 
             <div className="form-group">
                 <label htmlFor="category">Kategoria</label>
@@ -214,18 +266,6 @@ const AddAchievementForm: React.FC<Props> = ({
                         </option>
                     ))}
                 </select>
-            </div>
-
-            <div className="form-group">
-                <label htmlFor="period">Okres oceny</label>
-                <input
-                    id="period"
-                    name="period"
-                    type="text"
-                    value={form.period}
-                    onChange={handleChange}
-                    required
-                />
             </div>
 
             <div className="form-group">
@@ -251,11 +291,10 @@ const AddAchievementForm: React.FC<Props> = ({
                     rows={3}
                 />
             </div>
-
             <button
                 type="submit"
                 className="submit-btn"
-                disabled={isSubmitting || loadingUser}
+                disabled={isSubmitting || loadingUser || !detectedPeriod}
             >
                 {isSubmitting ? "Zapisywanie..." : "Zapisz i wróć do listy"}
             </button>

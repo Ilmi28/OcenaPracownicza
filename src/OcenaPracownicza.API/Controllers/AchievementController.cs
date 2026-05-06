@@ -5,14 +5,17 @@ using OcenaPracownicza.API.Data;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Enums;
 using OcenaPracownicza.API.Requests;
+using OcenaPracownicza.API.Interfaces.Services;
 using System.Security.Claims;
 
 namespace OcenaPracownicza.API.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/achievement")]
-public class AchievementController(ApplicationDbContext context) : ControllerBase
+[Route("api/[controller]")]
+public class AchievementController(
+    ApplicationDbContext context,
+    IEvaluationPeriodService periodService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Get()
@@ -34,13 +37,38 @@ public class AchievementController(ApplicationDbContext context) : ControllerBas
             query = query.Where(a => a.EmployeeId == employee.Id);
         }
 
-        var achievements = await query.ToListAsync();
+        var achievements = await query
+        .Select(a => new {
+            a.Id,
+            a.Name,
+            a.Description,
+            a.Date,
+            a.Category,
+            a.FinalScore,
+            a.AchievementsSummary,
+            a.EmployeeId,
+            EvaluationPeriodName = a.EvaluationPeriod != null ? a.EvaluationPeriod.Name : "Brak okresu"
+        })
+        .ToListAsync();
+
         return Ok(achievements);
     }
 
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] AddAchievementRequest request)
     {
+        var period = await periodService.GetPeriodByDateAsync(request.Date);
+
+        if (period == null)
+        {
+            return BadRequest("Data osi¹gniêcia nie mieœci siê w ¿adnym zdefiniowanym okresie ocen.");
+        }
+
+        if (period.IsClosed)
+        {
+            return BadRequest("Nie mo¿na dodawaæ osi¹gniêæ do zamkniêtego (zarchiwizowanego) okresu.");
+        }
+
         var achievement = new Achievement
         {
             Name = request.Name,
@@ -48,27 +76,30 @@ public class AchievementController(ApplicationDbContext context) : ControllerBas
             Date = request.Date,
             EmployeeId = request.EmployeeId,
             Category = request.Category,
-            Period = request.Period,
+            EvaluationPeriodId = period.Id,   
             FinalScore = request.FinalScore,
             AchievementsSummary = request.AchievementsSummary,
             Stage2Status = EvaluationStageStatus.PendingStage2
 
         };
-        await context.Achievements.AddAsync(achievement);
 
+        await context.Achievements.AddAsync(achievement);
         await context.SaveChangesAsync();
-        return Ok(achievement);
+
+        return Ok(new { id = achievement.Id, message = "Osi¹gniêcie zosta³o zapisane." });
     }
 
     [HttpGet("employee-dropdown")]
-    public IActionResult GetEmployeeDropdown()
+    [Authorize(Roles = "Manager,Admin")]       
+    public async Task<IActionResult> GetEmployeeDropdown()
     {
-        var employees = context.Employees.Select(e => new
+        var employees = await context.Employees.Select(e => new
         {
             e.Id,
             e.FirstName,
             e.LastName
-        }).ToList();
+        }).ToListAsync();
+
         return Ok(employees);
     }
 }

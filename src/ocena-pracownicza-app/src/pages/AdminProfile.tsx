@@ -7,25 +7,12 @@ import {
     TextField,
     Grid,
     CircularProgress,
-    Alert,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Divider,
+    Alert
 } from "@mui/material";
 import axiosClient from "../services/axiosClient";
 import { useAuth } from "../hooks/AuthProvider";
 import { AdminView } from "../utils/types";
 
-interface EvaluationPeriod {
-    id?: number;
-    name: string;
-    startDate: string;
-    endDate: string;
-}
 
 interface ApiResponse<T> {
     success: boolean;
@@ -41,27 +28,18 @@ const AdminProfile = () => {
     const [newAdmin, setNewAdmin] = useState<AdminView | null>(null);
     const [saving, setSaving] = useState(false);
 
-    const [periods, setPeriods] = useState<EvaluationPeriod[]>([]);
-    const [newPeriod, setNewPeriod] = useState<EvaluationPeriod>({ name: "", startDate: "", endDate: "" });
-    const [savingPeriod, setSavingPeriod] = useState(false);
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [adminResp, periodsResp] = await Promise.all([
-                axiosClient.get<ApiResponse<AdminView>>(`/admin/me`),
-                axiosClient.get<EvaluationPeriod[] | ApiResponse<EvaluationPeriod[]>>("/evaluation-periods")
+            const [adminResp] = await Promise.all([
+                axiosClient.get<ApiResponse<AdminView>>(`/admin/me`)
             ]);
 
             setAdmin(adminResp.data.data);
 
-            const periodsData = Array.isArray(periodsResp.data)
-                ? periodsResp.data
-                : (periodsResp.data as ApiResponse<EvaluationPeriod[]>).data;
-            setPeriods(periodsData || []);
 
         } catch (err: any) {
             setError(err?.response?.data?.message || err?.message || "Błąd pobierania danych");
@@ -95,23 +73,6 @@ const AdminProfile = () => {
             setError("Błąd podczas zapisywania profilu");
         } finally {
             setSaving(false);
-        }
-    };
-
-    const handleCreatePeriod = async () => {
-        if (!newPeriod.name || !newPeriod.startDate || !newPeriod.endDate) {
-            setError("Wypełnij wszystkie pola okresu");
-            return;
-        }
-        setSavingPeriod(true);
-        try {
-            await axiosClient.post("/evaluation-periods", newPeriod);
-            setNewPeriod({ name: "", startDate: "", endDate: "" });
-            await fetchData();
-        } catch (err: any) {
-            setError("Błąd podczas tworzenia okresu");
-        } finally {
-            setSavingPeriod(false);
         }
     };
 
@@ -168,75 +129,6 @@ const AdminProfile = () => {
                         </Grid>
                     )}
                 </Grid>
-            </Paper>
-
-            <Divider sx={{ mb: 4 }} />
-
-            <Paper sx={{ p: 3 }}>
-                <Typography variant="subtitle1" fontWeight="600" gutterBottom>
-                    Okresy Oceny Pracowniczej
-                </Typography>
-
-                <Box sx={{ bgcolor: "grey.50", p: 2, borderRadius: 1, mb: 4, mt: 2 }}>
-                    <Grid container spacing={2} alignItems="flex-end">
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <TextField fullWidth size="small" label="Nazwa okresu" value={newPeriod.name}
-                                onChange={(e) => setNewPeriod({ ...newPeriod, name: e.target.value })} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 3 }}>
-                            <TextField fullWidth size="small" type="date" label="Start" InputLabelProps={{ shrink: true }}
-                                value={newPeriod.startDate} onChange={(e) => setNewPeriod({ ...newPeriod, startDate: e.target.value })} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 3 }}>
-                            <TextField fullWidth size="small" type="date" label="Koniec" InputLabelProps={{ shrink: true }}
-                                value={newPeriod.endDate} onChange={(e) => setNewPeriod({ ...newPeriod, endDate: e.target.value })} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 2 }}>
-                            <Button fullWidth variant="contained" onClick={handleCreatePeriod} disabled={savingPeriod} sx={{ height: '40px' }}>
-                                Dodaj
-                            </Button>
-                        </Grid>
-                    </Grid>
-                </Box>
-
-                <TableContainer>
-                    <Table size="small">
-                        <TableHead sx={{ bgcolor: "grey.100" }}>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 700 }}>Nazwa Okresu</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Data Startu</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }}>Data Końca</TableCell>
-                                <TableCell sx={{ fontWeight: 700 }} align="right">Status</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {periods.map((p) => {
-                                const isPast = new Date(p.endDate) < new Date();
-                                return (
-                                    <TableRow key={p.id} hover>
-                                        <TableCell sx={{ fontWeight: 500 }}>{p.name}</TableCell>
-                                        <TableCell>{new Date(p.startDate).toLocaleDateString()}</TableCell>
-                                        <TableCell>{new Date(p.endDate).toLocaleDateString()}</TableCell>
-                                        <TableCell align="right">
-                                            <Box component="span" sx={{
-                                                px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 700,
-                                                bgcolor: isPast ? "error.light" : "success.light",
-                                                color: isPast ? "error.dark" : "success.dark"
-                                            }}>
-                                                {isPast ? "ZAKOŃCZONY" : "AKTYWNY"}
-                                            </Box>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                            {periods.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center" sx={{ py: 3 }}>Brak zdefiniowanych okresów.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
             </Paper>
         </Box>
     );

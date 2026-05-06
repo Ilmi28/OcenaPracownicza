@@ -13,9 +13,11 @@ import {
     TableRow,
     TextField,
     Typography,
+    MenuItem,       
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { evaluationService } from "../services/evaluationService";
+import axiosClient from "../services/axiosClient"; 
 import { Stage2HistoryItemView } from "../utils/types";
 import { useAuth } from "../hooks/AuthProvider";
 
@@ -28,30 +30,30 @@ const STATUS_LABELS: Record<number, string> = {
     5: "Zarchiwizowana",
 };
 
+interface EvaluationPeriod {
+    id: string;
+    name: string;
+}
+
 export default function EmployeeEvaluationHistory() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [data, setData] = useState<Stage2HistoryItemView[]>([]);
+    const [periods, setPeriods] = useState<EvaluationPeriod[]>([]);          
     const [employeeFilter, setEmployeeFilter] = useState("");
     const [positionFilter, setPositionFilter] = useState("");
+    const [periodFilter, setPeriodFilter] = useState("all");          
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const filteredData = useMemo(() => {
-        const normalizedEmployee = employeeFilter.trim().toLowerCase();
-        const normalizedPosition = positionFilter.trim().toLowerCase();
-
-        return data.filter((item) => {
-            const matchesEmployee =
-                normalizedEmployee.length === 0 ||
-                item.fullName.toLowerCase().includes(normalizedEmployee);
-            const matchesPosition =
-                normalizedPosition.length === 0 ||
-                item.position.toLowerCase().includes(normalizedPosition);
-
-            return matchesEmployee && matchesPosition;
-        });
-    }, [data, employeeFilter, positionFilter]);
+    const fetchPeriods = async () => {
+        try {
+            const resp = await axiosClient.get("/evaluation-periods");
+            setPeriods(resp.data);
+        } catch (err) {
+            console.error("Błąd pobierania okresów", err);
+        }
+    };
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -62,6 +64,7 @@ export default function EmployeeEvaluationHistory() {
                     ? await evaluationService.getMyStage2History()
                     : await evaluationService.getStage2History();
             setData(response);
+            await fetchPeriods();                   
         } catch (err: any) {
             const msg =
                 err?.response?.data?.message ??
@@ -76,6 +79,25 @@ export default function EmployeeEvaluationHistory() {
     useEffect(() => {
         load();
     }, [load]);
+
+    const filteredData = useMemo(() => {
+        const normalizedEmployee = employeeFilter.trim().toLowerCase();
+        const normalizedPosition = positionFilter.trim().toLowerCase();
+
+        return data.filter((item) => {
+            const matchesEmployee =
+                normalizedEmployee.length === 0 ||
+                item.fullName.toLowerCase().includes(normalizedEmployee);
+            const matchesPosition =
+                normalizedPosition.length === 0 ||
+                item.position.toLowerCase().includes(normalizedPosition);
+            const matchesPeriod = 
+                periodFilter === "all" || 
+                item.period === periodFilter;
+
+            return matchesEmployee && matchesPosition && matchesPeriod;
+        });
+    }, [data, employeeFilter, positionFilter, periodFilter]);
 
     if (loading) {
         return (
@@ -105,7 +127,7 @@ export default function EmployeeEvaluationHistory() {
             )}
 
             <Paper>
-                <Box display="flex" gap={2} p={2} flexWrap="wrap">
+                <Box display="flex" gap={2} p={2} flexWrap="wrap" alignItems="center">
                     {user?.role !== "Employee" && (
                         <TextField
                             size="small"
@@ -122,31 +144,50 @@ export default function EmployeeEvaluationHistory() {
                             onChange={(e) => setPositionFilter(e.target.value)}
                         />
                     )}
+                    
+                    {            }
+                    <TextField
+                        select
+                        size="small"
+                        label="Okres"
+                        value={periodFilter}
+                        onChange={(e) => setPeriodFilter(e.target.value)}
+                        sx={{ minWidth: 200 }}
+                    >
+                        <MenuItem value="all">Wszystkie okresy</MenuItem>
+                        {periods.map((p) => (
+                            <MenuItem key={p.id} value={p.name}>
+                                {p.name}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+
                     <Box ml="auto">
                         <Button variant="outlined" onClick={load}>
                             Odśwież
                         </Button>
                     </Box>
                 </Box>
+                
                 <Table>
                     <TableHead>
-                        <TableRow>
-                            {user?.role !== "Employee" && <TableCell>Pracownik</TableCell>}
-                            {user?.role !== "Employee" && <TableCell>Stanowisko</TableCell>}
-                            <TableCell>Osiągnięcie</TableCell>
-                            <TableCell>Okres</TableCell>
-                            <TableCell>Wynik</TableCell>
-                            <TableCell>Data</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell align="right">Akcje</TableCell>
+                        <TableRow sx={{ bgcolor: "grey.50" }}>
+                            {user?.role !== "Employee" && <TableCell sx={{ fontWeight: 700 }}>Pracownik</TableCell>}
+                            {user?.role !== "Employee" && <TableCell sx={{ fontWeight: 700 }}>Stanowisko</TableCell>}
+                            <TableCell sx={{ fontWeight: 700 }}>Osiągnięcie</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Okres</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Wynik</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Data</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }} align="right">Akcje</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {filteredData.map((item) => (
-                            <TableRow key={item.achievementId}>
+                            <TableRow key={item.achievementId} hover>
                                 {user?.role !== "Employee" && <TableCell>{item.fullName}</TableCell>}
                                 {user?.role !== "Employee" && <TableCell>{item.position}</TableCell>}
-                                <TableCell>{item.achievementName}</TableCell>
+                                <TableCell sx={{ fontWeight: 500 }}>{item.achievementName}</TableCell>
                                 <TableCell>{item.period}</TableCell>
                                 <TableCell>{item.finalScore}</TableCell>
                                 <TableCell>
@@ -155,31 +196,21 @@ export default function EmployeeEvaluationHistory() {
                                 <TableCell>
                                     <Chip
                                         size="small"
-                                        label={
-                                            STATUS_LABELS[item.stage2Status] ??
-                                            "Nieznany"
-                                        }
+                                        label={STATUS_LABELS[item.stage2Status] ?? "Nieznany"}
                                         color={
-                                            item.stage2Status === 2
-                                                ? "success"
-                                                : item.stage2Status === 3
-                                                  ? "error"
-                                                  : item.stage2Status >= 4
-                                                    ? "default"
-                                                    : "warning"
+                                            item.stage2Status === 2 ? "success" : 
+                                            item.stage2Status === 3 ? "error" : 
+                                            item.stage2Status >= 4 ? "default" : "warning"
                                         }
                                         variant="outlined"
+                                        sx={{ fontWeight: 600 }}
                                     />
                                 </TableCell>
                                 <TableCell align="right">
                                     <Button
                                         size="small"
                                         variant="contained"
-                                        onClick={() =>
-                                            navigate(
-                                                `/evaluation/history/${item.achievementId}`,
-                                            )
-                                        }
+                                        onClick={() => navigate(`/evaluation/history/${item.achievementId}`)}
                                     >
                                         Szczegóły
                                     </Button>
@@ -188,7 +219,7 @@ export default function EmployeeEvaluationHistory() {
                         ))}
                         {filteredData.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={user?.role === "Employee" ? 6 : 8} align="center">
+                                <TableCell colSpan={user?.role === "Employee" ? 6 : 8} align="center" sx={{ py: 3 }}>
                                     {data.length === 0
                                         ? "Brak rekordów historii ocen."
                                         : "Brak rekordów spełniających kryteria filtrowania."}

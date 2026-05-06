@@ -8,7 +8,7 @@ export interface AchievementListItem {
     description: string;
     date: string;
     category: number;
-    period: string;
+    evaluationPeriodName: string;
     finalScore: string;
     achievementsSummary: string;
     stage2Status: number;
@@ -36,7 +36,7 @@ const KATEGORIE: Record<number, { nazwa: string; kolor: string }> = {
 const AchievementList: React.FC = () => {
     const [achievements, setAchievements] = useState<AchievementListItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isEmployee, setIsEmployee] = useState(false); // Stan przechowujący informację o roli
+    const [isEmployee, setIsEmployee] = useState(false);                
     const navigate = useNavigate();
 
     const fetchData = async () => {
@@ -93,7 +93,7 @@ const AchievementList: React.FC = () => {
                             <th className="th-name">Nazwa</th>
                             <th className="th-desc">Opis</th>
                             <th className="th-summary">Podsumowanie</th>
-                            {/* Kolumna Pracownik widoczna TYLKO jeśli NIE JESTEŚ Employee */}
+                            {                           }
                             {!isEmployee && <th className="th-emp">Pracownik</th>}
                             <th className="th-actions" style={{ textAlign: "right" }}>Akcje</th>
                         </tr>
@@ -117,7 +117,11 @@ const AchievementList: React.FC = () => {
                                             {kat.nazwa}
                                         </span>
                                     </td>
-                                    <td>{item.period}</td>
+                                    <td className="col-period">
+                                        <span className="period-tag">
+                                            {item.evaluationPeriodName}
+                                        </span>
+                                    </td>
                                     <td>{item.finalScore}</td>
                                     <td className="col-name">{item.name}</td>
                                     <td>
@@ -130,7 +134,7 @@ const AchievementList: React.FC = () => {
                                             {item.achievementsSummary}
                                         </div>
                                     </td>
-                                    {/* Dane pracownika widoczne TYLKO jeśli NIE JESTEŚ Employee */}
+                                    {                           }
                                     {!isEmployee && (
                                         <td className="col-emp">
                                             <code>{item.employeeId.slice(0, 8)}</code>
@@ -207,7 +211,7 @@ const AchievementList: React.FC = () => {
 
                 .th-date { width: 110px; }
                 .th-cat { width: 150px; }
-                .th-period { width: 100px; }
+                .th-period { width: 150px; }
                 .th-score { width: 120px; }
                 .th-name { width: 180px; }
                 .th-emp { width: 100px; }

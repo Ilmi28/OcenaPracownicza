@@ -17,6 +17,7 @@ import EmployeeEvaluationHistory from "./pages/EmployeeEvaluationHistory";
 import EmployeeEvaluationHistoryDetails from "./pages/EmployeeEvaluationHistoryDetails";
 import AddAchievementForm from "./pages/AddAchievementForm";
 import AchievementList from "./pages/AchievementList";
+import EvaluationPeriodManager from "./pages/EvaluationPeriodManager";
 
 function App() {
     return (
@@ -67,6 +68,10 @@ function App() {
                             <Route
                                 path="/achievements"
                                 element={<AchievementList />}
+                            />
+                            <Route 
+                                path="evaluation-periods" 
+                                element={<EvaluationPeriodManager />} 
                             />
                         </Route>
                     </Routes>

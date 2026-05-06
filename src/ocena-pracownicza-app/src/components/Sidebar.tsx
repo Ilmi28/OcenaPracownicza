@@ -9,9 +9,10 @@ import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import HistoryIcon from "@mui/icons-material/History";
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import EventNoteIcon from "@mui/icons-material/EventNote";
 import { useAuth } from "../hooks/AuthProvider";
 
-// Zakładam, że masz hook useAuth. Jeśli nie, na razie podaję wersję z symulacją.
+
 const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
     const { user } = useAuth();
 
@@ -51,7 +52,7 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                         IconComponent={PersonIcon}
                     />
 
-                    {/* Warunkowe wyświetlanie - kluczowe dla Panelu Admina */}
+                    {                        }
                     {user?.role === "Admin" && (
                         <SidebarItem
                             text="Użytkownicy"
@@ -85,6 +86,13 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                             text="Moje osiągnięcia"
                             to="/achievements"
                             IconComponent={FormatListNumberedIcon}
+                        />
+                    )}
+                    {user?.role === "Admin" && (
+                        <SidebarItem
+                            text="Okresy ocen"
+                            to="/evaluation-periods"
+                            IconComponent={EventNoteIcon}
                         />
                     )}
 
