@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using OcenaPracownicza.API.Data;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Enums;
