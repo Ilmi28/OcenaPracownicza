@@ -5,6 +5,8 @@ using OcenaPracownicza.API.Data;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 
+namespace OcenaPracownicza.API.Controllers;
+
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("api/reports")]
@@ -21,6 +23,7 @@ public class ReportsController(
             return NotFound();
 
         var achievements = await context.Achievements
+            .Include(a => a.EvaluationPeriod)
             .Where(a => a.EmployeeId == id)
             .ToListAsync();
 
@@ -30,15 +33,16 @@ public class ReportsController(
     }
 
     [HttpGet("summary")]
-    public async Task<IActionResult> GenerateSummaryReport([FromQuery] string? period)
+    public async Task<IActionResult> GenerateSummaryReport([FromQuery] Guid? evaluationPeriodId)
     {
         var query = context.Achievements
             .Include(a => a.Employee)
+            .Include(a => a.EvaluationPeriod)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(period))
+        if (evaluationPeriodId.HasValue && evaluationPeriodId.Value != Guid.Empty)
         {
-            query = query.Where(a => a.Period == period);
+            query = query.Where(a => a.EvaluationPeriodId == evaluationPeriodId.Value);
         }
 
         var achievements = await query.ToListAsync();
