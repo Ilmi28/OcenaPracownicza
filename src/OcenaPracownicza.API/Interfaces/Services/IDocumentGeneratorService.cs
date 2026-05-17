@@ -1,4 +1,4 @@
-﻿using OcenaPracownicza.API.Entities;
+using OcenaPracownicza.API.Entities;
 
 namespace OcenaPracownicza.API.Interfaces.Services
 {
@@ -6,5 +6,8 @@ namespace OcenaPracownicza.API.Interfaces.Services
     {
         byte[] GenerateReport(Employee employee, List<Achievement> achievements);
         byte[] GenerateSummaryReport(List<Achievement> achievements);
+
+        byte[] GenerateExcelReport(Employee employee, List<Achievement> achievements);
+        byte[] GenerateExcelSummaryReport(List<Achievement> achievements);
     }
 }
