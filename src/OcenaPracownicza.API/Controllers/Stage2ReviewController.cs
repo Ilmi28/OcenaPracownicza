@@ -97,4 +97,12 @@ public class Stage2ReviewController(IStage2ReviewService stage2ReviewService) : 
         var response = await stage2ReviewService.ArchiveAsync(achievementId);
         return Ok(response);
     }
+
+    [HttpPut("{achievementId:guid}")]
+    [Authorize(Roles = "Manager,Admin")]
+    public async Task<IActionResult> UpdateAchievement(Guid achievementId, [FromBody] UpdateAchievementByManagerRequest request)
+    {
+        var response = await stage2ReviewService.UpdateAchievementAsync(achievementId, request);
+        return Ok(response);
+    }
 }

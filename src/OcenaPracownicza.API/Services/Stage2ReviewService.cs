@@ -4,6 +4,7 @@ using OcenaPracownicza.API.Enums;
 using OcenaPracownicza.API.Exceptions.BaseExceptions;
 using OcenaPracownicza.API.Interfaces.Other;
 using OcenaPracownicza.API.Interfaces.Services;
+using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
 using OcenaPracownicza.API.Views;
 
@@ -313,5 +314,55 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         {
             throw new ForbiddenException("Tylko administrator może wykonać tę operację.");
         }
+    }
+
+    public async Task<BaseResponse<Stage2ReviewDetailsView>> UpdateAchievementAsync(Guid achievementId, UpdateAchievementByManagerRequest request)
+    {
+        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId);
+        if (achievement == null)
+        {
+            throw new NotFoundException("Nie znaleziono osiągnięcia.");
+        }
+
+        Stage2TransitionValidator.EnsureCanReview(achievement.Stage2Status);
+
+        if (!userManager.IsCurrentUserManager() && !userManager.IsCurrentUserAdmin())
+        {
+            throw new ForbiddenException("Tylko przełożony lub administrator może edytować to osiągnięcie.");
+        }
+
+        var reviewerId = userManager.GetCurrentUserId() ?? throw new UnauthorizedAccessException();
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            achievement.Name = request.Name.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.Description))
+            achievement.Description = request.Description.Trim();
+
+        if (request.Category.HasValue)
+            achievement.Category = request.Category.Value;
+
+        if (!string.IsNullOrWhiteSpace(request.FinalScore))
+            achievement.FinalScore = request.FinalScore.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.AchievementsSummary))
+            achievement.AchievementsSummary = request.AchievementsSummary.Trim();
+
+        if (request.Stage2Comment != null)
+        {
+            achievement.Stage2Comment = string.IsNullOrWhiteSpace(request.Stage2Comment) ? null : request.Stage2Comment.Trim();
+        }
+
+        achievement.Stage2ReviewedByUserId = reviewerId;
+        achievement.Stage2ReviewedAtUtc = DateTime.UtcNow;
+        achievement.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        return new BaseResponse<Stage2ReviewDetailsView>
+        {
+            Data = await BuildDetails(achievementId),
+            Message = "Osiągnięcie podwładnego zostało zaktualizowane i skomentowane."
+        };
     }
 }

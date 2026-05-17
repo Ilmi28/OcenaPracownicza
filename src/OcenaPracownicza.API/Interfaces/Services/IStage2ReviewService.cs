@@ -1,3 +1,4 @@
+using OcenaPracownicza.API.Requests;
 using OcenaPracownicza.API.Responses;
 using OcenaPracownicza.API.Views;
 
@@ -16,4 +17,5 @@ public interface IStage2ReviewService
     Task<BaseResponse<Stage2ReviewDetailsView>> RejectAsync(Guid achievementId, string? comment);
     Task<BaseResponse<Stage2ReviewDetailsView>> CloseAsync(Guid achievementId);
     Task<BaseResponse<Stage2ReviewDetailsView>> ArchiveAsync(Guid achievementId);
+    Task<BaseResponse<Stage2ReviewDetailsView>> UpdateAchievementAsync(Guid achievementId, UpdateAchievementByManagerRequest request);
 }
