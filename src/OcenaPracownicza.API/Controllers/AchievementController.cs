@@ -61,12 +61,12 @@ public class AchievementController(
 
         if (period == null)
         {
-            return BadRequest("Data osi¹gniêcia nie mieœci siê w ¿adnym zdefiniowanym okresie ocen.");
+            return BadRequest("Data osiï¿½gniï¿½cia nie mieï¿½ci siï¿½ w ï¿½adnym zdefiniowanym okresie ocen.");
         }
 
         if (period.IsClosed)
         {
-            return BadRequest("Nie mo¿na dodawaæ osi¹gniêæ do zamkniêtego (zarchiwizowanego) okresu.");
+            return BadRequest("Nie moï¿½na dodawaï¿½ osiï¿½gniï¿½ï¿½ do zamkniï¿½tego (zarchiwizowanego) okresu.");
         }
 
         var achievement = new Achievement
@@ -79,14 +79,13 @@ public class AchievementController(
             EvaluationPeriodId = period.Id,   
             FinalScore = request.FinalScore,
             AchievementsSummary = request.AchievementsSummary,
-            Stage2Status = EvaluationStageStatus.PendingStage2
-
+            Stage2Status = request.IsDraft ? EvaluationStageStatus.Draft : EvaluationStageStatus.PendingStage2
         };
 
         await context.Achievements.AddAsync(achievement);
         await context.SaveChangesAsync();
 
-        return Ok(new { id = achievement.Id, message = "Osi¹gniêcie zosta³o zapisane." });
+        return Ok(new { id = achievement.Id, message = "Osiï¿½gniï¿½cie zostaï¿½o zapisane." });
     }
 
     [HttpGet("employee-dropdown")]
