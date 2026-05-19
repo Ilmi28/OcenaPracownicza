@@ -12,4 +12,5 @@ public class AddAchievementRequest
     public Guid EvaluationPeriodId { get; set; }
     public string FinalScore { get; set; } = null!;
     public string AchievementsSummary { get; set; } = null!;
+    public bool IsDraft { get; set; }
 }
