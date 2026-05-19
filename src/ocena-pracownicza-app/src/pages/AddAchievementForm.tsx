@@ -11,6 +11,7 @@ export type AchievementModel = {
     evaluationPeriodId: string;
     finalScore: string;
     achievementsSummary: string;
+    isDraft: boolean;
 };
 
 interface CurrentUser {
@@ -69,6 +70,7 @@ const AddAchievementForm: React.FC<Props> = ({
         evaluationPeriodId: "",
         finalScore: "",
         achievementsSummary: "",
+        isDraft: false,
     });
 
     useEffect(() => {
@@ -140,9 +142,7 @@ useEffect(() => {
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        
+    const submitForm = async (isDraft: boolean) => {
         if (!detectedPeriod) {
             setMessage({ type: "error", text: "Nie można zapisać: Wybrana data nie pasuje do żadnego okresu ocen." });
             return;
@@ -150,9 +150,11 @@ useEffect(() => {
 
         setIsSubmitting(true);
         setMessage(null);
+        
+        const payload = { ...form, isDraft };
 
         try {
-            await axiosClient.post("/achievement", form);
+            await axiosClient.post("/achievement", payload);
             if (onSuccess) onSuccess();
             navigate("/achievements");
         } catch (error: any) {
@@ -165,8 +167,11 @@ useEffect(() => {
         }
     };
 
+    const handleDraftSubmit = () => submitForm(true);
+    const handleFinalSubmit = () => submitForm(false);
+
     return (
-        <form onSubmit={handleSubmit} className="achievement-form">
+        <form className="achievement-form">
             <div className="form-header">
                 <button
                     type="button"
@@ -291,13 +296,26 @@ useEffect(() => {
                     rows={3}
                 />
             </div>
-            <button
-                type="submit"
-                className="submit-btn"
-                disabled={isSubmitting || loadingUser || !detectedPeriod}
-            >
-                {isSubmitting ? "Zapisywanie..." : "Zapisz i wróć do listy"}
-            </button>
+            <div className="button-group" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button
+                    type="button"
+                    className="submit-btn draft-btn"
+                    onClick={handleDraftSubmit}
+                    disabled={isSubmitting || loadingUser || !detectedPeriod}
+                    style={{ background: '#718096' }} // Szary kolor wyróżniający szkic
+                >
+                    {isSubmitting ? "Zapisywanie..." : "Zapisz jako wersję roboczą"}
+                </button>
+
+                <button
+                    type="button"
+                    className="submit-btn"
+                    onClick={handleFinalSubmit}
+                    disabled={isSubmitting || loadingUser || !detectedPeriod}
+                >
+                    {isSubmitting ? "Zapisywanie..." : "Prześlij do oceny"}
+                </button>
+            </div>
 
             <style>{`
                 /* Style pozostają takie same jak w Twoim poprzednim fragmencie */
