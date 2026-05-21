@@ -53,9 +53,12 @@ const KATEGORIE = [
     { id: 5, nazwa: "Inne" },
 ];
 
+const DEFAULT_CATEGORY_NAME = "Inne";
+const POLISH_LOCALE = "pl-PL";
 const formatToLocal = (iso: string) => iso.slice(0, 16);
 const getCategoryName = (categoryId: number) =>
-    KATEGORIE.find((category) => category.id === categoryId)?.nazwa ?? "Inne";
+    KATEGORIE.find((category) => category.id === categoryId)?.nazwa ??
+    DEFAULT_CATEGORY_NAME;
 const getErrorMessage = (error: unknown, fallback: string) => {
     const apiError = error as ApiError;
     return apiError.response?.data?.message || apiError.message || fallback;
@@ -380,7 +383,7 @@ useEffect(() => {
                             </div>
                             <div>
                                 <dt>Data</dt>
-                                <dd>{new Date(form.date).toLocaleString("pl-PL")}</dd>
+                                <dd>{new Date(form.date).toLocaleString(POLISH_LOCALE)}</dd>
                             </div>
                             <div>
                                 <dt>Okres</dt>
