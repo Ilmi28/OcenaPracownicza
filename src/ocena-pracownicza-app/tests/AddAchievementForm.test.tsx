@@ -26,39 +26,34 @@ vi.mock("../src/services/axiosClient", () => ({
 describe("AddAchievementForm", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-
-        vi.mocked(axiosClient.get).mockImplementation((url: string) => {
-            if (url === "/employee/me") {
-                return Promise.resolve({
-                    data: {
-                        data: {
-                            id: "employee-1",
-                            firstName: "Jan",
-                            lastName: "Kowalski",
-                        },
-                    },
-                });
-            }
-
-            if (url.startsWith("/evaluation-periods/by-date")) {
-                return Promise.resolve({
-                    data: {
-                        id: "period-1",
-                        name: "2026",
-                    },
-                });
-            }
-
-            return Promise.reject(new Error(`Unexpected GET ${url}`));
-        });
     });
 
+    const prepareInitialRequests = () => {
+        vi.mocked(axiosClient.get)
+            .mockResolvedValueOnce({
+                data: {
+                    data: {
+                        id: "employee-1",
+                        firstName: "Jan",
+                        lastName: "Kowalski",
+                    },
+                },
+            } as never)
+            .mockResolvedValueOnce({
+                data: {
+                    id: "period-1",
+                    name: "2026",
+                },
+            } as never);
+    };
+
     it("requires completeness confirmation before final submission", async () => {
+        prepareInitialRequests();
         vi.mocked(axiosClient.post).mockResolvedValue({ data: { id: "achievement-1" } });
 
         render(<AddAchievementForm />);
 
-        await screen.findByDisplayValue("Jan Kowalski");
+        await screen.findByText("Jan Kowalski");
 
         fireEvent.change(screen.getByLabelText("Nazwa osiągnięcia"), {
             target: { value: "Projekt X" },
@@ -79,13 +74,13 @@ describe("AddAchievementForm", () => {
             await screen.findByRole("heading", {
                 name: "Potwierdź kompletność zgłoszenia",
             }),
-        ).toBeInTheDocument();
+        ).toBeTruthy();
         expect(axiosClient.post).not.toHaveBeenCalled();
 
         const confirmButton = screen.getByRole("button", {
             name: "Potwierdź i wyślij",
-        });
-        expect(confirmButton).toBeDisabled();
+        }) as HTMLButtonElement;
+        expect(confirmButton.disabled).toBe(true);
 
         fireEvent.click(
             screen.getByLabelText(
@@ -93,7 +88,7 @@ describe("AddAchievementForm", () => {
             ),
         );
 
-        expect(confirmButton).toBeEnabled();
+        expect(confirmButton.disabled).toBe(false);
 
         fireEvent.click(confirmButton);
 
@@ -112,11 +107,12 @@ describe("AddAchievementForm", () => {
     });
 
     it("keeps draft submission without the confirmation step", async () => {
+        prepareInitialRequests();
         vi.mocked(axiosClient.post).mockResolvedValue({ data: { id: "achievement-2" } });
 
         render(<AddAchievementForm />);
 
-        await screen.findByDisplayValue("Jan Kowalski");
+        await screen.findByText("Jan Kowalski");
 
         fireEvent.click(
             screen.getByRole("button", { name: "Zapisz jako wersję roboczą" }),
@@ -136,6 +132,6 @@ describe("AddAchievementForm", () => {
             screen.queryByRole("heading", {
                 name: "Potwierdź kompletność zgłoszenia",
             }),
-        ).not.toBeInTheDocument();
+        ).toBeNull();
     });
 });

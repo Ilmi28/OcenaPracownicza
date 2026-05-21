@@ -31,6 +31,15 @@ interface EvaluationPeriodBasicInfo {
     name: string;
 }
 
+type ApiError = {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+    message?: string;
+};
+
 type Props = {
     initialEmployeeId?: string;
     onSuccess?: () => void;
@@ -47,6 +56,10 @@ const KATEGORIE = [
 const formatToLocal = (iso: string) => iso.slice(0, 16);
 const getCategoryName = (categoryId: number) =>
     KATEGORIE.find((category) => category.id === categoryId)?.nazwa ?? "Inne";
+const getErrorMessage = (error: unknown, fallback: string) => {
+    const apiError = error as ApiError;
+    return apiError.response?.data?.message || apiError.message || fallback;
+};
 
 const AddAchievementForm: React.FC<Props> = ({
     initialEmployeeId = "",
@@ -89,8 +102,8 @@ const AddAchievementForm: React.FC<Props> = ({
                     ...prev,
                     employeeId: userData.id,
                 }));
-            } catch (err: any) {
-                console.error("Błąd pobierania profilu użytkownika:", err);
+            } catch (error) {
+                console.error("Błąd pobierania profilu użytkownika:", error);
                 setMessage({ 
                     type: "error", 
                     text: "Nie udało się pobrać danych Twojego profilu." 
@@ -118,7 +131,7 @@ useEffect(() => {
                 ...prev,
                 evaluationPeriodId: id             
             }));
-        } catch (err) {
+        } catch {
             setDetectedPeriod(null);
             setForm(prev => ({ ...prev, evaluationPeriodId: "" }));
         }
@@ -171,11 +184,11 @@ useEffect(() => {
             await axiosClient.post("/achievement", payload);
             if (onSuccess) onSuccess();
             navigate("/achievements");
-        } catch (error: any) {
-            const errorMsg =
-                error.response?.data?.message ||
-                error.message ||
-                "Nie udało się zapisać osiągnięcia.";
+        } catch (error) {
+            const errorMsg = getErrorMessage(
+                error,
+                "Nie udało się zapisać osiągnięcia.",
+            );
             setMessage({ type: "error", text: errorMsg });
             setIsSubmitting(false);
         }
