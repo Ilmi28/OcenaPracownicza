@@ -27,7 +27,6 @@ interface DictionaryItem {
 }
 
 interface CurrentUser { id: string; firstName: string; lastName: string; }
-interface ApiResponse<T> { success: boolean; message: string; data: T; }
 interface EvaluationPeriodBasicInfo { id: string; name: string; }
 type ApiError = { response?: { data?: { message?: string; }; }; message?: string; };
 
