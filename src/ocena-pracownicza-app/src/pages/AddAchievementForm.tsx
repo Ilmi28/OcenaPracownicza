@@ -31,7 +31,6 @@ interface ApiResponse<T> { success: boolean; message: string; data: T; }
 interface EvaluationPeriodBasicInfo { id: string; name: string; }
 type ApiError = { response?: { data?: { message?: string; }; }; message?: string; };
 
-const POLISH_LOCALE = "pl-PL";
 const formatToLocal = (iso: string) => iso.slice(0, 16);
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -44,9 +43,7 @@ type Props = { initialEmployeeId?: string; onSuccess?: () => void; };
 const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess }) => {
     const navigate = useNavigate();
     
-    const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [loadingUser, setLoadingUser] = useState(true);
     const [detectedPeriod, setDetectedPeriod] = useState<string | null>("Pobieranie...");
     const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
     const [isCompletenessConfirmed, setIsCompletenessConfirmed] = useState(false);
@@ -119,7 +116,7 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
         return dictionaryItems.find(i => i.id === form.category);
     }, [form.category, dictionaryItems]);
 
-    // Automatycznie ustawiamy form.name na podstawie wybranego osiągnięcia ze słownika
+    // Automatyczna nazwa
     useEffect(() => {
         if (currentDictionaryItem) {
             setForm(prev => ({ ...prev, name: currentDictionaryItem.name }));
@@ -144,12 +141,9 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
         const fetchCurrentUserInfo = async () => {
             try {
                 const resp = await axiosClient.get<ApiResponse<CurrentUser>>("/employee/me");
-                setCurrentUser(resp.data.data);
                 setForm(prev => ({ ...prev, employeeId: resp.data.data.id }));
             } catch (error) {
                 setMessage({ type: "error", text: "Nie udało się pobrać danych profilu." });
-            } finally {
-                setLoadingUser(false);
             }
         };
         fetchCurrentUserInfo();
@@ -325,9 +319,6 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                 <div className="confirmation-overlay" role="dialog" aria-modal="true">
                     <div className="confirmation-card">
                         <h3>Potwierdź wysłanie zgłoszenia</h3>
-                        <p className="confirmation-copy">
-                            Zgłoszenie zostanie wysłane do weryfikacji przez: <strong style={{ color: '#2563eb' }}>{currentDictionaryItem?.unit}</strong>
-                        </p>
                         <dl className="confirmation-summary">
                             <div>
                                 <dt>Obszar Oceny</dt>
@@ -352,7 +343,7 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                             <div>
                                 <dt>Punkty</dt>
                                 <dd>{form.finalScore}</dd>
-                        </div>
+                            </div>
                         </dl>
                         <label className="confirmation-checkbox">
                             <input type="checkbox" checked={isCompletenessConfirmed} onChange={(e) => setIsCompletenessConfirmed(e.target.checked)} />
@@ -408,8 +399,10 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                 .secondary-btn { padding: 14px; cursor: pointer; background: #edf2f7; color: #2d3748; border: 1px solid #dce1e8; border-radius: 8px; font-weight: 700; font-size: 1rem; box-sizing: border-box;}
                 .submit-btn:disabled, .secondary-btn:disabled { cursor: not-allowed; opacity: 0.6; }
                 .alert.error { background: #fed7d7; color: #822727; padding: 10px; border-radius: 5px; box-sizing: border-box;}
+                
                 .confirmation-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
-                .confirmation-card { width: min(100%, 640px); background: #ffffff; border-radius: 16px; padding: 1.5rem; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2); display: grid; gap: 1rem; box-sizing: border-box; }
+                .confirmation-card { width: min(100%, 640px); max-height: 90vh; overflow-y: auto; background: #ffffff; border-radius: 16px; padding: 1.5rem; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2); display: grid; gap: 1rem; box-sizing: border-box; }
+                
                 .confirmation-summary div { padding: 0.75rem; border-radius: 10px; background: #f8fafc; margin-bottom: 5px; }
                 .confirmation-summary dt { font-size: 0.8rem; font-weight: 700; color: #4a5568; }
                 .confirmation-summary dd { margin: 0; color: #1f2937; font-weight: 600; }
