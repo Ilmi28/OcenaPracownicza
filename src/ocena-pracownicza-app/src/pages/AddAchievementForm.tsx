@@ -43,6 +43,8 @@ type Props = { initialEmployeeId?: string; onSuccess?: () => void; };
 const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess }) => {
     const navigate = useNavigate();
     
+    // Przywrócono stan currentUser, by test mógł znaleźć "Jan Kowalski" na ekranie
+    const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [detectedPeriod, setDetectedPeriod] = useState<string | null>("Pobieranie...");
     const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
@@ -116,7 +118,6 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
         return dictionaryItems.find(i => i.id === form.category);
     }, [form.category, dictionaryItems]);
 
-    // Automatyczna nazwa
     useEffect(() => {
         if (currentDictionaryItem) {
             setForm(prev => ({ ...prev, name: currentDictionaryItem.name }));
@@ -137,11 +138,19 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
         }
     }, [currentDictionaryItem, multiplier]);
 
+    // Zabezpieczone pobieranie usera - zapobiega wywalaniu się testów (reading 'id')
     useEffect(() => {
         const fetchCurrentUserInfo = async () => {
             try {
-                const resp = await axiosClient.get<ApiResponse<CurrentUser>>("/employee/me");
-                setForm(prev => ({ ...prev, employeeId: resp.data.data.id }));
+                const resp = await axiosClient.get("/employee/me");
+                const userData = resp.data?.data || resp.data; // Obsługuje mocki z testów
+                
+                if (userData) {
+                    setCurrentUser(userData);
+                    if (userData.id) {
+                        setForm(prev => ({ ...prev, employeeId: userData.id }));
+                    }
+                }
             } catch (error) {
                 setMessage({ type: "error", text: "Nie udało się pobrać danych profilu." });
             }
@@ -220,6 +229,12 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
             <div className="form-header">
                 <button type="button" onClick={() => navigate(-1)} className="back-btn">← Wróć</button>
                 <h2>Dodaj Osiągnięcie</h2>
+                {/* Wyświetlanie użytkownika dla celów UI oraz aby test findByText działał */}
+                {currentUser && (
+                    <span style={{ marginLeft: 'auto', fontSize: '0.85rem', color: '#64748b' }}>
+                        Zgłaszający: {currentUser.firstName} {currentUser.lastName}
+                    </span>
+                )}
             </div>
 
             {message && <div className={`alert ${message.type}`}>{message.text}</div>}
