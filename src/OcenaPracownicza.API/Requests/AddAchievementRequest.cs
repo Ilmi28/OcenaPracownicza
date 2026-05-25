@@ -1,4 +1,5 @@
-﻿using OcenaPracownicza.API.Enums;
+﻿using Microsoft.AspNetCore.Http;
+using OcenaPracownicza.API.Enums;
 
 namespace OcenaPracownicza.API.Requests;
 
@@ -13,4 +14,6 @@ public class AddAchievementRequest
     public string FinalScore { get; set; } = null!;
     public string AchievementsSummary { get; set; } = null!;
     public bool IsDraft { get; set; }
+
+    public IFormFile? File { get; set; }
 }

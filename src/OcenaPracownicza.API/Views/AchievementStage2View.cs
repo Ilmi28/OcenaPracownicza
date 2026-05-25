@@ -14,4 +14,6 @@ public class AchievementStage2View
     public string? Stage2Comment { get; set; }
     public string? Stage2ReviewedByUserId { get; set; }
     public DateTime? Stage2ReviewedAtUtc { get; set; }
+    public Guid? AttachmentId { get; set; }
+    public string? AttachmentFileName { get; set; }
 }

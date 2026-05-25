@@ -18,4 +18,6 @@ public class Achievement : BaseEntity
     public DateTime? Stage2ReviewedAtUtc { get; set; }
     public Guid EmployeeId { get; set; }
     public Employee Employee { get; set; } = null!;
+    public Guid? AttachmentId { get; set; }
+    public Attachment? Attachment { get; set; }
 }

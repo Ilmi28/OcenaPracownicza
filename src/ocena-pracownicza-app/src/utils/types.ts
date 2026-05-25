@@ -53,6 +53,8 @@ export interface AchievementStage2View {
     stage2Comment?: string | null;
     stage2ReviewedByUserId?: string | null;
     stage2ReviewedAtUtc?: string | null;
+    attachmentId?: string | null;
+    attachmentFileName?: string | null;
 }
 
 export interface Stage2ReviewDetailsView {
@@ -69,6 +71,8 @@ export interface Stage2ReviewDetailsView {
     stage2ReviewedByUserId?: string | null;
     stage2ReviewedAtUtc?: string | null;
     achievements: AchievementStage2View[];
+    attachmentId?: string | null;
+    attachmentFileName?: string | null;
 }
 
 export interface ManagerView {
