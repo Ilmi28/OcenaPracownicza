@@ -55,18 +55,46 @@ public class AchievementController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] AddAchievementRequest request)
+    public async Task<IActionResult> Post([FromForm] AddAchievementRequest request, IFormFile? file)
     {
         var period = await periodService.GetPeriodByDateAsync(request.Date);
 
         if (period == null)
         {
-            return BadRequest("Data osi�gni�cia nie mie�ci si� w �adnym zdefiniowanym okresie ocen.");
+            return BadRequest("Data osiągnięcia nie mieści się w żadnym zdefiniowanym okresie ocen.");
         }
 
         if (period.IsClosed)
         {
-            return BadRequest("Nie mo�na dodawa� osi�gni�� do zamkni�tego (zarchiwizowanego) okresu.");
+            return BadRequest("Nie można dodawać osiągnięć do zamkniętego (zarchiwizowanego) okresu.");
+        }
+
+        Attachment? attachment = null;
+
+        if (file != null && file.Length > 0)
+        {
+            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+            var folderPath = Path.Combine("Storage", "Attachments");
+
+            Directory.CreateDirectory(folderPath);
+
+            var fullPath = Path.Combine(folderPath, fileName);
+
+            using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            attachment = new Attachment
+            {
+                FileName = file.FileName,
+                ContentType = file.ContentType,
+                FileSize = file.Length,
+                StoragePath = fullPath
+            };
+
+            await context.Attachments.AddAsync(attachment);
+            await context.SaveChangesAsync();
         }
 
         var achievement = new Achievement
@@ -76,16 +104,17 @@ public class AchievementController(
             Date = request.Date,
             EmployeeId = request.EmployeeId,
             Category = request.Category,
-            EvaluationPeriodId = period.Id,   
+            EvaluationPeriodId = period.Id,
             FinalScore = request.FinalScore,
             AchievementsSummary = request.AchievementsSummary,
-            Stage2Status = request.IsDraft ? EvaluationStageStatus.Draft : EvaluationStageStatus.PendingStage2
+            Stage2Status = request.IsDraft ? EvaluationStageStatus.Draft : EvaluationStageStatus.PendingStage2,
+            AttachmentId = attachment?.Id
         };
 
         await context.Achievements.AddAsync(achievement);
         await context.SaveChangesAsync();
 
-        return Ok(new { id = achievement.Id, message = "Osi�gni�cie zosta�o zapisane." });
+        return Ok(new { id = achievement.Id, message = "Osiągnięcie zostało zapisane." });
     }
 
     [HttpGet("employee-dropdown")]
@@ -107,5 +136,19 @@ public class AchievementController(
     public IActionResult GetDictionary()
     {
         return Ok(AchievementDictionary.Map);
+    }
+
+    [HttpGet("attachments/{id}")]
+    [Authorize(Roles = "Manager,Admin")] 
+    public async Task<IActionResult> GetAttachment(Guid id)
+    {
+        var attachment = await context.Attachments.FirstOrDefaultAsync(a => a.Id == id);
+        if (attachment == null) return NotFound("Nie znaleziono załącznika.");
+
+        if (!System.IO.File.Exists(attachment.StoragePath))
+            return NotFound("Plik fizyczny nie istnieje na serwerze.");
+
+        var fileBytes = await System.IO.File.ReadAllBytesAsync(attachment.StoragePath);
+        return File(fileBytes, attachment.ContentType, attachment.FileName);
     }
 }

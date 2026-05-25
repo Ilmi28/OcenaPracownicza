@@ -68,6 +68,8 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
         isDraft: false,
     });
 
+    const [file, setFile] = useState<File | null>(null);
+
     useEffect(() => {
         const fetchDictionary = async () => {
             try {
@@ -205,23 +207,50 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
         setMessage(null);
     };
 
-    const submitForm = async (isDraft: boolean) => {
-        if (!detectedPeriod) {
-            setMessage({ type: "error", text: "Nie można zapisać: Wybrana data nie pasuje do żadnego okresu." });
-            return;
+const submitForm = async (isDraft: boolean) => {
+    if (!detectedPeriod) {
+        setMessage({ type: "error", text: "Nie można zapisać: Wybrana data nie pasuje do żadnego okresu." });
+        return;
+    }
+
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+        const formData = new FormData();
+
+        formData.append("Name", form.name);
+        formData.append("Description", form.description);
+        formData.append("Date", form.date);
+        formData.append("EmployeeId", form.employeeId);
+        formData.append("Category", "1");
+        formData.append("EvaluationPeriodId", form.evaluationPeriodId);
+        formData.append("FinalScore", form.finalScore);
+        formData.append("AchievementsSummary", "test");
+        formData.append("IsDraft", String(isDraft));
+
+        if (file) {
+            formData.append("File", file);
         }
 
-        setIsSubmitting(true);
-        setMessage(null);
-        try {
-            await axiosClient.post("/achievement", { ...form, isDraft });
-            if (onSuccess) onSuccess();
-            navigate("/achievements");
-        } catch (error) {
-            setMessage({ type: "error", text: getErrorMessage(error, "Błąd zapisu.") });
-            setIsSubmitting(false);
-        }
-    };
+        await axiosClient.post("/achievement", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        });
+
+        if (onSuccess) onSuccess();
+        navigate("/achievements");
+
+    } catch (error) {
+        setMessage({
+            type: "error",
+            text: getErrorMessage(error, "Błąd zapisu.")
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+};
 
     return (
         <form className="achievement-form">
@@ -327,6 +356,14 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                 <button type="button" className="submit-btn" onClick={handleFinalSubmit} disabled={isSubmitting || !detectedPeriod || isLoadingDictionary}>
                     {isSubmitting ? "Zapisywanie..." : "Prześlij do weryfikacji"}
                 </button>
+            </div>
+
+            <div className="form-group">
+                <label>Załącznik (opcjonalnie)</label>
+                <input
+                    type="file"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                />
             </div>
 
             {isConfirmationOpen && (

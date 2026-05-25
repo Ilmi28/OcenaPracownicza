@@ -15,6 +15,7 @@ import {
     TableRow,
     Typography,
 } from "@mui/material";
+import DownloadIcon from "@mui/icons-material/Download";
 import { Stage2ReviewDetailsView } from "../utils/types";
 import { evaluationService } from "../services/evaluationService";
 import { useAuth } from "../hooks/AuthProvider";
@@ -35,6 +36,7 @@ export default function EmployeeEvaluationHistoryDetails() {
     const [data, setData] = useState<Stage2ReviewDetailsView | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [downloadingId, setDownloadingId] = useState<string | null>(null); // Stan blokady na czas pobierania pliku
 
     const load = useCallback(async () => {
         if (!achievementId) return;
@@ -62,6 +64,18 @@ export default function EmployeeEvaluationHistoryDetails() {
         load();
     }, [load]);
 
+    // Funkcja wywołująca serwis pobierania i generująca pobranie pliku w przeglądarce
+    const handleDownloadAttachment = async (attachmentId: string, originalFileName: string) => {
+        try {
+            setDownloadingId(attachmentId);
+            await evaluationService.downloadAttachment(attachmentId, originalFileName);
+        } catch (err: any) {
+            alert("Nie udało się pobrać pliku. Upewnij się, że masz odpowiednie uprawnienia.");
+        } finally {
+            setDownloadingId(null);
+        }
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" mt={8}>
@@ -84,11 +98,13 @@ export default function EmployeeEvaluationHistoryDetails() {
                     Wróć do historii
                 </Button>
             </Box>
+            
             {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                     {error}
                 </Alert>
             )}
+
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -126,6 +142,31 @@ export default function EmployeeEvaluationHistoryDetails() {
                         </Typography>
                         <Typography>{data.finalScore}</Typography>
                     </Grid>
+
+                    {/* NOWA SEKCJA: Załącznik główny w boksie szczegółów */}
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Załącznik
+                        </Typography>
+                        {data.attachmentId ? (
+                            <Box display="flex" alignItems="center" mt={0.5}>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={downloadingId === data.attachmentId ? <CircularProgress size={16} /> : <DownloadIcon />}
+                                    disabled={downloadingId !== null}
+                                    onClick={() => handleDownloadAttachment(data.attachmentId!, data.attachmentFileName ?? `Zalacznik_${data.achievementName}`)}
+                                >
+                                    {downloadingId === data.attachmentId ? "Pobieranie..." : "Pobierz plik"}
+                                </Button>
+                            </Box>
+                        ) : (
+                            <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+                                Brak załącznika
+                            </Typography>
+                        )}
+                    </Grid>
+
                     <Grid size={{ xs: 12 }}>
                         <Typography variant="body2" color="text.secondary">
                             Podsumowanie osiągnięć
@@ -149,6 +190,7 @@ export default function EmployeeEvaluationHistoryDetails() {
                             <TableCell>Wynik</TableCell>
                             <TableCell>Status</TableCell>
                             <TableCell>Komentarz</TableCell>
+                            <TableCell align="center">Załącznik</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -161,6 +203,23 @@ export default function EmployeeEvaluationHistoryDetails() {
                                 <TableCell>{item.finalScore}</TableCell>
                                 <TableCell>{STATUS_LABELS[item.stage2Status] ?? "Nieznany"}</TableCell>
                                 <TableCell>{item.stage2Comment ?? "-"}</TableCell>
+                                <TableCell align="center">
+                                    {item.attachmentId ? (
+                                        <Button
+                                            size="small"
+                                            variant="text"
+                                            startIcon={downloadingId === item.attachmentId ? <CircularProgress size={16} /> : <DownloadIcon />}
+                                            disabled={downloadingId !== null}
+                                            onClick={() => handleDownloadAttachment(item.attachmentId!, item.attachmentFileName ?? `Zalacznik_${item.name}`)}
+                                        >
+                                            {downloadingId === item.attachmentId ? "Pobieranie..." : "Pobierz"}
+                                        </Button>
+                                    ) : (
+                                        <Typography variant="caption" color="text.disabled">
+                                            Brak
+                                        </Typography>
+                                    )}
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
