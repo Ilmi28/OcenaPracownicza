@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Achievement> Achievements { get; set; }
     public DbSet<EvaluationPeriod> EvaluationPeriods { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
+    public DbSet<AchievementElement> AchievementElements { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

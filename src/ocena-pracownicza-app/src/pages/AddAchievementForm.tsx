@@ -14,16 +14,15 @@ export type AchievementModel = {
     isDraft: boolean;
 };
 
-type ScoreType = "Fixed" | "Multiplied" | "Variable" | "Formula";
-
 interface DictionaryItem {
-    id: number;
+    id: number;                      
+    elementGuid: string;                   
     code: string;
     name: string;
-    unit: string;
-    area: string;
+    unit: string;                   
+    area: string;          
     basePoints: number;
-    scoreType: ScoreType;
+    isStackable: boolean;             
 }
 
 interface CurrentUser { id: string; firstName: string; lastName: string; }
@@ -42,7 +41,6 @@ type Props = { initialEmployeeId?: string; onSuccess?: () => void; };
 const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess }) => {
     const navigate = useNavigate();
     
-    // Przywrócono stan currentUser, by test mógł znaleźć "Jan Kowalski" na ekranie
     const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [detectedPeriod, setDetectedPeriod] = useState<string | null>("Pobieranie...");
@@ -54,7 +52,6 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
     const [isLoadingDictionary, setIsLoadingDictionary] = useState(true);
     
     const [selectedArea, setSelectedArea] = useState<string>("Scientific");
-    const [multiplier, setMultiplier] = useState<number>(1);
 
     const [form, setForm] = useState<AchievementModel>({
         name: "",
@@ -70,31 +67,36 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
 
     const [file, setFile] = useState<File | null>(null);
 
-    useEffect(() => {
-        const fetchDictionary = async () => {
-            try {
-                const response = await axiosClient.get("/achievement/dictionary");
-                
-                const itemsArray: DictionaryItem[] = Object.entries(response.data).map(([key, val]: [string, any]) => ({
-                    id: Number(key),
+    const fetchDictionary = async () => {
+        if (!form.evaluationPeriodId) return;
+        setIsLoadingDictionary(true);
+        try {
+            const response = await axiosClient.get("/achievementelement");
+            
+            const itemsArray: DictionaryItem[] = response.data
+                .filter((el: any) => el.evaluationPeriodId === form.evaluationPeriodId)
+                .map((val: any, index: number) => ({
+                    id: index + 1,                         
+                    elementGuid: val.id,                
                     code: val.code,
                     name: val.name,
-                    unit: val.unit,
-                    area: val.area,
+                    unit: val.departmentName || "Inne",                
+                    area: val.activity === 0 ? "Scientific" : "Didactic",          
                     basePoints: val.basePoints,
-                    scoreType: val.scoreType
+                    isStackable: val.isStackable 
                 }));
 
-                setDictionaryItems(itemsArray);
-            } catch (error) {
-                setMessage({ type: "error", text: "Nie udało się pobrać słownika osiągnięć z serwera." });
-            } finally {
-                setIsLoadingDictionary(false);
-            }
-        };
+            setDictionaryItems(itemsArray);
+        } catch (error) {
+            setMessage({ type: "error", text: "Nie udało się pobrać szablonów osiągnięć dla tego okresu." });
+        } finally {
+            setIsLoadingDictionary(false);
+        }
+    };
 
+    useEffect(() => {
         fetchDictionary();
-    }, []);
+    }, [form.evaluationPeriodId]);
 
     const availableItems = useMemo(() => {
         return dictionaryItems.filter(item => item.area === selectedArea);
@@ -111,7 +113,6 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
     useEffect(() => {
         if (availableItems.length > 0 && !availableItems.find(i => i.id === form.category)) {
             setForm(prev => ({ ...prev, category: availableItems[0].id }));
-            setMultiplier(1);
         }
     }, [selectedArea, availableItems, form.category]);
 
@@ -127,24 +128,15 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
 
     useEffect(() => {
         if (currentDictionaryItem) {
-            if (currentDictionaryItem.scoreType === "Fixed") {
-                setForm(prev => ({ ...prev, finalScore: currentDictionaryItem.basePoints.toString() }));
-            } else if (currentDictionaryItem.scoreType === "Multiplied") {
-                setForm(prev => ({ ...prev, finalScore: (currentDictionaryItem.basePoints * multiplier).toString() }));
-            } else {
-                if (form.finalScore === "") {
-                    setForm(prev => ({ ...prev, finalScore: currentDictionaryItem.basePoints.toString() }));
-                }
-            }
+            setForm(prev => ({ ...prev, finalScore: currentDictionaryItem.basePoints.toString() }));
         }
-    }, [currentDictionaryItem, multiplier]);
+    }, [currentDictionaryItem]);
 
-    // Zabezpieczone pobieranie usera - zapobiega wywalaniu się testów (reading 'id')
     useEffect(() => {
         const fetchCurrentUserInfo = async () => {
             try {
                 const resp = await axiosClient.get("/employee/me");
-                const userData = resp.data?.data || resp.data; // Obsługuje mocki z testów
+                const userData = resp.data?.data || resp.data;
                 
                 if (userData) {
                     setCurrentUser(userData);
@@ -168,6 +160,7 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
             } catch {
                 setDetectedPeriod(null);
                 setForm(prev => ({ ...prev, evaluationPeriodId: "" }));
+                setDictionaryItems([]);
             }
         };
         if (form.date) fetchPeriod();
@@ -207,57 +200,58 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
         setMessage(null);
     };
 
-const submitForm = async (isDraft: boolean) => {
-    if (!detectedPeriod) {
-        setMessage({ type: "error", text: "Nie można zapisać: Wybrana data nie pasuje do żadnego okresu." });
-        return;
-    }
-
-    setIsSubmitting(true);
-    setMessage(null);
-
-    try {
-        const formData = new FormData();
-
-        formData.append("Name", form.name);
-        formData.append("Description", form.description);
-        formData.append("Date", form.date);
-        formData.append("EmployeeId", form.employeeId);
-        formData.append("Category", "1");
-        formData.append("EvaluationPeriodId", form.evaluationPeriodId);
-        formData.append("FinalScore", form.finalScore);
-        formData.append("AchievementsSummary", "test");
-        formData.append("IsDraft", String(isDraft));
-
-        if (file) {
-            formData.append("File", file);
+    const submitForm = async (isDraft: boolean) => {
+        if (!detectedPeriod || !currentDictionaryItem) {
+            setMessage({ type: "error", text: "Nie można zapisać: Wybrana data nie pasuje do żadnego okresu." });
+            return;
         }
 
-        await axiosClient.post("/achievement", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data"
+        setIsSubmitting(true);
+        setMessage(null);
+
+        try {
+            const formData = new FormData();
+
+            formData.append("Name", form.name);
+            formData.append("Description", form.description);
+            formData.append("Date", form.date);
+            formData.append("EmployeeId", form.employeeId);
+            
+            formData.append("AchievementElementId", currentDictionaryItem.elementGuid);
+            
+            formData.append("EvaluationPeriodId", form.evaluationPeriodId);
+            formData.append("FinalScore", form.finalScore);
+            formData.append("AchievementsSummary", form.description.slice(0, 100));
+            formData.append("IsDraft", String(isDraft));
+
+            if (file) {
+                formData.append("File", file);
             }
-        });
 
-        if (onSuccess) onSuccess();
-        navigate("/achievements");
+            await axiosClient.post("/achievement", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            });
 
-    } catch (error) {
-        setMessage({
-            type: "error",
-            text: getErrorMessage(error, "Błąd zapisu.")
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+            if (onSuccess) onSuccess();
+            navigate("/achievements");
+
+        } catch (error) {
+            setMessage({
+                type: "error",
+                text: getErrorMessage(error, "Błąd zapisu.")
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <form className="achievement-form">
             <div className="form-header">
                 <button type="button" onClick={() => navigate(-1)} className="back-btn">← Wróć</button>
                 <h2>Dodaj Osiągnięcie</h2>
-                {/* Wyświetlanie użytkownika dla celów UI oraz aby test findByText działał */}
                 {currentUser && (
                     <span style={{ marginLeft: 'auto', fontSize: '0.85rem', color: '#64748b' }}>
                         Zgłaszający: {currentUser.firstName} {currentUser.lastName}
@@ -267,8 +261,16 @@ const submitForm = async (isDraft: boolean) => {
 
             {message && <div className={`alert ${message.type}`}>{message.text}</div>}
 
+            <div className="form-group">
+                <label htmlFor="date">Data zaistnienia osiągnięcia</label>
+                <input id="date" name="date" type="datetime-local" value={formatToLocal(form.date)} onChange={handleChange} required />
+                <div style={{ marginTop: '8px', fontSize: '0.85rem', padding: '10px', borderRadius: '6px', backgroundColor: detectedPeriod && detectedPeriod !== "Pobieranie..." ? '#f0fff4' : '#fff5f5', color: detectedPeriod && detectedPeriod !== "Pobieranie..." ? '#276749' : '#c53030', border: `1px solid ${detectedPeriod && detectedPeriod !== "Pobieranie..." ? '#c6f6d5' : '#feb2b2'}`, fontWeight: '600' }}>
+                    {detectedPeriod === "Pobieranie..." ? <span>🔍 Sprawdzanie okresu...</span> : detectedPeriod ? <span>Okres: {detectedPeriod}</span> : <span>⚠️ Nieznany okres - zmień datę!</span>}
+                </div>
+            </div>
+
             {isLoadingDictionary ? (
-                <div className="loading-placeholder">Pobieranie słownika osiągnięć...</div>
+                <div className="loading-placeholder">Pobieranie bazy kryteriów osiągnięć dla wybranego okresu...</div>
             ) : (
                 <>
                     <div className="form-group">
@@ -282,8 +284,10 @@ const submitForm = async (isDraft: boolean) => {
                     <div className="form-group">
                         <label htmlFor="category">Klasyfikacja Osiągnięcia</label>
                         <select id="category" name="category" value={form.category} onChange={handleChange}>
-                            {Object.entries(groupedItems).map(([unit, items]) => (
-                                <optgroup key={unit} label={`🏫 ${unit}`}>
+                            {dictionaryItems.length === 0 ? (
+                                <option value="">Brak szablonów dla tego okresu</option>
+                            ) : Object.entries(groupedItems).map(([unit, items]) => (
+                                <optgroup key={unit} label={`Dział: ${unit}`}>
                                     {items.map((item) => (
                                         <option key={item.id} value={item.id}>
                                             [{item.code}] {item.name}
@@ -299,19 +303,7 @@ const submitForm = async (isDraft: boolean) => {
             <hr style={{ borderTop: '1px dashed #cbd5e1', margin: '10px 0' }} />
 
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                {currentDictionaryItem?.scoreType === "Multiplied" && (
-                    <div className="form-group" style={{ flex: 1 }}>
-                        <label>Liczba (np. studentów, prac, miesięcy)</label>
-                        <input
-                            type="number"
-                            min="1"
-                            value={multiplier}
-                            onChange={(e) => setMultiplier(Math.max(1, Number(e.target.value)))}
-                        />
-                    </div>
-                )}
-                
-                <div className="form-group" style={{ flex: currentDictionaryItem?.scoreType === "Multiplied" ? 1 : 'none', width: currentDictionaryItem?.scoreType !== "Multiplied" ? '100%' : 'auto' }}>
+                <div className="form-group" style={{ width: '100%' }}>
                     <label htmlFor="finalScore">Wynik punktowy</label>
                     <input
                         id="finalScore"
@@ -320,27 +312,17 @@ const submitForm = async (isDraft: boolean) => {
                         value={form.finalScore}
                         onChange={handleChange}
                         required
-                        disabled={currentDictionaryItem?.scoreType === "Fixed" || currentDictionaryItem?.scoreType === "Multiplied"}
+                        disabled={false}             
                         style={{
-                            backgroundColor: (currentDictionaryItem?.scoreType === "Fixed" || currentDictionaryItem?.scoreType === "Multiplied") ? '#f1f5f9' : '#fff',
+                            backgroundColor: '#fff',
                             color: '#0f172a',
                             fontWeight: 'bold'
                         }}
                     />
-                    <small style={{ color: '#64748b', fontSize: '0.75rem' }}>
-                        {currentDictionaryItem?.scoreType === "Fixed" && "Punkty stałe, wyliczone automatycznie."}
-                        {currentDictionaryItem?.scoreType === "Multiplied" && `Naliczone: ${multiplier} × ${currentDictionaryItem.basePoints} pkt`}
-                        {currentDictionaryItem?.scoreType === "Variable" && `Podaj wartość ręcznie (Sugerowane: ${currentDictionaryItem.basePoints} pkt)`}
-                        {currentDictionaryItem?.scoreType === "Formula" && `Ostateczna wartość wyliczana przez dział ewaluacji.`}
+                    <small style={{ color: '#4e73df', fontSize: '0.75rem', fontWeight: '600' }}>
+                        Przełożony zweryfikuje liczbę punktów. Sugerowana: {currentDictionaryItem?.basePoints || 0}.
+                        {currentDictionaryItem?.isStackable && " (Można wielokrotnie dodawać tę osiągnięcie)."}
                     </small>
-                </div>
-            </div>
-
-            <div className="form-group">
-                <label htmlFor="date">Data zaistnienia osiągnięcia</label>
-                <input id="date" name="date" type="datetime-local" value={formatToLocal(form.date)} onChange={handleChange} required />
-                <div style={{ marginTop: '8px', fontSize: '0.85rem', padding: '10px', borderRadius: '6px', backgroundColor: detectedPeriod ? '#f0fff4' : '#fff5f5', color: detectedPeriod ? '#276749' : '#c53030', border: `1px solid ${detectedPeriod ? '#c6f6d5' : '#feb2b2'}`, fontWeight: '600' }}>
-                    {detectedPeriod === "Pobieranie..." ? <span>🔍 Sprawdzanie okresu...</span> : detectedPeriod ? <span>Okres: {detectedPeriod}</span> : <span>⚠️ Nieznany okres - zmień datę!</span>}
                 </div>
             </div>
 
@@ -348,7 +330,13 @@ const submitForm = async (isDraft: boolean) => {
                 <label htmlFor="description">Opis i uwagi</label>
                 <textarea id="description" name="description" value={form.description} onChange={handleChange} required rows={3} />
             </div>
-
+            <div className="form-group">
+                <label>Załącznik (opcjonalnie)</label>
+                <input
+                    type="file"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                />
+            </div>
             <div className="button-group" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                 <button type="button" className="submit-btn" onClick={() => submitForm(true)} disabled={isSubmitting || !detectedPeriod || isLoadingDictionary} style={{ background: '#718096' }}>
                     {isSubmitting ? "Zapisywanie..." : "Zapisz jako szkic"}
@@ -356,14 +344,6 @@ const submitForm = async (isDraft: boolean) => {
                 <button type="button" className="submit-btn" onClick={handleFinalSubmit} disabled={isSubmitting || !detectedPeriod || isLoadingDictionary}>
                     {isSubmitting ? "Zapisywanie..." : "Prześlij do weryfikacji"}
                 </button>
-            </div>
-
-            <div className="form-group">
-                <label>Załącznik (opcjonalnie)</label>
-                <input
-                    type="file"
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                />
             </div>
 
             {isConfirmationOpen && (

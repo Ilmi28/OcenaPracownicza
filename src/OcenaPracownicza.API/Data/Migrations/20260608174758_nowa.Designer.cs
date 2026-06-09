@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OcenaPracownicza.API.Data;
 
@@ -11,9 +12,11 @@ using OcenaPracownicza.API.Data;
 namespace OcenaPracownicza.API.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260608174758_nowa")]
+    partial class nowa
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -226,9 +229,6 @@ namespace OcenaPracownicza.API.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AchievementElementId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("AchievementsSummary")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -280,8 +280,6 @@ namespace OcenaPracownicza.API.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AchievementElementId");
-
                     b.HasIndex("AttachmentId");
 
                     b.HasIndex("EmployeeId");
@@ -297,13 +295,13 @@ namespace OcenaPracownicza.API.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("ActivityId")
+                    b.Property<int>("Activity")
                         .HasColumnType("int");
 
                     b.Property<decimal>("BasePoints")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("CategoryId")
+                    b.Property<int>("Category")
                         .HasColumnType("int");
 
                     b.Property<string>("Code")
@@ -313,11 +311,8 @@ namespace OcenaPracownicza.API.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DepartmentId")
+                    b.Property<int>("Department")
                         .HasColumnType("int");
-
-                    b.Property<Guid>("EvaluationPeriodId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsStackable")
                         .HasColumnType("bit");
@@ -330,8 +325,6 @@ namespace OcenaPracownicza.API.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EvaluationPeriodId");
 
                     b.ToTable("AchievementElements");
                 });
@@ -590,10 +583,6 @@ namespace OcenaPracownicza.API.Data.Migrations
 
             modelBuilder.Entity("OcenaPracownicza.API.Entities.Achievement", b =>
                 {
-                    b.HasOne("OcenaPracownicza.API.Entities.AchievementElement", "AchievementElement")
-                        .WithMany()
-                        .HasForeignKey("AchievementElementId");
-
                     b.HasOne("OcenaPracownicza.API.Entities.Attachment", "Attachment")
                         .WithMany()
                         .HasForeignKey("AttachmentId");
@@ -610,22 +599,9 @@ namespace OcenaPracownicza.API.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("AchievementElement");
-
                     b.Navigation("Attachment");
 
                     b.Navigation("Employee");
-
-                    b.Navigation("EvaluationPeriod");
-                });
-
-            modelBuilder.Entity("OcenaPracownicza.API.Entities.AchievementElement", b =>
-                {
-                    b.HasOne("OcenaPracownicza.API.Entities.EvaluationPeriod", "EvaluationPeriod")
-                        .WithMany()
-                        .HasForeignKey("EvaluationPeriodId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("EvaluationPeriod");
                 });

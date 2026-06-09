@@ -131,13 +131,6 @@ public class AchievementController(
         return Ok(employees);
     }
 
-    [HttpGet("dictionary")]
-    [AllowAnonymous]
-    public IActionResult GetDictionary()
-    {
-        return Ok(AchievementDictionary.Map);
-    }
-
     [HttpGet("attachments/{id}")]
     [Authorize(Roles = "Manager,Admin")] 
     public async Task<IActionResult> GetAttachment(Guid id)
