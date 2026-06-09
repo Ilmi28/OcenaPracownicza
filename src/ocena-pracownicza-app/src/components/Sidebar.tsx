@@ -9,6 +9,7 @@ import FactCheckIcon from "@mui/icons-material/FactCheck";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import HistoryIcon from "@mui/icons-material/History";
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import AppRegistrationIcon from "@mui/icons-material/AppRegistration";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import { useAuth } from "../hooks/AuthProvider";
 
@@ -93,6 +94,14 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                             text="Okresy ocen"
                             to="/evaluation-periods"
                             IconComponent={EventNoteIcon}
+                        />
+                    )}
+
+                    {user?.role === "Admin" && (
+                        <SidebarItem
+                            text="Szablony osiągnięć"
+                            to="/achievement-elements"
+                            IconComponent={AppRegistrationIcon}
                         />
                     )}
 

@@ -20,4 +20,6 @@ public class Achievement : BaseEntity
     public Employee Employee { get; set; } = null!;
     public Guid? AttachmentId { get; set; }
     public Attachment? Attachment { get; set; }
+    public Guid? AchievementElementId { get; set; }
+    public AchievementElement? AchievementElement { get; set; }
 }

@@ -92,7 +92,6 @@ const AchievementList: React.FC = () => {
                             <th className="th-score">Wynik</th>
                             <th className="th-name">Nazwa</th>
                             <th className="th-desc">Opis</th>
-                            <th className="th-summary">Podsumowanie</th>
                             {                           }
                             {!isEmployee && <th className="th-emp">Pracownik</th>}
                             <th className="th-actions" style={{ textAlign: "right" }}>Akcje</th>
@@ -127,11 +126,6 @@ const AchievementList: React.FC = () => {
                                     <td>
                                         <div className="col-desc" title={item.description}>
                                             {item.description}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="col-desc" title={item.achievementsSummary}>
-                                            {item.achievementsSummary}
                                         </div>
                                     </td>
                                     {                           }
@@ -213,7 +207,7 @@ const AchievementList: React.FC = () => {
                 .th-cat { width: 150px; }
                 .th-period { width: 150px; }
                 .th-score { width: 120px; }
-                .th-name { width: 180px; }
+                .th-name { width: 500px; }
                 .th-emp { width: 100px; }
                 .th-actions { width: 110px; }
 

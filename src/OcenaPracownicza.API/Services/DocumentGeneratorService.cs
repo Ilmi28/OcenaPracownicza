@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Interfaces.Services;
 using QuestPDF.Fluent;
@@ -7,205 +8,282 @@ using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OcenaPracownicza.API.Enums;
 
 namespace Ocenapracownicza.API.Services
 {
     public class DocumentGeneratorService : IDocumentGeneratorService
     {
-        public byte[] GenerateReport(Employee employee)
-        {
-            return GenerateReport(employee, new List<Achievement>());
-        }
+        private static string GetActivityLabel(int id)
+            => AchievementDictionary.Activities.FirstOrDefault(x => x.Id == id)?.Label ?? "Inny obszar działalności";
 
-        public byte[] GenerateReport(Employee employee, List<Achievement> achievements)
+        private static string GetDepartmentLabel(int id)
+            => AchievementDictionary.Departments.FirstOrDefault(x => x.Id == id)?.Label ?? "Inny dział weryfikujący";
+
+        private static string GetCategoryLabel(int id)
+            => AchievementDictionary.Categories.FirstOrDefault(x => x.Id == id)?.Label ?? "Pozostałe osiągnięcia";
+
+        private static string PobierzNazweStatusu(EvaluationStageStatus status) => status switch
+        {
+            EvaluationStageStatus.Draft => "Szkic",
+            EvaluationStageStatus.PendingStage2 => "Oczekujący",
+            EvaluationStageStatus.Stage2Approved => "Zatwierdzony",
+            _ => status.ToString()
+        };
+
+        public byte[] GenerateReport(Employee employee, List<Achievement> achievements, List<AchievementElement> elements, EvaluationPeriod? evaluationPeriod = null)
         {
             QuestPDF.Settings.License = LicenseType.Community;
+
+            var selectedPeriodName = evaluationPeriod?.Name
+                ?? achievements.FirstOrDefault()?.EvaluationPeriod?.Name ?? "Wszystkie okresy";
+
+            var filtrowaneAchievements = achievements
+                .Where(x => x.Stage2Status != EvaluationStageStatus.Draft)
+                .ToList();
 
             var document = Document.Create(container =>
             {
                 container.Page(page =>
                 {
-                    page.Size(PageSizes.A4);
-                    page.Margin(2, Unit.Centimetre);
-                    page.DefaultTextStyle(x => x.FontSize(12).FontFamily("Arial"));
+                    page.Size(PageSizes.A4.Portrait());
+                    page.Margin(1.2f, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(8.5f).FontFamily("Arial"));
 
-                    page.Header()
-                        .Text("Raport oceny pracownika")
-                        .FontSize(20)
-                        .Bold()
-                        .AlignCenter();
-
-                    page.Content().Column(column =>
+                    page.Header().PaddingBottom(12).Column(col =>
                     {
-                        column.Spacing(5);
-                        column.Item().Text($"Imię i nazwisko: {employee.FirstName} {employee.LastName}");
-                        column.Item().Text($"Stanowisko: {employee.Position}");
+                        col.Item().AlignRight().Text("Załącznik do Regulaminu oceny okresowej").FontSize(7).Italic().FontColor(Colors.Grey.Darken1);
+                        col.Item().Text("ARKUSZ OKRESOWEJ OCENY NAUCZYCIELA AKADEMICKIEGO").FontSize(13).Bold().FontColor(Colors.Blue.Darken4);
+                        col.Item().PaddingVertical(2).Text($"Okres oceny: {selectedPeriodName}").FontSize(10).Italic();
+                        col.Item().PaddingVertical(4).LineHorizontal(1.5f).LineColor(Colors.Blue.Darken4);
 
-                        column.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
-
-                        foreach (var a in achievements)
+                        col.Item().PaddingTop(6).Border(0.5f).BorderColor(Colors.Grey.Lighten1).Background(Colors.Grey.Lighten5).Padding(8).Grid(grid =>
                         {
-                            // Używamy danych z powiązanej encji EvaluationPeriod
-                            column.Item().Text($"Okres: {a.EvaluationPeriod?.Name ?? "Brak danych"}").Bold();
-                            column.Item().Text($"Ocena końcowa: {a.FinalScore}");
-                            column.Item().Text($"Kategoria: {a.Category}");
-                            column.Item().Text($"Osiągnięcie: {a.Name}");
-                            column.Item().Text($"Opis: {a.Description}");
-                            column.Item().Text($"Podsumowanie: {a.AchievementsSummary}");
+                            grid.Columns(2);
+                            grid.Item().Text($"Pracownik: {employee?.FirstName} {employee?.LastName}").Bold();
 
-                            if (!string.IsNullOrEmpty(a.Stage2Comment))
-                                column.Item().Text($"Komentarz przełożonego: {a.Stage2Comment}").Italic();
+                            var suma = filtrowaneAchievements.Sum(x => decimal.TryParse(x.FinalScore, out var s) ? s : 0).ToString("F2");
+                            grid.Item().Text($"Suma przyznanych punktów: {suma}").Bold().FontColor(Colors.Green.Darken3);
+                        });
+                    });
 
-                            column.Item().PaddingVertical(5).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten3);
+                    page.Content().Column(col =>
+                    {
+                        var poDzialalnosciach = filtrowaneAchievements.GroupBy(a => {
+                            var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                            return el?.ActivityId ?? 0;
+                        }).OrderBy(g => g.Key);
+
+                        foreach (var grupaDzialalnosci in poDzialalnosciach)
+                        {
+                            col.Item().PaddingTop(12).PaddingBottom(2).Text(GetActivityLabel(grupaDzialalnosci.Key).ToUpper()).FontSize(11).Bold().FontColor(Colors.Blue.Darken4);
+                            col.Item().LineHorizontal(0.5f).LineColor(Colors.Blue.Lighten3);
+
+                            var poDzialach = grupaDzialalnosci.GroupBy(a => {
+                                var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                                return el?.DepartmentId ?? 0;
+                            }).OrderBy(g => g.Key);
+
+                            foreach (var grupaDzialu in poDzialach)
+                            {
+                                col.Item().PaddingTop(8).PaddingLeft(5).Text($"Dział weryfikujący: {GetDepartmentLabel(grupaDzialu.Key)}").FontSize(9.5f).Bold().FontColor(Colors.Blue.Darken2);
+
+                                var poKategoriach = grupaDzialu.GroupBy(a => {
+                                    var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                                    return el?.CategoryId ?? 0;
+                                }).OrderBy(g => g.Key);
+
+                                foreach (var grupaKategorii in poKategoriach)
+                                {
+                                    col.Item().PaddingTop(4).PaddingLeft(10).PaddingBottom(2).Text($"• {GetCategoryLabel(grupaKategorii.Key)}").FontSize(8.5f).Bold().FontColor(Colors.Grey.Darken3);
+
+                                    col.Item().PaddingLeft(10).PaddingBottom(8).Table(table =>
+                                    {
+                                        table.ColumnsDefinition(cols =>
+                                        {
+                                            cols.RelativeColumn(0.7f);   
+                                            cols.RelativeColumn(4.0f);     
+                                            cols.RelativeColumn(0.7f);    
+                                            cols.RelativeColumn(0.7f);    
+                                            cols.RelativeColumn(1.1f);   
+                                            cols.RelativeColumn(1.1f);   
+                                        });
+
+                                        table.Header(h =>
+                                        {
+                                            h.Cell().Element(HeaderStyle).Text("Kod");
+                                            h.Cell().Element(HeaderStyle).Text("Nazwa kryterium oraz uzasadnienie pracownika");
+                                            h.Cell().Element(HeaderStyle).Text("Pkt").AlignCenter();
+                                            h.Cell().Element(HeaderStyle).Text("Max").AlignCenter();
+                                            h.Cell().Element(HeaderStyle).Text("Status");
+                                            h.Cell().Element(HeaderStyle).Text("Data");
+                                        });
+
+                                        foreach (var a in grupaKategorii)
+                                        {
+                                            var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                                            string backgroundColor = GetStatusBackgroundColor(a.Stage2Status);
+
+                                            BuildCell(table.Cell(), backgroundColor).Text(el?.Code ?? "-");
+
+                                            BuildCell(table.Cell(), backgroundColor).Column(c =>
+                                            {
+                                                c.Item().Text(a.Name ?? "-");
+                                                if (!string.IsNullOrEmpty(a.Description))
+                                                {
+                                                    c.Item().Text($"Uzasadnienie: {a.Description}").FontSize(7.5f).Italic().FontColor(Colors.Grey.Darken2);
+                                                }
+                                            });
+
+                                            BuildCell(table.Cell(), backgroundColor).AlignCenter().Text(a.FinalScore ?? "0").Bold();
+                                            BuildCell(table.Cell(), backgroundColor).AlignCenter().Text(el?.BasePoints.ToString("F2") ?? "0");
+                                            BuildCell(table.Cell(), backgroundColor).Text(PobierzNazweStatusu(a.Stage2Status)).Bold();
+                                            BuildCell(table.Cell(), backgroundColor).Text(a.Date.ToString("dd.MM.yyyy"));
+                                        }
+                                    });
+                                }
+                            }
                         }
                     });
 
-                    page.Footer()
-                        .AlignCenter()
-                        .Text(x =>
-                        {
-                            x.Span("Wygenerowano: ");
-                            x.Span($"{DateTime.Now:dd.MM.yyyy HH:mm}");
-                        });
+                    page.Footer().AlignRight().Text(x =>
+                    {
+                        x.Span("Strona ").FontSize(7.5f);
+                        x.CurrentPageNumber().FontSize(7.5f);
+                        x.Span(" z ").FontSize(7.5f);
+                        x.TotalPages().FontSize(7.5f);
+                    });
                 });
             });
-
             return document.GeneratePdf();
         }
 
         public byte[] GenerateSummaryReport(List<Achievement> achievements)
         {
-            QuestPDF.Settings.License = LicenseType.Community;
-
             var document = Document.Create(container =>
             {
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4);
-                    page.Margin(1, Unit.Centimetre); // Mniejszy margines dla tabeli zbiorczej
-                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+                    page.Margin(1.5f, Unit.Centimetre);
+                    page.Header().PaddingBottom(10).Text("Raport zbiorczy osiągnięć pracowników").FontSize(15).Bold().AlignCenter().FontColor(Colors.Blue.Darken4);
 
-                    page.Header()
-                        .Text("Raport zbiorczy pracowników")
-                        .FontSize(18)
-                        .Bold()
-                        .AlignCenter();
-
-                    page.Content().PaddingVertical(10).Table(table =>
+                    page.Content().Table(table =>
                     {
-                        table.ColumnsDefinition(columns =>
-                        {
-                            columns.RelativeColumn(3); // Imię i nazwisko
-                            columns.RelativeColumn(2); // Stanowisko
-                            columns.RelativeColumn(2); // Okres
-                            columns.RelativeColumn(1); // Ocena
+                        table.ColumnsDefinition(c => { c.RelativeColumn(3); c.RelativeColumn(2); c.RelativeColumn(2); c.RelativeColumn(1.2f); });
+                        table.Header(h => {
+                            h.Cell().Element(HeaderStyle).Text("Pracownik");
+                            h.Cell().Element(HeaderStyle).Text("Okres");
+                            h.Cell().Element(HeaderStyle).Text("Status");
+                            h.Cell().Element(HeaderStyle).Text("Wynik pkt").AlignCenter();
                         });
 
-                        table.Header(header =>
+                        foreach (var a in achievements.Where(x => x.Stage2Status != EvaluationStageStatus.Draft))
                         {
-                            header.Cell().Element(CellStyle).Text("Imię i nazwisko");
-                            header.Cell().Element(CellStyle).Text("Stanowisko");
-                            header.Cell().Element(CellStyle).Text("Okres");
-                            header.Cell().Element(CellStyle).Text("Ocena");
+                            string backgroundColor = GetStatusBackgroundColor(a.Stage2Status);
 
-                            static IContainer CellStyle(IContainer container)
-                            {
-                                return container.DefaultTextStyle(x => x.Bold())
-                                                .PaddingVertical(5)
-                                                .BorderBottom(1)
-                                                .BorderColor(Colors.Black);
-                            }
-                        });
-
-                        foreach (var a in achievements)
-                        {
-                            table.Cell().Element(ContentStyle).Text($"{a.Employee?.FirstName} {a.Employee?.LastName}");
-                            table.Cell().Element(ContentStyle).Text(a.Employee?.Position ?? "-");
-                            table.Cell().Element(ContentStyle).Text(a.EvaluationPeriod?.Name ?? "-");
-                            table.Cell().Element(ContentStyle).Text(a.FinalScore);
-
-                            static IContainer ContentStyle(IContainer container)
-                            {
-                                return container.PaddingVertical(2).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2);
-                            }
+                            BuildCell(table.Cell(), backgroundColor).Text($"{a.Employee?.FirstName} {a.Employee?.LastName}");
+                            BuildCell(table.Cell(), backgroundColor).Text(a.EvaluationPeriod?.Name ?? "-");
+                            BuildCell(table.Cell(), backgroundColor).Text(PobierzNazweStatusu(a.Stage2Status));
+                            BuildCell(table.Cell(), backgroundColor).AlignCenter().Text(a.FinalScore ?? "0").Bold();
                         }
                     });
-
-                    page.Footer()
-                        .AlignCenter()
-                        .Text(x =>
-                        {
-                            x.CurrentPageNumber();
-                            x.Span(" / ");
-                            x.TotalPages();
-                        });
                 });
             });
-
             return document.GeneratePdf();
         }
-        public byte[] GenerateExcelReport(Employee employee, List<Achievement> achievements)
+
+        private static IContainer BuildCell(IContainer container, string backgroundColor)
+        {
+            var cell = container.Padding(4).BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2);
+            if (!string.IsNullOrEmpty(backgroundColor)) cell = cell.Background(backgroundColor);
+            return cell;
+        }
+
+        private static string GetStatusBackgroundColor(EvaluationStageStatus status)
+        {
+            if (status == EvaluationStageStatus.PendingStage2) return Colors.Yellow.Lighten5;
+            if (status == EvaluationStageStatus.Stage2Approved) return Colors.Green.Lighten5;
+            return string.Empty;
+        }
+
+        private static IContainer HeaderStyle(IContainer container) =>
+            container.Background(Colors.Blue.Darken4).Padding(4).DefaultTextStyle(x => x.Bold().FontColor(Colors.White).FontSize(8.0f));
+
+
+        public byte[] GenerateExcelReport(Employee employee, List<Achievement> achievements, List<AchievementElement> elements, EvaluationPeriod? evaluationPeriod = null)
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine("RAPORT OCENY PRACOWNIKA;;;;;;");
-            sb.AppendLine($"Pracownik:;{employee.FirstName} {employee.LastName};;;;;");
-            sb.AppendLine($"Stanowisko:;{employee.Position};;;;;");
-            sb.AppendLine($"Data wygenerowania:;{DateTime.Now:dd.MM.yyyy HH:mm};;;;;");
-            sb.AppendLine(";;;;;;"); 
+            sb.AppendLine($"Pracownik:;{employee?.FirstName} {employee?.LastName};;;;;");
+            sb.AppendLine($"Okres ewaluacji:;{(evaluationPeriod?.Name ?? "Wszystkie okresy")};;;;;");
+            sb.AppendLine(";;;;;;");    
 
-            sb.AppendLine("Okres oceny;Kategoria osiągnięcia;Nazwa osiągnięcia;Ocena końcowa;Podsumowanie celów;Komentarz przełożonego;Data wpisu");
+            sb.AppendLine("Obszar działalności;Dział weryfikujący;Kategoria słownika;Kod;Nazwa kryterium;Uzasadnienie pracownika;Punkty przyznane;Punkty bazowe (Max);Status;Data zaistnienia");
 
-            foreach (var a in achievements)
+            var filtrowane = achievements.Where(x => x.Stage2Status != EvaluationStageStatus.Draft).ToList();
+
+            var poDzialalnosciach = filtrowane.GroupBy(a => {
+                var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                return el?.ActivityId ?? 0;
+            }).OrderBy(g => g.Key);
+
+            foreach (var gActivity in poDzialalnosciach)
             {
-                var period = a.EvaluationPeriod?.Name ?? "Brak danych";
-                var category = a.Category.ToString();
+                string nazwaObszaru = GetActivityLabel(gActivity.Key);
 
-                var name = (a.Name ?? "").Replace(";", ",").Replace("\r", " ").Replace("\n", " ");
-                var score = a.FinalScore ?? "Brak oceny";
-                var summary = (a.AchievementsSummary ?? "").Replace(";", ",").Replace("\r", " ").Replace("\n", " ");
-                var comment = (a.Stage2Comment ?? "").Replace(";", ",").Replace("\r", " ").Replace("\n", " ");
-                var date = a.Date.ToString("dd.MM.yyyy");
+                var poDzialach = gActivity.GroupBy(a => {
+                    var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                    return el?.DepartmentId ?? 0;
+                }).OrderBy(g => g.Key);
 
-                sb.AppendLine($"{period};{category};{name};{score};{summary};{comment};{date}");
+                foreach (var gDept in poDzialach)
+                {
+                    string nazwaDzialu = GetDepartmentLabel(gDept.Key);
+
+                    var poKategoriach = gDept.GroupBy(a => {
+                        var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                        return el?.CategoryId ?? 0;
+                    }).OrderBy(g => g.Key);
+
+                    foreach (var gCat in poKategoriach)
+                    {
+                        string nazwaKategorii = GetCategoryLabel(gCat.Key);
+
+                        foreach (var a in gCat)
+                        {
+                            var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                            string statusTekst = PobierzNazweStatusu(a.Stage2Status);
+
+                            string oczyszczonaNazwa = a.Name?.Replace("\r", "").Replace("\n", " ").Replace(";", ",") ?? "";
+                            string oczyszczonyOpis = a.Description?.Replace("\r", "").Replace("\n", " ").Replace(";", ",") ?? "";
+
+                            sb.AppendLine($"{nazwaObszaru};{nazwaDzialu};{nazwaKategorii};{el?.Code};{oczyszczonaNazwa};{oczyszczonyOpis};{a.FinalScore};{el?.BasePoints};{statusTekst};{a.Date:dd.MM.yyyy}");
+                        }
+                    }
+                }
             }
-
             return ConvertToExcelCsvBytes(sb.ToString());
         }
 
         public byte[] GenerateExcelSummaryReport(List<Achievement> achievements)
         {
             var sb = new StringBuilder();
-
-            // Nagłówki kolumn tabeli zbiorczej
-            sb.AppendLine("Imię i nazwisko pracownika;Stanowisko;Okres oceny;Kategoria osiągnięcia;Nazwa osiągnięcia;Status etapu 2;Ocena końcowa");
-
-            foreach (var a in achievements)
+            sb.AppendLine("Pracownik;Okres;Status;Punkty przyznane");
+            foreach (var a in achievements.Where(x => x.Stage2Status != EvaluationStageStatus.Draft))
             {
-                var fullName = $"{a.Employee?.FirstName} {a.Employee?.LastName}";
-                var position = a.Employee?.Position ?? "-";
-                var period = a.EvaluationPeriod?.Name ?? "-";
-                var category = a.Category.ToString();
-                var name = (a.Name ?? "").Replace(";", ",").Replace("\r", " ").Replace("\n", " ");
-                var status = a.Stage2Status.ToString();
-                var score = a.FinalScore ?? "-";
-
-                sb.AppendLine($"{fullName};{position};{period};{category};{name};{status};{score}");
+                sb.AppendLine($"{a.Employee?.FirstName} {a.Employee?.LastName};{a.EvaluationPeriod?.Name};{PobierzNazweStatusu(a.Stage2Status)};{a.FinalScore}");
             }
-
             return ConvertToExcelCsvBytes(sb.ToString());
         }
 
         private byte[] ConvertToExcelCsvBytes(string csvContent)
         {
-            var csvBytes = Encoding.UTF8.GetBytes(csvContent);
-            var bom = new byte[] { 0xEF, 0xBB, 0xBF }; 
-
-            var finalBytes = new byte[bom.Length + csvBytes.Length];
-            Buffer.BlockCopy(bom, 0, finalBytes, 0, bom.Length);
-            Buffer.BlockCopy(csvBytes, 0, finalBytes, bom.Length, csvBytes.Length);
-
-            return finalBytes;
+            var bytes = Encoding.UTF8.GetBytes(csvContent);
+            return new byte[] { 0xEF, 0xBB, 0xBF }.Concat(bytes).ToArray();
         }
+
+        public byte[] GenerateReport(Employee employee, List<Achievement> achievements) => GenerateReport(employee, achievements, new List<AchievementElement>());
+        public byte[] GenerateExcelReport(Employee employee, List<Achievement> achievements) => GenerateExcelReport(employee, achievements, new List<AchievementElement>());
     }
 }
