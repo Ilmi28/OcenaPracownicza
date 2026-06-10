@@ -7,7 +7,7 @@ export type AchievementModel = {
     description: string;
     date: string;
     employeeId: string;
-    category: string;
+    category: string;                      
     evaluationPeriodId: string;
     finalScore: string;
     achievementsSummary: string;
@@ -30,10 +30,18 @@ interface EvaluationPeriodBasicInfo {
     isClosed?: boolean; 
 }
 
+interface ApiCategoryItem {
+    id: number;
+    name: string;
+}
+
 interface CurrentUser { id: string; firstName: string; lastName: string; }
 type ApiError = { response?: { data?: { message?: string; }; }; message?: string; };
 
-const formatToLocal = (iso: string) => iso.slice(0, 16);
+const formatToLocal = (iso: string) => {
+    if (!iso) return "";
+    return iso.slice(0, 16);
+};
 
 const getErrorMessage = (error: unknown, fallback: string) => {
     const apiError = error as ApiError;
@@ -58,14 +66,19 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
     const [dictionaryItems, setDictionaryItems] = useState<DictionaryItem[]>([]);
     const [isLoadingDictionary, setIsLoadingDictionary] = useState(true);
     
+    const [apiCategories, setApiCategories] = useState<ApiCategoryItem[]>([]);
+    
     const [selectedArea, setSelectedArea] = useState<string>("Scientific");
 
     const [form, setForm] = useState<AchievementModel>({
         name: "",
         description: "",
-        date: new Date().toISOString(),
+        date: (() => {
+            const local = new Date();
+            return new Date(local.getTime() - local.getTimezoneOffset() * 60000).toISOString();
+        })(),
         employeeId: initialEmployeeId,
-        category: "",
+        category: "0", 
         evaluationPeriodId: "",
         finalScore: "",
         achievementsSummary: "",
@@ -73,6 +86,21 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
     });
 
     const [file, setFile] = useState<File | null>(null);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axiosClient.get<ApiCategoryItem[]>("/achievement/categories");
+                setApiCategories(response.data);
+                if (response.data.length > 0) {
+                    setForm(prev => ({ ...prev, category: response.data[0].id.toString() }));
+                }
+            } catch (error) {
+                console.error("Nie udało się pobrać kategorii osiągnięć.", error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const fetchDictionary = async () => {
         if (!form.evaluationPeriodId) return;
@@ -116,20 +144,22 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
         }, {} as Record<string, DictionaryItem[]>);
     }, [availableItems]);
 
+    const [selectedElementId, setSelectedElementId] = useState<string>("");
+
     useEffect(() => {
         if (availableItems.length > 0) {
-            const exists = availableItems.some(i => i.elementGuid === form.category);
+            const exists = availableItems.some(i => i.elementGuid === selectedElementId);
             if (!exists) {
-                setForm(prev => ({ ...prev, category: availableItems[0].elementGuid }));
+                setSelectedElementId(availableItems[0].elementGuid);
             }
         } else {
-            setForm(prev => ({ ...prev, category: "" }));
+            setSelectedElementId("");
         }
     }, [selectedArea, availableItems]);
 
     const currentDictionaryItem = useMemo(() => {
-        return dictionaryItems.find(i => i.elementGuid === form.category);
-    }, [form.category, dictionaryItems]);
+        return dictionaryItems.find(i => i.elementGuid === selectedElementId);
+    }, [selectedElementId, dictionaryItems]);
 
     useEffect(() => {
         if (currentDictionaryItem) {
@@ -183,7 +213,8 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
             } catch {
                 setDetectedPeriod(null);
                 setIsPeriodClosed(false);
-                setForm(prev => ({ ...prev, evaluationPeriodId: "", category: "" }));
+                setForm(prev => ({ ...prev, evaluationPeriodId: "" }));
+                setSelectedElementId("");
                 setDictionaryItems([]);
             }
         };
@@ -192,10 +223,18 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setForm(prev => ({
-            ...prev,
-            [name]: name === "date" ? new Date(value).toISOString() : value,
-        }));
+        
+        setForm(prev => {
+            if (name === "date") {
+                const localDate = new Date(value);
+                const isoString = isNaN(localDate.getTime())
+                    ? new Date().toISOString()
+                    : new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
+                
+                return { ...prev, [name]: isoString };
+            }
+            return { ...prev, [name]: value };
+        });
     };
 
     const isFormValid = useMemo(() => {
@@ -205,12 +244,13 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
             Boolean(form.date) &&
             Boolean(form.employeeId) &&
             Boolean(form.evaluationPeriodId) &&
+            Boolean(selectedElementId) &&
             Boolean(form.category) &&
             Boolean(String(form.finalScore).trim()) &&
             Boolean(detectedPeriod) &&
             !isPeriodClosed                               
         );
-    }, [form, detectedPeriod, isPeriodClosed]);
+    }, [form, selectedElementId, detectedPeriod, isPeriodClosed]);
 
     const handleFinalSubmit = () => {
         if (!isFormValid) {
@@ -241,7 +281,7 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
             formData.append("Description", form.description);
             formData.append("Date", form.date);
             formData.append("EmployeeId", form.employeeId);
-            formData.append("Category", "0"); 
+            formData.append("Category", form.category); 
             formData.append("AchievementElementId", currentDictionaryItem.elementGuid);
             formData.append("EvaluationPeriodId", form.evaluationPeriodId);
             formData.append("FinalScore", form.finalScore);
@@ -288,7 +328,6 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                 <label htmlFor="date">Data zaistnienia osiągnięcia</label>
                 <input id="date" name="date" type="datetime-local" value={formatToLocal(form.date)} onChange={handleChange} required />
                 
-                {                                          }
                 <div style={{ 
                     marginTop: '8px', 
                     fontSize: '0.85rem', 
@@ -324,8 +363,13 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="category">Klasyfikacja Osiągnięcia</label>
-                        <select id="category" name="category" value={form.category} onChange={handleChange} disabled={isPeriodClosed}>
+                        <label htmlFor="elementSelect">Osiągnięcie</label>
+                        <select 
+                            id="elementSelect" 
+                            value={selectedElementId} 
+                            onChange={(e) => setSelectedElementId(e.target.value)} 
+                            disabled={isPeriodClosed}
+                        >
                             {dictionaryItems.length === 0 ? (
                                 <option value="">Brak szablonów dla tego okresu</option>
                             ) : Object.entries(groupedItems).map(([unit, items]) => (
@@ -341,6 +385,17 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                     </div>
                 </>
             )}
+
+            <div className="form-group">
+                <label htmlFor="category">Kategoria Biznesowa</label>
+                <select id="category" name="category" value={form.category} onChange={handleChange} disabled={isPeriodClosed}>
+                    {apiCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
 
             <hr style={{ borderTop: '1px dashed #cbd5e1', margin: '10px 0' }} />
 
@@ -381,7 +436,6 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                 />
             </div>
             
-            {                                    }
             <div className="button-group" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                 <button type="button" className="submit-btn" onClick={() => submitForm(true)} disabled={isSubmitting || !isFormValid} style={{ background: '#718096' }}>
                     Zapisywanie jako szkic
@@ -436,7 +490,6 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
             )}
 
             <style>{`
-                /* style bez zmian */
                 .achievement-form { width: 100%; max-width: 600px; margin: 2rem auto; display: grid; gap: 1.25rem; padding: 2.5rem; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); font-family: 'Inter', sans-serif; box-sizing: border-box; }
                 .form-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
                 .back-btn { background: none; border: none; color: #4e73df; cursor: pointer; font-weight: 600; }
@@ -451,7 +504,7 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                 .secondary-btn { padding: 14px; cursor: pointer; background: #edf2f7; color: #2d3748; border: 1px solid #dce1e8; border-radius: 8px; font-weight: 700; font-size: 1rem; box-sizing: border-box;}
                 .submit-btn:disabled, .secondary-btn:disabled { cursor: not-allowed; opacity: 0.4; background: #cbd5e1 !important; color: #94a3b8; }
                 .alert.error { background: #fed7d7; color: #822727; padding: 10px; border-radius: 5px; box-sizing: border-box;}
-                .confirmation-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+                .confirmation-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 1.5rem; z-index: 1000; }
                 .confirmation-card { width: min(100%, 640px); max-height: 90vh; overflow-y: auto; background: #ffffff; border-radius: 16px; padding: 1.5rem; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2); display: grid; gap: 1rem; box-sizing: border-box; }
                 .confirmation-summary div { padding: 0.75rem; border-radius: 10px; background: #f8fafc; margin-bottom: 5px; }
                 .confirmation-summary dt { font-size: 0.8rem; font-weight: 700; color: #4a5568; }

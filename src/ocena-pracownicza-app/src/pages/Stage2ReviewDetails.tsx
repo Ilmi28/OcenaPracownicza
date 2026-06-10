@@ -289,7 +289,35 @@ export default function Stage2ReviewDetails() {
                     </Grid>
                 </Grid>
             </Paper>
-
+            <Paper sx={{ p: 3, mb: 3}}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                    Decyzja komisji
+                </Typography>
+                <TextField
+                    fullWidth
+                    multiline
+                    minRows={3}
+                    label="Komentarz (wymagany przy odrzuceniu)"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    disabled={saving || canArchive || canClose}
+                    sx={{ mb: 2 }}
+                />
+                <Box display="flex" gap={2} justifyContent="flex-end">
+                    <Button variant="outlined" color="error" disabled={saving || !canDecide} onClick={onReject}>
+                        Odrzuć
+                    </Button>
+                    <Button variant="contained" disabled={saving || !canDecide} onClick={onApprove}>
+                        Zatwierdź
+                    </Button>
+                    <Button variant="outlined" disabled={saving || !canClose} onClick={onClose}>
+                        Zamknij ocenę
+                    </Button>
+                    <Button variant="contained" color="secondary" disabled={saving || !canArchive} onClick={onArchive}>
+                        Archiwizuj ocenę
+                    </Button>
+                </Box>
+            </Paper>
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>
                     Osiągnięcia
@@ -340,35 +368,7 @@ export default function Stage2ReviewDetails() {
                 </Table>
             </Paper>
 
-            <Paper sx={{ p: 3 }}>
-                <Typography variant="subtitle1" fontWeight={600} mb={2}>
-                    Decyzja komisji
-                </Typography>
-                <TextField
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    label="Komentarz (wymagany przy odrzuceniu)"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    disabled={saving || canArchive || canClose}
-                    sx={{ mb: 2 }}
-                />
-                <Box display="flex" gap={2} justifyContent="flex-end">
-                    <Button variant="outlined" color="error" disabled={saving || !canDecide} onClick={onReject}>
-                        Odrzuć
-                    </Button>
-                    <Button variant="contained" disabled={saving || !canDecide} onClick={onApprove}>
-                        Zatwierdź
-                    </Button>
-                    <Button variant="outlined" disabled={saving || !canClose} onClick={onClose}>
-                        Zamknij ocenę
-                    </Button>
-                    <Button variant="contained" color="secondary" disabled={saving || !canArchive} onClick={onArchive}>
-                        Archiwizuj ocenę
-                    </Button>
-                </Box>
-            </Paper>
+
         </Box>
     );
 }
