@@ -10,4 +10,5 @@ public class Stage2ReviewItemView
     public string Period { get; set; } = string.Empty;
     public string FinalScore { get; set; } = string.Empty;
     public int Stage2Status { get; set; }
+    public string Description { get; set; } = string.Empty;
 }

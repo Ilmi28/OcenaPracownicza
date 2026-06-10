@@ -11,6 +11,13 @@ interface ApiResponse<T> {
     data: T;
 }
 
+interface UpdateAchievementPayload {
+    name: string;
+    description: string;
+    finalScore: string;
+    stage2Comment?: string | null;
+}
+
 export const evaluationService = {
     getStage2History: async () => {
         const res = await axiosClient.get<ApiResponse<Stage2HistoryItemView[]>>(
@@ -54,6 +61,15 @@ export const evaluationService = {
         );
         return res.data.data;
     },
+
+    updateAchievement: async (achievementId: string, payload: UpdateAchievementPayload) => {
+        const res = await axiosClient.put<ApiResponse<Stage2ReviewDetailsView>>(
+            `/evaluation/stage2/${achievementId}`,
+            payload
+        );
+        return res.data.data;
+    },
+
     approve: async (achievementId: string, comment?: string) => {
         const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
             `/evaluation/stage2/${achievementId}/approve`,

@@ -83,7 +83,8 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 AchievementName = a.Name,
                 Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
-                Stage2Status = (int)a.Stage2Status
+                Stage2Status = (int)a.Stage2Status,
+                Description = a.Description ?? ""    
             })
             .OrderByDescending(a => a.Period)
             .ToListAsync();
@@ -111,7 +112,8 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 AchievementName = a.Name,
                 Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
-                Stage2Status = (int)a.Stage2Status
+                Stage2Status = (int)a.Stage2Status,
+                Description = a.Description ?? ""    
             })
             .OrderByDescending(a => a.Period)
             .ToListAsync();
@@ -137,7 +139,8 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 AchievementName = a.Name,
                 Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
-                Stage2Status = (int)a.Stage2Status
+                Stage2Status = (int)a.Stage2Status,
+                Description = a.Description ?? ""    
             })
             .OrderByDescending(a => a.Period)
             .ToListAsync();
@@ -240,15 +243,12 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         return new BaseResponse<Stage2ReviewDetailsView> { Data = await BuildDetails(achievementId) };
     }
 
-    // =========================================================================
-    // MODYFIKACJA METODY BUILDDETAILS: DODANE .Include() ORAZ MAPOWANIE ZAŁĄCZNIKA
-    // =========================================================================
     private async Task<Stage2ReviewDetailsView> BuildDetails(Guid achievementId, Guid? requiredEmployeeId = null)
     {
         var selectedAchievement = await context.Achievements
             .Include(a => a.Employee)
             .Include(a => a.EvaluationPeriod)
-            .Include(a => a.Attachment) // <-- KLUCZOWE: dołączenie głównego załącznika
+            .Include(a => a.Attachment)
             .FirstOrDefaultAsync(a =>
                 a.Id == achievementId &&
                 (!requiredEmployeeId.HasValue || a.EmployeeId == requiredEmployeeId.Value));
@@ -260,7 +260,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
 
         var achievements = await context.Achievements
             .Include(a => a.EvaluationPeriod)
-            .Include(a => a.Attachment) // <-- KLUCZOWE: dołączenie załączników dla listy składowej
+            .Include(a => a.Attachment)
             .Where(a => a.EmployeeId == selectedAchievement.EmployeeId)
             .OrderByDescending(a => a.Date)
             .ToListAsync();
@@ -279,8 +279,6 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             Stage2Comment = selectedAchievement.Stage2Comment,
             Stage2ReviewedAtUtc = selectedAchievement.Stage2ReviewedAtUtc,
             Stage2ReviewedByUserId = selectedAchievement.Stage2ReviewedByUserId,
-
-            // --- NOWE: Mapowanie załącznika dla głównego widoku ---
             AttachmentId = selectedAchievement.AttachmentId,
             AttachmentFileName = selectedAchievement.Attachment?.FileName,
 

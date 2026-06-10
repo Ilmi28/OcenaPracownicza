@@ -46,7 +46,8 @@ namespace OcenaPracownicza.API.Controllers
                 name = p.Name,
                 startDate = p.StartDate,
                 endDate = p.EndDate,
-                regulationVersion = p.RegulationVersion
+                regulationVersion = p.RegulationVersion,
+                isClosed = p.IsClosed       
             });
 
             return Ok(result);

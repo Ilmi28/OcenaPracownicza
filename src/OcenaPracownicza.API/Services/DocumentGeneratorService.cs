@@ -28,8 +28,19 @@ namespace Ocenapracownicza.API.Services
             EvaluationStageStatus.Draft => "Szkic",
             EvaluationStageStatus.PendingStage2 => "Oczekujący",
             EvaluationStageStatus.Stage2Approved => "Zatwierdzony",
+            EvaluationStageStatus.Stage2Rejected => "Odrzucony",
             _ => status.ToString()
         };
+
+        private static AchievementElement? GetElement(Achievement a, List<AchievementElement> elements)
+        {
+            if (elements != null && elements.Any())
+            {
+                var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                if (el != null) return el;
+            }
+            return a.AchievementElement;
+        }
 
         public byte[] GenerateReport(Employee employee, List<Achievement> achievements, List<AchievementElement> elements, EvaluationPeriod? evaluationPeriod = null)
         {
@@ -39,7 +50,7 @@ namespace Ocenapracownicza.API.Services
                 ?? achievements.FirstOrDefault()?.EvaluationPeriod?.Name ?? "Wszystkie okresy";
 
             var filtrowaneAchievements = achievements
-                .Where(x => x.Stage2Status != EvaluationStageStatus.Draft)
+                .Where(x => x.Stage2Status != EvaluationStageStatus.Draft && x.Stage2Status != EvaluationStageStatus.Stage2Rejected)
                 .ToList();
 
             var document = Document.Create(container =>
@@ -70,7 +81,7 @@ namespace Ocenapracownicza.API.Services
                     page.Content().Column(col =>
                     {
                         var poDzialalnosciach = filtrowaneAchievements.GroupBy(a => {
-                            var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                            var el = GetElement(a, elements);
                             return el?.ActivityId ?? 0;
                         }).OrderBy(g => g.Key);
 
@@ -80,7 +91,7 @@ namespace Ocenapracownicza.API.Services
                             col.Item().LineHorizontal(0.5f).LineColor(Colors.Blue.Lighten3);
 
                             var poDzialach = grupaDzialalnosci.GroupBy(a => {
-                                var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                                var el = GetElement(a, elements);
                                 return el?.DepartmentId ?? 0;
                             }).OrderBy(g => g.Key);
 
@@ -89,7 +100,7 @@ namespace Ocenapracownicza.API.Services
                                 col.Item().PaddingTop(8).PaddingLeft(5).Text($"Dział weryfikujący: {GetDepartmentLabel(grupaDzialu.Key)}").FontSize(9.5f).Bold().FontColor(Colors.Blue.Darken2);
 
                                 var poKategoriach = grupaDzialu.GroupBy(a => {
-                                    var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                                    var el = GetElement(a, elements);
                                     return el?.CategoryId ?? 0;
                                 }).OrderBy(g => g.Key);
 
@@ -101,27 +112,29 @@ namespace Ocenapracownicza.API.Services
                                     {
                                         table.ColumnsDefinition(cols =>
                                         {
-                                            cols.RelativeColumn(0.7f);   
-                                            cols.RelativeColumn(4.0f);     
-                                            cols.RelativeColumn(0.7f);    
-                                            cols.RelativeColumn(0.7f);    
-                                            cols.RelativeColumn(1.1f);   
-                                            cols.RelativeColumn(1.1f);   
+                                            cols.RelativeColumn(0.7f);
+                                            cols.RelativeColumn(4.0f);
+                                            cols.RelativeColumn(0.6f);
+                                            cols.RelativeColumn(0.6f);
+                                            cols.RelativeColumn(1.6f);
+                                            cols.RelativeColumn(1.2f);
+                                            cols.RelativeColumn(1.8f);
                                         });
 
                                         table.Header(h =>
                                         {
                                             h.Cell().Element(HeaderStyle).Text("Kod");
-                                            h.Cell().Element(HeaderStyle).Text("Nazwa kryterium oraz uzasadnienie pracownika");
+                                            h.Cell().Element(HeaderStyle).Text("Nazwa osiągnięcia oraz opis");
                                             h.Cell().Element(HeaderStyle).Text("Pkt").AlignCenter();
                                             h.Cell().Element(HeaderStyle).Text("Max").AlignCenter();
                                             h.Cell().Element(HeaderStyle).Text("Status");
                                             h.Cell().Element(HeaderStyle).Text("Data");
+                                            h.Cell().Element(HeaderStyle).Text("Komentarz przełożonego");
                                         });
 
                                         foreach (var a in grupaKategorii)
                                         {
-                                            var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                                            var el = GetElement(a, elements);
                                             string backgroundColor = GetStatusBackgroundColor(a.Stage2Status);
 
                                             BuildCell(table.Cell(), backgroundColor).Text(el?.Code ?? "-");
@@ -131,7 +144,7 @@ namespace Ocenapracownicza.API.Services
                                                 c.Item().Text(a.Name ?? "-");
                                                 if (!string.IsNullOrEmpty(a.Description))
                                                 {
-                                                    c.Item().Text($"Uzasadnienie: {a.Description}").FontSize(7.5f).Italic().FontColor(Colors.Grey.Darken2);
+                                                    c.Item().Text($"Opis: {a.Description}").FontSize(7.5f).Italic().FontColor(Colors.Grey.Darken2);
                                                 }
                                             });
 
@@ -139,6 +152,7 @@ namespace Ocenapracownicza.API.Services
                                             BuildCell(table.Cell(), backgroundColor).AlignCenter().Text(el?.BasePoints.ToString("F2") ?? "0");
                                             BuildCell(table.Cell(), backgroundColor).Text(PobierzNazweStatusu(a.Stage2Status)).Bold();
                                             BuildCell(table.Cell(), backgroundColor).Text(a.Date.ToString("dd.MM.yyyy"));
+                                            BuildCell(table.Cell(), backgroundColor).Text(a.Stage2Comment ?? "-").Italic();
                                         }
                                     });
                                 }
@@ -178,7 +192,7 @@ namespace Ocenapracownicza.API.Services
                             h.Cell().Element(HeaderStyle).Text("Wynik pkt").AlignCenter();
                         });
 
-                        foreach (var a in achievements.Where(x => x.Stage2Status != EvaluationStageStatus.Draft))
+                        foreach (var a in achievements.Where(x => x.Stage2Status != EvaluationStageStatus.Draft && x.Stage2Status != EvaluationStageStatus.Stage2Rejected))
                         {
                             string backgroundColor = GetStatusBackgroundColor(a.Stage2Status);
 
@@ -210,56 +224,75 @@ namespace Ocenapracownicza.API.Services
         private static IContainer HeaderStyle(IContainer container) =>
             container.Background(Colors.Blue.Darken4).Padding(4).DefaultTextStyle(x => x.Bold().FontColor(Colors.White).FontSize(8.0f));
 
-
         public byte[] GenerateExcelReport(Employee employee, List<Achievement> achievements, List<AchievementElement> elements, EvaluationPeriod? evaluationPeriod = null)
         {
             var sb = new StringBuilder();
 
+            var filtrowane = achievements
+                .Where(x => x.Stage2Status != EvaluationStageStatus.Draft && x.Stage2Status != EvaluationStageStatus.Stage2Rejected)
+                .ToList();
+
+            string selectedPeriodName = evaluationPeriod?.Name ?? achievements.FirstOrDefault()?.EvaluationPeriod?.Name ?? "Wszystkie okresy";
+            var sumaPunktow = filtrowane.Sum(x => decimal.TryParse(x.FinalScore, out var s) ? s : 0).ToString("F2");
+
+            sb.AppendLine("ARKUSZ OKRESOWEJ OCENY NAUCZYCIELA AKADEMICKIEGO;;;;;;");
             sb.AppendLine($"Pracownik:;{employee?.FirstName} {employee?.LastName};;;;;");
-            sb.AppendLine($"Okres ewaluacji:;{(evaluationPeriod?.Name ?? "Wszystkie okresy")};;;;;");
-            sb.AppendLine(";;;;;;");    
-
-            sb.AppendLine("Obszar działalności;Dział weryfikujący;Kategoria słownika;Kod;Nazwa kryterium;Uzasadnienie pracownika;Punkty przyznane;Punkty bazowe (Max);Status;Data zaistnienia");
-
-            var filtrowane = achievements.Where(x => x.Stage2Status != EvaluationStageStatus.Draft).ToList();
+            sb.AppendLine($"Okres oceny:;{selectedPeriodName};;;;;");
+            sb.AppendLine($"Suma przyznanych punktów:;{sumaPunktow};;;;;");
+            sb.AppendLine(";;;;;;");   
 
             var poDzialalnosciach = filtrowane.GroupBy(a => {
-                var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                var el = GetElement(a, elements);
                 return el?.ActivityId ?? 0;
             }).OrderBy(g => g.Key);
 
             foreach (var gActivity in poDzialalnosciach)
             {
-                string nazwaObszaru = GetActivityLabel(gActivity.Key);
+                string nazwaObszaru = GetActivityLabel(gActivity.Key).ToUpper();
+                sb.AppendLine($"=== {nazwaObszaru} ===;;;;;;");
 
                 var poDzialach = gActivity.GroupBy(a => {
-                    var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                    var el = GetElement(a, elements);
                     return el?.DepartmentId ?? 0;
                 }).OrderBy(g => g.Key);
 
                 foreach (var gDept in poDzialach)
                 {
                     string nazwaDzialu = GetDepartmentLabel(gDept.Key);
+                    sb.AppendLine($">> Dział weryfikujący: {nazwaDzialu};;;;;;");
 
                     var poKategoriach = gDept.GroupBy(a => {
-                        var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                        var el = GetElement(a, elements);
                         return el?.CategoryId ?? 0;
                     }).OrderBy(g => g.Key);
 
                     foreach (var gCat in poKategoriach)
                     {
                         string nazwaKategorii = GetCategoryLabel(gCat.Key);
+                        sb.AppendLine($"• {nazwaKategorii};;;;;;");
+
+                        sb.AppendLine("Kod;Nazwa osiągnięcia oraz opis;Pkt;Max;Status;Data;Komentarz przełożonego");
 
                         foreach (var a in gCat)
                         {
-                            var el = elements.FirstOrDefault(e => e.Id == a.AchievementElementId);
+                            var el = GetElement(a, elements);
                             string statusTekst = PobierzNazweStatusu(a.Stage2Status);
 
-                            string oczyszczonaNazwa = a.Name?.Replace("\r", "").Replace("\n", " ").Replace(";", ",") ?? "";
-                            string oczyszczonyOpis = a.Description?.Replace("\r", "").Replace("\n", " ").Replace(";", ",") ?? "";
+                            string nazwaCzysta = a.Name?.Replace("\r", "").Replace("\n", " ").Replace(";", ",") ?? "-";
+                            if (!string.IsNullOrEmpty(a.Description))
+                            {
+                                string opisCzysty = a.Description.Replace("\r", "").Replace("\n", " ").Replace(";", ",");
+                                nazwaCzysta += $" (Opis: {opisCzysty})";
+                            }
 
-                            sb.AppendLine($"{nazwaObszaru};{nazwaDzialu};{nazwaKategorii};{el?.Code};{oczyszczonaNazwa};{oczyszczonyOpis};{a.FinalScore};{el?.BasePoints};{statusTekst};{a.Date:dd.MM.yyyy}");
+                            string pktMax = el?.BasePoints.ToString("F2") ?? "0.00";
+                            string dataTekst = a.Date.ToString("dd.MM.yyyy");
+                            string komentarzCzysty = a.Stage2Comment?.Replace("\r", "").Replace("\n", " ").Replace(";", ",") ?? "-";
+
+                            sb.AppendLine($"{el?.Code ?? "-"};{nazwaCzysta};{a.FinalScore ?? "0"};{pktMax};{statusTekst};{dataTekst};{komentarzCzysty}");
                         }
+
+                        sb.AppendLine(";;;;;;");
                     }
                 }
             }
@@ -270,7 +303,7 @@ namespace Ocenapracownicza.API.Services
         {
             var sb = new StringBuilder();
             sb.AppendLine("Pracownik;Okres;Status;Punkty przyznane");
-            foreach (var a in achievements.Where(x => x.Stage2Status != EvaluationStageStatus.Draft))
+            foreach (var a in achievements.Where(x => x.Stage2Status != EvaluationStageStatus.Draft && x.Stage2Status != EvaluationStageStatus.Stage2Rejected))
             {
                 sb.AppendLine($"{a.Employee?.FirstName} {a.Employee?.LastName};{a.EvaluationPeriod?.Name};{PobierzNazweStatusu(a.Stage2Status)};{a.FinalScore}");
             }
