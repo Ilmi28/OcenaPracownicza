@@ -76,13 +76,13 @@ export default function Stage2ReviewQueue() {
                     ? "Zatwierdzone oceny"
                     : viewMode === "archived"
                       ? "Archiwum ocen"
-                      : "Kolejka etapu 2"}
+                      : "Oczekujące na zatwierdzenie/odrzucenie"}
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={3}>
                 {viewMode === "approved"
                     ? "Zatwierdzone oceny pracowników dostępne dla administratora."
                     : viewMode === "archived"
-                      ? "Zarchiwizowane oceny dostępne do podglądu."
+                      ? "Archiwum ocen dostępne do podglądu."
                       : "Weryfikacja oceny i osiągnięć przez Manager/Admin."}
             </Typography>
             {error && (
@@ -121,7 +121,7 @@ export default function Stage2ReviewQueue() {
                         <TableRow>
                             <TableCell>Pracownik</TableCell>
                             <TableCell>Stanowisko</TableCell>
-                            <TableCell>Osiągnięcie</TableCell>
+                            <TableCell>Osiągnięcie oraz opis</TableCell>
                             <TableCell>Okres</TableCell>
                             <TableCell>Wynik</TableCell>
                             <TableCell>Status</TableCell>
@@ -133,7 +133,24 @@ export default function Stage2ReviewQueue() {
                             <TableRow key={item.achievementId}>
                                 <TableCell>{item.fullName}</TableCell>
                                 <TableCell>{item.position}</TableCell>
-                                <TableCell>{item.achievementName}</TableCell>
+                                
+                                {                                 }
+                                <TableCell>
+                                    <Typography variant="body2" fontWeight={500}>
+                                        {item.achievementName}
+                                    </Typography>
+                                    {item.description && (
+                                        <Typography 
+                                            variant="caption" 
+                                            color="text.secondary" 
+                                            display="block" 
+                                            sx={{ fontStyle: 'italic', mt: 0.5, maxWidth: 400 }}
+                                        >
+                                            Opis: {item.description}
+                                        </Typography>
+                                    )}
+                                </TableCell>
+                                
                                 <TableCell>{item.period}</TableCell>
                                 <TableCell>{item.finalScore}</TableCell>
                                 <TableCell>

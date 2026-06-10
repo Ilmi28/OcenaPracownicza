@@ -16,4 +16,5 @@ public class AddAchievementRequest
     public bool IsDraft { get; set; }
 
     public IFormFile? File { get; set; }
+    public Guid AchievementElementId { get; set; }
 }

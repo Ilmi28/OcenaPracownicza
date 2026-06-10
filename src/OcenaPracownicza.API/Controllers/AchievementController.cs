@@ -47,7 +47,17 @@ public class AchievementController(
             a.FinalScore,
             a.AchievementsSummary,
             a.EmployeeId,
-            EvaluationPeriodName = a.EvaluationPeriod != null ? a.EvaluationPeriod.Name : "Brak okresu"
+            a.Stage2Status,
+            EvaluationPeriodName = a.EvaluationPeriod != null ? a.EvaluationPeriod.Name : "Brak okresu",
+            EvaluationPeriodId = a.EvaluationPeriodId,
+
+            AchievementElementId = a.AchievementElementId,
+            AchievementElementCode = a.AchievementElement != null ? a.AchievementElement.Code : "-",
+            AchievementElementBasePoints = a.AchievementElement != null ? a.AchievementElement.BasePoints : 0,
+            
+            ActivityId = a.AchievementElement != null ? a.AchievementElement.ActivityId : 0,
+            DepartmentId = a.AchievementElement != null ? a.AchievementElement.DepartmentId : 0,
+            CategoryId = a.AchievementElement != null ? a.AchievementElement.CategoryId : 0
         })
         .ToListAsync();
 
@@ -108,7 +118,9 @@ public class AchievementController(
             FinalScore = request.FinalScore,
             AchievementsSummary = request.AchievementsSummary,
             Stage2Status = request.IsDraft ? EvaluationStageStatus.Draft : EvaluationStageStatus.PendingStage2,
-            AttachmentId = attachment?.Id
+            AttachmentId = attachment?.Id,
+            
+            AchievementElementId = request.AchievementElementId
         };
 
         await context.Achievements.AddAsync(achievement);

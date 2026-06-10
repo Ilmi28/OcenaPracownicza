@@ -3,11 +3,13 @@ import {
     Paper, Typography, Box, TextField, Button,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-    CircularProgress, Tooltip
+    CircularProgress, Tooltip, FormControlLabel, Checkbox
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ArchiveIcon from "@mui/icons-material/Archive";
 import axiosClient from "../services/axiosClient";
+import { evaluationService } from "../services/evaluationService";
 
 interface EvaluationPeriod {
     id: string;
@@ -15,12 +17,14 @@ interface EvaluationPeriod {
     startDate: string;
     endDate: string;
     regulationVersion: string;             
+    isClosed: boolean;                
 }
 
 const EvaluationPeriodManager: React.FC = () => {
     const [periods, setPeriods] = useState<EvaluationPeriod[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [archivingId, setArchivingId] = useState<string | null>(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPeriod, setEditingPeriod] = useState<EvaluationPeriod | null>(null);
@@ -28,7 +32,8 @@ const EvaluationPeriodManager: React.FC = () => {
         name: "",
         startDate: "",
         endDate: "",
-        regulationVersion: ""          
+        regulationVersion: "",
+        isClosed: false                   
     });
 
     const fetchPeriods = async () => {
@@ -51,7 +56,8 @@ const EvaluationPeriodManager: React.FC = () => {
                 name: period.name,
                 startDate: period.startDate.slice(0, 10),
                 endDate: period.endDate.slice(0, 10),
-                regulationVersion: period.regulationVersion || ""
+                regulationVersion: period.regulationVersion || "",
+                isClosed: period.isClosed ?? false
             });
         } else {
             setEditingPeriod(null);
@@ -59,7 +65,8 @@ const EvaluationPeriodManager: React.FC = () => {
                 name: "", 
                 startDate: "", 
                 endDate: "", 
-                regulationVersion: "Zarządzanie nr 1..."                
+                regulationVersion: "Zarządzanie nr 1...",
+                isClosed: false
             });
         }
         setIsModalOpen(true);
@@ -89,6 +96,56 @@ const EvaluationPeriodManager: React.FC = () => {
             setPeriods(periods.filter(p => p.id !== id));
         } catch (err) {
             alert("Nie można usunąć okresu (prawdopodobnie posiada przypisane osiągnięcia).");
+        }
+    };
+
+    const handleArchivePeriodAchievements = async (period: EvaluationPeriod) => {
+        const confirmClose = window.confirm(
+            `Czy chcesz zamknąć i zarchiwizować wszystkie zweryfikowane osiągnięcia (zatwierdzone lub odrzucone) przypisane do okresu "${period.name}"?\nPo zakończeniu okres zostanie oznaczony jako nieaktywny.`
+        );
+        if (!confirmClose) return;
+
+        setArchivingId(period.id);
+        try {
+            const achievementsResp = await axiosClient.get("/achievement");
+            const allAchievements: any[] = achievementsResp.data;
+
+            debugger;
+
+            const periodAchievements = allAchievements.filter(a => 
+                a.evaluationPeriodName === period.name
+            );
+
+            const targets = periodAchievements.filter(a => 
+                a.stage2Status === 4 || a.stage2Status === 3 || a.stage2Status === 2
+            );
+
+            if (targets.length > 0) {
+                for (const t of targets) {
+                    const id = t.id || t.achievementId;
+                    if (t.stage2Status === 2 || t.stage2Status === 3) {
+                        await evaluationService.close(id);
+                    }
+                    await evaluationService.archive(id);
+                }
+            }
+
+            await axiosClient.put(`/evaluation-periods/${period.id}`, {
+                name: period.name,
+                startDate: period.startDate.slice(0, 10),
+                endDate: period.endDate.slice(0, 10), 
+                regulationVersion: period.regulationVersion,
+                isClosed: true                   
+            });
+
+            alert(`Sukces! Zarchiwizowano osiągnięcia (${targets.length} szt.), a okres "${period.name}" został ustawiony jako nieaktywny.`);
+            await fetchPeriods();
+        } catch (err: any) {
+            console.error(err);
+            const errorMsg = err?.response?.data?.message ?? "Wystąpił błąd podczas masowego procesu archiwizacji osiągnięć.";
+            alert(errorMsg);
+        } finally {
+            setArchivingId(null);
         }
     };
 
@@ -128,34 +185,53 @@ const EvaluationPeriodManager: React.FC = () => {
                         </TableHead>
                         <TableBody>
                             {periods.map((p) => {
-                                const isPast = new Date(p.endDate) < new Date();
+                                const isPast = new Date(p.endDate) < new Date() || p.isClosed;
+                                const isCurrentArchiving = archivingId === p.id;
+
                                 return (
-                                    <TableRow key={p.id} hover>
+                                    <TableRow key={p.id} hover sx={{ opacity: p.isClosed ? 0.55 : 1 }}>
                                         <TableCell sx={{ fontWeight: 600 }}>{p.name}</TableCell>
                                         <TableCell>{new Date(p.startDate).toLocaleDateString()}</TableCell>
                                         <TableCell>{new Date(p.endDate).toLocaleDateString()}</TableCell>
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                {p.regulationVersion}
-                                            </Box>
-                                        </TableCell>
+                                        <TableCell>{p.regulationVersion}</TableCell>
                                         <TableCell align="center">
+                                            {                     }
                                             <Box component="span" sx={{
                                                 px: 1.5, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 700,
-                                                bgcolor: isPast ? "error.light" : "success.light",
-                                                color: isPast ? "error.dark" : "success.dark"
+                                                bgcolor: p.isClosed ? "grey.300" : isPast ? "error.light" : "success.light",
+                                                color: p.isClosed ? "grey.700" : isPast ? "error.dark" : "success.dark"
                                             }}>
-                                                {isPast ? "ZAKOŃCZONY" : "AKTYWNY"}
+                                                {p.isClosed ? "NIEAKTYWNY" : isPast ? "ZAKOŃCZONY" : "AKTYWNY"}
                                             </Box>
                                         </TableCell>
                                         <TableCell align="right">
+                                            
+                                            {                                          }
+                                            {!p.isClosed && (
+                                                <Tooltip title="Zarchiwizuj zweryfikowane osiągnięcia i zamknij okres">
+                                                    <IconButton 
+                                                        onClick={() => handleArchivePeriodAchievements(p)} 
+                                                        color="secondary" 
+                                                        size="small" 
+                                                        sx={{ mr: 1 }}
+                                                        disabled={archivingId !== null}
+                                                    >
+                                                        {isCurrentArchiving ? (
+                                                            <CircularProgress size={18} color="inherit" />
+                                                        ) : (
+                                                            <ArchiveIcon fontSize="small" />
+                                                        )}
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+
                                             <Tooltip title="Edytuj">
-                                                <IconButton onClick={() => openModal(p)} color="primary" size="small" sx={{ mr: 1 }}>
+                                                <IconButton onClick={() => openModal(p)} color="primary" size="small" sx={{ mr: 1 }} disabled={archivingId !== null}>
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
                                             <Tooltip title="Usuń">
-                                                <IconButton onClick={() => handleDelete(p.id)} color="error" size="small">
+                                                <IconButton onClick={() => handleDelete(p.id)} color="error" size="small" disabled={archivingId !== null}>
                                                     <DeleteIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
@@ -203,6 +279,20 @@ const EvaluationPeriodManager: React.FC = () => {
                             value={formData.endDate}
                             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                         />
+
+                        {                           }
+                        {editingPeriod && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox 
+                                        checked={formData.isClosed} 
+                                        onChange={(e) => setFormData({ ...formData, isClosed: e.target.checked })} 
+                                        color="primary"
+                                    />
+                                }
+                                label="Okres zamknięty (zablokuj dodawanie rekordów)"
+                            />
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 2, bgcolor: 'grey.50' }}>

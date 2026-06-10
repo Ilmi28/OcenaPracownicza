@@ -25,6 +25,7 @@ export interface Stage2ReviewItemView {
     period: string;
     finalScore: string;
     stage2Status: number;
+    description?: string;
 }
 
 export interface Stage2HistoryItemView {

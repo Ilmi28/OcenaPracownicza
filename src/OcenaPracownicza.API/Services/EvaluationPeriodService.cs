@@ -3,14 +3,14 @@ using OcenaPracownicza.API.Entities;
 using OcenaPracownicza.API.Interfaces.Repositories;
 using OcenaPracownicza.API.Interfaces.Services;
 using OcenaPracownicza.API.Requests;
-using OcenaPracownicza.API.Data;      
+using OcenaPracownicza.API.Data;
 
 namespace OcenaPracownicza.API.Services
 {
     public class EvaluationPeriodService : IEvaluationPeriodService
     {
         private readonly IEvaluationPeriodRepository _repo;
-        private readonly ApplicationDbContext _context;     
+        private readonly ApplicationDbContext _context;
 
         public EvaluationPeriodService(IEvaluationPeriodRepository repo, ApplicationDbContext context)
         {
@@ -52,6 +52,8 @@ namespace OcenaPracownicza.API.Services
             period.Name = request.Name;
             period.StartDate = request.StartDate;
             period.EndDate = request.EndDate;
+            period.RegulationVersion = request.RegulationVersion;     
+            period.IsClosed = request.IsClosed;                          
 
             await _repo.UpdateAsync(period);
         }

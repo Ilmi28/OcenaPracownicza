@@ -15,8 +15,12 @@ import {
     TextField,
     Typography,
     Chip,
+    IconButton,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { Stage2ReviewDetailsView } from "../utils/types";
 import { evaluationService } from "../services/evaluationService";
 import { useAuth } from "../hooks/AuthProvider";
@@ -38,8 +42,12 @@ export default function Stage2ReviewDetails() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [comment, setComment] = useState("");
+    
+    const [score, setScore] = useState("");
+    const [isEditingScore, setIsEditingScore] = useState(false);
+
     const [error, setError] = useState<string | null>(null);
-    const [downloadingId, setDownloadingId] = useState<string | null>(null); // Stan blokady pobierania pliku
+    const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         if (!achievementId) return;
@@ -49,6 +57,7 @@ export default function Stage2ReviewDetails() {
             const response = await evaluationService.getDetails(achievementId);
             setData(response);
             setComment(response.stage2Comment ?? "");
+            setScore(response.finalScore ?? "0");          
         } catch (err: any) {
             const msg =
                 err?.response?.data?.message ??
@@ -64,7 +73,6 @@ export default function Stage2ReviewDetails() {
         load();
     }, [load]);
 
-    // Funkcja wywołująca serwis pobierania załącznika
     const handleDownloadAttachment = async (attachmentId: string, originalFileName: string) => {
         try {
             setDownloadingId(attachmentId);
@@ -73,6 +81,26 @@ export default function Stage2ReviewDetails() {
             alert("Nie udało się pobrać pliku. Upewnij się, że masz odpowiednie uprawnienia.");
         } finally {
             setDownloadingId(null);
+        }
+    };
+
+    const onUpdateScore = async () => {
+        if (!achievementId || !data) return;
+        setSaving(true);
+        setError(null);
+        try {
+            const updated = await evaluationService.updateAchievement(achievementId, {
+                finalScore: score.trim(),
+                name: data.achievementName,
+                description: data.achievementsSummary
+            });
+            setData(updated);
+            setScore(updated.finalScore ?? "0");
+            setIsEditingScore(false);
+        } catch (err: any) {
+            setError(err?.response?.data?.message ?? "Nie udało się zaktualizować punktacji.");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -195,14 +223,41 @@ export default function Stage2ReviewDetails() {
                         </Typography>
                         <Typography>{data.period}</Typography>
                     </Grid>
+
+                    {                              }
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Typography variant="body2" color="text.secondary">
-                            Wynik końcowy
+                            Wynik końcowy (Punkty)
                         </Typography>
-                        <Typography>{data.finalScore}</Typography>
+                        {isEditingScore ? (
+                            <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+                                <TextField
+                                    size="small"
+                                    type="number"
+                                    value={score}
+                                    onChange={(e) => setScore(e.target.value)}
+                                    disabled={saving}
+                                    sx={{ width: 120 }}
+                                />
+                                <IconButton color="success" onClick={onUpdateScore} disabled={saving}>
+                                    <SaveIcon />
+                                </IconButton>
+                                <IconButton color="error" onClick={() => { setIsEditingScore(false); setScore(data.finalScore); }} disabled={saving}>
+                                    <CancelIcon />
+                                </IconButton>
+                            </Box>
+                        ) : (
+                            <Box display="flex" alignItems="center" gap={1}>
+                                <Typography fontWeight={700}>{data.finalScore}</Typography>
+                                {canDecide && (
+                                    <IconButton size="small" color="primary" onClick={() => setIsEditingScore(true)}>
+                                        <EditIcon fontSize="small" />
+                                    </IconButton>
+                                )}
+                            </Box>
+                        )}
                     </Grid>
 
-                    {/* DODANA SEKCJA: Załącznik główny wniosku */}
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Typography variant="body2" color="text.secondary">
                             Załącznik
@@ -249,7 +304,7 @@ export default function Stage2ReviewDetails() {
                             <TableCell>Wynik</TableCell>
                             <TableCell>Status</TableCell>
                             <TableCell>Komentarz</TableCell>
-                            <TableCell align="center">Załącznik</TableCell> {/* Dodany nagłówek kolumny */}
+                            <TableCell align="center">Załącznik</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -263,7 +318,6 @@ export default function Stage2ReviewDetails() {
                                 <TableCell>{STATUS_LABELS[item.stage2Status] ?? "Nieznany"}</TableCell>
                                 <TableCell>{item.stage2Comment ?? "-"}</TableCell>
                                 <TableCell align="center">
-                                    {/* Dodana komórka z przyciskiem pobierania */}
                                     {item.attachmentId ? (
                                         <Button
                                             size="small"
@@ -297,7 +351,7 @@ export default function Stage2ReviewDetails() {
                     label="Komentarz (wymagany przy odrzuceniu)"
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    disabled={saving || !canDecide}
+                    disabled={saving || canArchive || canClose}
                     sx={{ mb: 2 }}
                 />
                 <Box display="flex" gap={2} justifyContent="flex-end">
