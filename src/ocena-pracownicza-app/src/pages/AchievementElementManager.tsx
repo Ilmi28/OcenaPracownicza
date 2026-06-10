@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
     Paper, Typography, Box, TextField, Button,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";       
 import axiosClient from "../services/axiosClient";
 
 export interface EvaluationPeriod {
@@ -61,6 +62,9 @@ const AchievementElementManager: React.FC = () => {
         isStackable: false
     });
 
+    const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+    const [targetPeriodId, setTargetPeriodId] = useState<string>("");
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -97,6 +101,10 @@ const AchievementElementManager: React.FC = () => {
 
     const getLabel = (list: DictItem[], id: number) => list.find(x => x.id === id)?.label || "Nieznane";
 
+    const availableTargetPeriods = useMemo(() => {
+        return periods.filter(p => p.id !== selectedPeriodId);
+    }, [periods, selectedPeriodId]);
+
     const openModal = (element: AchievementElementListItem | null = null) => {
         if (element) {
             setEditingElement(element);
@@ -114,6 +122,15 @@ const AchievementElementManager: React.FC = () => {
             setFormData({ code: "", activity: 0, department: 0, category: 0, name: "", basePoints: 0, isStackable: false });
         }
         setIsModalOpen(true);
+    };
+
+    const openCopyModal = () => {
+        if (availableTargetPeriods.length > 0) {
+            setTargetPeriodId(availableTargetPeriods[0].id);
+        } else {
+            setTargetPeriodId("");
+        }
+        setIsCopyModalOpen(true);
     };
 
     const handleSave = async () => {
@@ -134,6 +151,23 @@ const AchievementElementManager: React.FC = () => {
         }
     };
 
+    const handleCopyPackage = async () => {
+        if (!selectedPeriodId || !targetPeriodId) return;
+        setSaving(true);
+        try {
+        const response = await axiosClient.post("/achievement/copy-package", {
+            sourcePeriodId: selectedPeriodId,
+            targetPeriodId: targetPeriodId
+        });
+            alert(response.data?.message || "Kopiowanie zakończone pomyślnie!");
+            setIsCopyModalOpen(false);
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Wystąpił błąd podczas kopiowania struktury.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!window.confirm("Czy na pewno chcesz usunąć ten szablon?")) return;
         try {
@@ -149,22 +183,41 @@ const AchievementElementManager: React.FC = () => {
     return (
         <Box sx={{ p: 3 }}>
             <Paper sx={{ p: 3 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
                     <Typography variant="h5" fontWeight="700">Zarządzanie Szablonami</Typography>
-                    <FormControl size="small" sx={{ minWidth: 220, ml: 'auto', mr: 2 }}>
-                        <InputLabel id="period-select-label">Okres ocen</InputLabel>
-                        <Select
-                            labelId="period-select-label"
-                            value={selectedPeriodId}
-                            label="Okres ocen"
-                            onChange={(e) => setSelectedPeriodId(e.target.value)}
-                        >
-                            {periods.map((p) => (
-                                <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <Button variant="contained" onClick={() => openModal()} disabled={!selectedPeriodId}>+ Dodaj</Button>
+                    
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 'auto' }}>
+                        <FormControl size="small" sx={{ minWidth: 220 }}>
+                            <InputLabel id="period-select-label">Okres ocen</InputLabel>
+                            <Select
+                                labelId="period-select-label"
+                                value={selectedPeriodId}
+                                label="Okres ocen"
+                                onChange={(e) => setSelectedPeriodId(e.target.value)}
+                            >
+                                {periods.map((p) => (
+                                    <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {                              }
+                        {elements.length > 0 && (
+                            <Tooltip title="Kopiuj szablony tego okresu do innego">
+                                <Button 
+                                    variant="outlined" 
+                                    color="secondary" 
+                                    startIcon={<ContentCopyIcon />}
+                                    onClick={openCopyModal}
+                                    sx={{ height: '40px' }}
+                                >
+                                    Kopiuj zestaw
+                                </Button>
+                            </Tooltip>
+                        )}
+                    </Box>
+
+                    <Button variant="contained" onClick={() => openModal()} disabled={!selectedPeriodId} sx={{ height: '40px' }}>+ Dodaj</Button>
                 </Box>
 
                 <TableContainer>
@@ -218,6 +271,7 @@ const AchievementElementManager: React.FC = () => {
                 </TableContainer>
             </Paper>
 
+            {                        }
             <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} fullWidth maxWidth="sm">
                 <DialogTitle sx={{ fontWeight: 700 }}>{editingElement ? "Edytuj Szablon" : "Nowy Szablon"}</DialogTitle>
                 <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 2 }}>
@@ -267,7 +321,7 @@ const AchievementElementManager: React.FC = () => {
                                 color="primary"
                             />
                         }
-                        label="Możliwość wielokrotnego rozliczania (Krotność)"
+                        label="Możliwość dodawania wielu osiągnięć tego typu"
                     />
 
                     <TextField 
@@ -279,10 +333,50 @@ const AchievementElementManager: React.FC = () => {
                         onChange={(e) => setFormData({...formData, name: e.target.value})} 
                     />
                 </DialogContent>
+                <DialogTitle></DialogTitle>
                 <DialogActions sx={{ p: 2, bgcolor: 'grey.50' }}>
                     <Button onClick={() => setIsModalOpen(false)} color="inherit">Anuluj</Button>
                     <Button onClick={handleSave} variant="contained" disabled={saving || !formData.code || !formData.name}>
                         {saving ? "Zapisywanie..." : "Zapisz"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {                                 }
+            <Dialog open={isCopyModalOpen} onClose={() => setIsCopyModalOpen(false)} fullWidth maxWidth="xs">
+                <DialogTitle sx={{ fontWeight: 700 }}>Kopiuj zestaw szablonów</DialogTitle>
+                <DialogContent sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        Spowoduje to sklonowanie wszystkich <strong>{elements.length}</strong> zdefiniowanych szablonów z aktualnego okresu do wybranego poniżej okresu docelowego. Szablony o powtarzających się kodach zostaną pominięte.
+                    </Typography>
+                    
+                    <FormControl fullWidth sx={{ mt: 1 }}>
+                        <InputLabel id="target-period-label">Docelowy okres ocen</InputLabel>
+                        <Select
+                            labelId="target-period-label"
+                            value={targetPeriodId}
+                            label="Docelowy okres ocen"
+                            onChange={(e) => setTargetPeriodId(e.target.value)}
+                        >
+                            {availableTargetPeriods.length === 0 ? (
+                                <MenuItem value="" disabled>Brak innych okresów w bazie</MenuItem>
+                            ) : (
+                                availableTargetPeriods.map((p) => (
+                                    <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                                ))
+                            )}
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    <Button onClick={() => setIsCopyModalOpen(false)} color="inherit">Anuluj</Button>
+                    <Button 
+                        onClick={handleCopyPackage} 
+                        variant="contained" 
+                        color="secondary" 
+                        disabled={saving || !targetPeriodId}
+                    >
+                        {saving ? "Kopiowanie..." : "Rozpocznij kopiowanie"}
                     </Button>
                 </DialogActions>
             </Dialog>

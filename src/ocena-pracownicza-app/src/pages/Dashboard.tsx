@@ -62,6 +62,28 @@ const STATUS_LABELS: Record<number, string> = {
     5: "Zarchiwizowana",
 };
 
+const MAPA_KATEGORII: Record<number, string> = {
+    0: "Sukces projektowy",
+    1: "Rozwój techniczny",
+    2: "Ulepszenie procesu",
+    3: "Mentoring",
+    4: "Innowacja",
+    5: "Liderowanie",
+    6: "Sukces klienta"
+};
+
+const przetlumaczKategorie = (engName: string): string => {
+    const nameLower = engName.replace(/\s+/g, "").toLowerCase();
+    if (nameLower.includes("projectdelivery")) return "Sukces projektowy";
+    if (nameLower.includes("technicalgrowth")) return "Rozwój techniczny";
+    if (nameLower.includes("processimprovement")) return "Ulepszenie procesu";
+    if (nameLower.includes("mentorship") || nameLower.includes("mentoring")) return "Mentoring";
+    if (nameLower.includes("innovation")) return "Innowacja";
+    if (nameLower.includes("leadership")) return "Liderowanie";
+    if (nameLower.includes("customersuccess")) return "Sukces klienta";
+    return engName;                   
+};
+
 const statusChipColor = (status: number) =>
     status === 2 ? "success" : status === 3 ? "error" : status >= 4 ? "default" : "warning";
 
@@ -254,16 +276,19 @@ export default function Dashboard() {
 
                     <Paper sx={{ p: 2.5, mb: 3 }}>
                         <Typography variant="subtitle1" fontWeight={700} mb={2}>
-                            Postęp w kategoriach
+                            Postęp w wymaganiach okresu
                         </Typography>
                         <Stack direction="row" useFlexGap flexWrap="wrap" gap={1}>
                             {employeeProgress.categories.map((category) => (
-                                <Chip
-                                    key={category.categoryId}
-                                    label={`${category.categoryName}: ${category.currentCount}/${category.requiredCount}`}
-                                    color={category.currentCount >= category.requiredCount ? "success" : "default"}
-                                    variant="outlined"
-                                />
+                                <>
+                                    {                           }
+                                    <Chip
+                                        key={category.categoryId}
+                                        label={`${przetlumaczKategorie(category.categoryName)}: ${category.currentCount}/${category.requiredCount}`}
+                                        color={category.currentCount >= category.requiredCount ? "success" : "default"}
+                                        variant="outlined"
+                                    />
+                                </>
                             ))}
                         </Stack>
                     </Paper>
@@ -349,6 +374,7 @@ export default function Dashboard() {
                         <TableRow>
                             {user.role !== "Employee" && <TableCell>Pracownik</TableCell>}
                             <TableCell>Osiągnięcie</TableCell>
+                            <TableCell>Kategoria</TableCell> 
                             <TableCell>Okres</TableCell>
                             <TableCell>Wynik</TableCell>
                             <TableCell>Status</TableCell>
@@ -361,6 +387,9 @@ export default function Dashboard() {
                                 <TableRow key={item.achievementId}>
                                     {user.role !== "Employee" && <TableCell>{item.fullName}</TableCell>}
                                     <TableCell>{item.achievementName}</TableCell>
+                                    <TableCell>
+                                        {MAPA_KATEGORII[(item as any).category] ?? MAPA_KATEGORII[0]}
+                                    </TableCell>
                                     <TableCell>{item.period}</TableCell>
                                     <TableCell>{item.finalScore}</TableCell>
                                     <TableCell>
@@ -376,7 +405,7 @@ export default function Dashboard() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={user.role === "Employee" ? 5 : 6} align="center">
+                                <TableCell colSpan={user.role === "Employee" ? 6 : 7} align="center">
                                     Brak danych do wyświetlenia.
                                 </TableCell>
                             </TableRow>

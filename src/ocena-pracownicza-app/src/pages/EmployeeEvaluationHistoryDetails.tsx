@@ -36,7 +36,7 @@ export default function EmployeeEvaluationHistoryDetails() {
     const [data, setData] = useState<Stage2ReviewDetailsView | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [downloadingId, setDownloadingId] = useState<string | null>(null); // Stan blokady na czas pobierania pliku
+    const [downloadingId, setDownloadingId] = useState<string | null>(null);                   
 
     const load = useCallback(async () => {
         if (!achievementId) return;
@@ -64,7 +64,6 @@ export default function EmployeeEvaluationHistoryDetails() {
         load();
     }, [load]);
 
-    // Funkcja wywołująca serwis pobierania i generująca pobranie pliku w przeglądarce
     const handleDownloadAttachment = async (attachmentId: string, originalFileName: string) => {
         try {
             setDownloadingId(attachmentId);
@@ -143,7 +142,7 @@ export default function EmployeeEvaluationHistoryDetails() {
                         <Typography>{data.finalScore}</Typography>
                     </Grid>
 
-                    {/* NOWA SEKCJA: Załącznik główny w boksie szczegółów */}
+                    {                        }
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Typography variant="body2" color="text.secondary">
                             Załącznik
@@ -176,9 +175,26 @@ export default function EmployeeEvaluationHistoryDetails() {
                 </Grid>
             </Paper>
 
+<Paper sx={{ p: 3, mb: 3 }}> {            }
+    <Typography variant="subtitle1" fontWeight={600} mb={2}>
+        Informacje o decyzji
+    </Typography>
+    <Typography variant="body2" color="text.secondary">
+        Komentarz
+    </Typography>
+    <Typography mb={2}>{data.stage2Comment ?? "-"}</Typography>
+    <Typography variant="body2" color="text.secondary">
+        Data oceny
+    </Typography>
+    <Typography>
+        {data.stage2ReviewedAtUtc
+            ? new Date(data.stage2ReviewedAtUtc).toLocaleString("pl-PL")
+            : "-"}
+    </Typography>
+</Paper>
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>
-                    Osiągnięcia
+                    Inne osiągnięcia
                 </Typography>
                 <Table size="small">
                     <TableHead>
@@ -226,23 +242,7 @@ export default function EmployeeEvaluationHistoryDetails() {
                 </Table>
             </Paper>
 
-            <Paper sx={{ p: 3 }}>
-                <Typography variant="subtitle1" fontWeight={600} mb={2}>
-                    Informacje o decyzji
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Komentarz
-                </Typography>
-                <Typography mb={2}>{data.stage2Comment ?? "-"}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Data oceny
-                </Typography>
-                <Typography>
-                    {data.stage2ReviewedAtUtc
-                        ? new Date(data.stage2ReviewedAtUtc).toLocaleString("pl-PL")
-                        : "-"}
-                </Typography>
-            </Paper>
+
         </Box>
     );
 }
