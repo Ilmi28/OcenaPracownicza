@@ -20,6 +20,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<EvaluationPeriod> EvaluationPeriods { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
     public DbSet<AchievementElement> AchievementElements { get; set; }
+    public DbSet<Grade> Grades { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

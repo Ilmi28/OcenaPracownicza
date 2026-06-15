@@ -37,6 +37,7 @@ public static class ServiceExtensions
         services.AddScoped<IEvaluationSheetGeneratorService, EvaluationSheetGeneratorService>();
         services.AddHostedService<EvaluationPeriodBackgroundService>();
         services.AddScoped<IEvaluationPeriodService, EvaluationPeriodService>();
+        services.AddScoped<IGradeService, GradeService>();
 
     }
 

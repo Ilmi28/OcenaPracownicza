@@ -14,6 +14,11 @@ const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
     const navigate = useNavigate();
     const { logout } = useAuth();
 
+    const handleLogout = async () => {
+        await logout();                     
+        navigate("/login");              
+    };
+
     return (
         <AppBar
             position="fixed"
@@ -76,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ drawerWidth, user }) => {
                         <Button
                             variant="contained"
                             color="primary"
-                            onClick={logout}
+                            onClick={handleLogout}          
                         >
                             Wyloguj się
                         </Button>

@@ -19,6 +19,7 @@ import AchievementList from "./pages/AchievementList";
 import EvaluationPeriodManager from "./pages/EvaluationPeriodManager";
 import AchievementElementManager from "./pages/AchievementElementManager"; 
 import ReportsPage from "./pages/ReportsPage"; 
+import GradeView from "./pages/GradeView";
 
 function App() {
     return (
@@ -85,6 +86,10 @@ function App() {
                             <Route 
                                 path="evaluation-periods" 
                                 element={<EvaluationPeriodManager />} 
+                            />
+                            <Route
+                                path="/grades"
+                                element={<GradeView />}
                             />
                         </Route>
                     </Routes>
