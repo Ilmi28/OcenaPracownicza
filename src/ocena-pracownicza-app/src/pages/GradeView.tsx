@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { 
     Box, Paper, Table, TableBody, TableCell, TableHead, TableRow, 
-    Typography, Button, MenuItem, TextField, CircularProgress, Chip, 
+    Typography, Button, MenuItem, TextField, Chip, 
     IconButton, Alert, Dialog, DialogTitle, DialogContent, DialogActions 
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -16,7 +16,6 @@ export default function GradeView() {
     const [employees, setEmployees] = useState<any[]>([]);
     const [periods, setPeriods] = useState<any[]>([]);
     const [selectedPeriod, setSelectedPeriod] = useState("");
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [openDialog, setOpenDialog] = useState(false);
@@ -26,7 +25,6 @@ export default function GradeView() {
     const isManagerOrAdmin = user?.role === "Manager" || user?.role === "Admin";
 
     const fetchData = useCallback(async () => {
-        setLoading(true);
         try {
             const [pRes, eRes] = await Promise.all([
                 axiosClient.get("/evaluation-periods"),
@@ -36,14 +34,12 @@ export default function GradeView() {
             setEmployees(Array.isArray(eRes.data) ? eRes.data : (eRes.data?.data || []));
             if (pRes.data?.length > 0 && !selectedPeriod) setSelectedPeriod(pRes.data[0].id);
         } catch (err) { setError("Błąd ładowania słowników."); }
-        setLoading(false);
     }, [isManagerOrAdmin, selectedPeriod]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const loadGrades = useCallback(async () => {
         if (!user || !user.userId) return;
-        setLoading(true);
         setError(null);
         
         try {
@@ -56,19 +52,16 @@ export default function GradeView() {
             }
             
             const rawData = res.data?.data || res.data || [];
-            
             let filtered = rawData;
+            
             if (user.role === "Employee" && selectedPeriod) {
                 const periodName = periods.find(p => p.id === selectedPeriod)?.name;
                 filtered = rawData.filter((g: any) => g.periodName === periodName);
             }
-            
             setGrades(filtered);
         } catch (err: any) {
             setError("Brak uprawnień lub błąd serwera.");
             setGrades([]);
-        } finally {
-            setLoading(false);
         }
     }, [selectedPeriod, user, periods]);
 
@@ -83,7 +76,7 @@ export default function GradeView() {
             }
             loadGrades();
             setOpenDialog(false);
-        } catch (err) { alert("Błąd zapisu."); }
+        } catch (err) { alert("Błąd podczas zapisu."); }
     };
 
     const handleDelete = async (id: string) => {
@@ -105,7 +98,10 @@ export default function GradeView() {
 
     return (
         <Box p={3}>
-            <Typography variant="h5" mb={3}>Zarządzanie ocenami</Typography>
+            <Typography variant="h5" mb={3}>
+                {user?.role === "Employee" ? "Moja historia ocen" : "Zarządzanie ocenami"}
+            </Typography>
+
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             <TextField select label="Okres" value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)} sx={{ width: 250, mb: 3 }}>
