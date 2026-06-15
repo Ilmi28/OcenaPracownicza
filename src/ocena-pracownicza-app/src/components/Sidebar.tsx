@@ -13,7 +13,7 @@ import AppRegistrationIcon from "@mui/icons-material/AppRegistration";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import AssessmentIcon from "@mui/icons-material/Assessment";                
 import { useAuth } from "../hooks/AuthProvider";
-
+import GradeIcon from "@mui/icons-material/Grade";
 
 const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
     const { user } = useAuth();
@@ -112,6 +112,14 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                             text="Szablony osiągnięć"
                             to="/achievement-elements"
                             IconComponent={AppRegistrationIcon}
+                        />
+                    )}
+
+                    {(user?.role === "Admin" || user?.role === "Manager" || user?.role === "Employee") && (
+                        <SidebarItem
+                            text="Oceny"
+                            to="/grades"
+                            IconComponent={GradeIcon}
                         />
                     )}
 

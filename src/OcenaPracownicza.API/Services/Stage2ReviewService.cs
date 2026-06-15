@@ -17,6 +17,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
         var items = await context.Achievements
             .Include(a => a.Employee)
             .Include(a => a.EvaluationPeriod)
+            .OrderByDescending(a => a.Date)
             .Select(a => new Stage2HistoryItemView
             {
                 AchievementId = a.Id,
@@ -31,7 +32,6 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 Stage2ReviewedAtUtc = a.Stage2ReviewedAtUtc,
                 Description = a.Description ?? ""
             })
-            .OrderByDescending(a => a.Date)
             .ToListAsync();
 
         return new BaseResponse<List<Stage2HistoryItemView>> { Data = items };
@@ -44,12 +44,21 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             .Include(a => a.Employee)
             .Include(a => a.EvaluationPeriod)
             .Where(a => a.EmployeeId == currentEmployeeId)
+            .OrderByDescending(a => a.Date)
             .Select(a => new Stage2HistoryItemView
             {
                 AchievementId = a.Id,
-                Description = a.Description ?? ""      
+                EmployeeId = a.EmployeeId,
+                FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
+                Position = a.Employee.Position,
+                AchievementName = a.Name,
+                Period = a.EvaluationPeriod.Name,
+                FinalScore = a.FinalScore,
+                Stage2Status = (int)a.Stage2Status,
+                Date = a.Date,
+                Stage2ReviewedAtUtc = a.Stage2ReviewedAtUtc,
+                Description = a.Description ?? ""
             })
-            .OrderByDescending(a => a.Date)
             .ToListAsync();
 
         return new BaseResponse<List<Stage2HistoryItemView>> { Data = items };
@@ -61,6 +70,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             .Include(a => a.Employee)
             .Include(a => a.EvaluationPeriod)
             .Where(a => a.Stage2Status == EvaluationStageStatus.PendingStage2)
+            .OrderByDescending(a => a.EvaluationPeriod.Name)
             .Select(a => new Stage2ReviewItemView
             {
                 AchievementId = a.Id,
@@ -71,15 +81,11 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status,
-                Description = a.Description ?? ""    
+                Description = a.Description ?? ""
             })
-            .OrderByDescending(a => a.Period)
             .ToListAsync();
 
-        return new BaseResponse<List<Stage2ReviewItemView>>
-        {
-            Data = items
-        };
+        return new BaseResponse<List<Stage2ReviewItemView>> { Data = items };
     }
 
     public async Task<BaseResponse<List<Stage2ReviewItemView>>> GetApprovedAsync()
@@ -90,6 +96,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             .Include(a => a.Employee)
             .Include(a => a.EvaluationPeriod)
             .Where(a => a.Stage2Status == EvaluationStageStatus.Stage2Approved)
+            .OrderByDescending(a => a.EvaluationPeriod.Name)
             .Select(a => new Stage2ReviewItemView
             {
                 AchievementId = a.Id,
@@ -100,15 +107,11 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status,
-                Description = a.Description ?? ""    
+                Description = a.Description ?? ""
             })
-            .OrderByDescending(a => a.Period)
             .ToListAsync();
 
-        return new BaseResponse<List<Stage2ReviewItemView>>
-        {
-            Data = items
-        };
+        return new BaseResponse<List<Stage2ReviewItemView>> { Data = items };
     }
 
     public async Task<BaseResponse<List<Stage2ReviewItemView>>> GetArchivedAsync()
@@ -117,6 +120,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             .Include(a => a.Employee)
             .Include(a => a.EvaluationPeriod)
             .Where(a => a.Stage2Status == EvaluationStageStatus.Archived)
+            .OrderByDescending(a => a.EvaluationPeriod.Name)
             .Select(a => new Stage2ReviewItemView
             {
                 AchievementId = a.Id,
@@ -127,37 +131,28 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 Period = a.EvaluationPeriod.Name,
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status,
-                Description = a.Description ?? ""    
+                Description = a.Description ?? ""
             })
-            .OrderByDescending(a => a.Period)
             .ToListAsync();
 
-        return new BaseResponse<List<Stage2ReviewItemView>>
-        {
-            Data = items
-        };
+        return new BaseResponse<List<Stage2ReviewItemView>> { Data = items };
     }
 
     public async Task<BaseResponse<Stage2ReviewDetailsView>> GetDetailsAsync(Guid achievementId)
     {
-        var details = await BuildDetails(achievementId);
-        return new BaseResponse<Stage2ReviewDetailsView> { Data = details };
+        return new BaseResponse<Stage2ReviewDetailsView> { Data = await BuildDetails(achievementId) };
     }
 
     public async Task<BaseResponse<Stage2ReviewDetailsView>> GetMyDetailsAsync(Guid achievementId)
     {
         var currentEmployeeId = await GetCurrentEmployeeIdAsync();
-        var details = await BuildDetails(achievementId, currentEmployeeId);
-        return new BaseResponse<Stage2ReviewDetailsView> { Data = details };
+        return new BaseResponse<Stage2ReviewDetailsView> { Data = await BuildDetails(achievementId, currentEmployeeId) };
     }
 
     public async Task<BaseResponse<Stage2ReviewDetailsView>> ApproveAsync(Guid achievementId, string? comment)
     {
-        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId);
-        if (achievement == null)
-        {
-            throw new NotFoundException("Nie znaleziono osiągnięcia.");
-        }
+        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId)
+            ?? throw new NotFoundException("Nie znaleziono osiągnięcia.");
 
         Stage2TransitionValidator.EnsureCanReview(achievement.Stage2Status);
         var reviewerId = userManager.GetCurrentUserId() ?? throw new UnauthorizedAccessException();
@@ -174,19 +169,14 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
     public async Task<BaseResponse<Stage2ReviewDetailsView>> RejectAsync(Guid achievementId, string? comment)
     {
         Stage2TransitionValidator.EnsureRejectComment(comment);
-
-        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId);
-        if (achievement == null)
-        {
-            throw new NotFoundException("Nie znaleziono osiągnięcia.");
-        }
+        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId)
+            ?? throw new NotFoundException("Nie znaleziono osiągnięcia.");
 
         Stage2TransitionValidator.EnsureCanReview(achievement.Stage2Status);
         var reviewerId = userManager.GetCurrentUserId() ?? throw new UnauthorizedAccessException();
-        var normalizedComment = comment!.Trim();
 
         achievement.Stage2Status = EvaluationStageStatus.Stage2Rejected;
-        achievement.Stage2Comment = normalizedComment;
+        achievement.Stage2Comment = comment!.Trim();
         achievement.Stage2ReviewedAtUtc = DateTime.UtcNow;
         achievement.Stage2ReviewedByUserId = reviewerId;
 
@@ -197,15 +187,10 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
     public async Task<BaseResponse<Stage2ReviewDetailsView>> CloseAsync(Guid achievementId)
     {
         EnsureAdminRole();
-
-        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId);
-        if (achievement == null)
-        {
-            throw new NotFoundException("Nie znaleziono osiągnięcia.");
-        }
+        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId)
+            ?? throw new NotFoundException("Nie znaleziono osiągnięcia.");
 
         Stage2TransitionValidator.EnsureCanClose(achievement.Stage2Status);
-
         achievement.Stage2Status = EvaluationStageStatus.Closed;
 
         await context.SaveChangesAsync();
@@ -215,15 +200,10 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
     public async Task<BaseResponse<Stage2ReviewDetailsView>> ArchiveAsync(Guid achievementId)
     {
         EnsureAdminRole();
-
-        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId);
-        if (achievement == null)
-        {
-            throw new NotFoundException("Nie znaleziono osiągnięcia.");
-        }
+        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId)
+            ?? throw new NotFoundException("Nie znaleziono osiągnięcia.");
 
         Stage2TransitionValidator.EnsureCanArchive(achievement.Stage2Status);
-
         achievement.Stage2Status = EvaluationStageStatus.Archived;
 
         await context.SaveChangesAsync();
@@ -236,14 +216,8 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             .Include(a => a.Employee)
             .Include(a => a.EvaluationPeriod)
             .Include(a => a.Attachment)
-            .FirstOrDefaultAsync(a =>
-                a.Id == achievementId &&
-                (!requiredEmployeeId.HasValue || a.EmployeeId == requiredEmployeeId.Value));
-
-        if (selectedAchievement == null)
-        {
-            throw new NotFoundException("Nie znaleziono osiągnięcia.");
-        }
+            .FirstOrDefaultAsync(a => a.Id == achievementId && (!requiredEmployeeId.HasValue || a.EmployeeId == requiredEmployeeId.Value))
+            ?? throw new NotFoundException("Nie znaleziono osiągnięcia.");
 
         var achievements = await context.Achievements
             .Include(a => a.EvaluationPeriod)
@@ -268,7 +242,6 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             Stage2ReviewedByUserId = selectedAchievement.Stage2ReviewedByUserId,
             AttachmentId = selectedAchievement.AttachmentId,
             AttachmentFileName = selectedAchievement.Attachment?.FileName,
-
             Achievements = achievements.Select(a => new AchievementStage2View
             {
                 Id = a.Id,
@@ -298,9 +271,7 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             .FirstOrDefaultAsync();
 
         if (currentEmployeeId == Guid.Empty)
-        {
             throw new NotFoundException("Nie znaleziono profilu pracownika.");
-        }
 
         return currentEmployeeId;
     }
@@ -308,58 +279,33 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
     private void EnsureAdminRole()
     {
         if (!userManager.IsCurrentUserAdmin())
-        {
             throw new ForbiddenException("Tylko administrator może wykonać tę operację.");
-        }
     }
 
     public async Task<BaseResponse<Stage2ReviewDetailsView>> UpdateAchievementAsync(Guid achievementId, UpdateAchievementByManagerRequest request)
     {
-        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId);
-        if (achievement == null)
-        {
-            throw new NotFoundException("Nie znaleziono osiągnięcia.");
-        }
+        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId)
+            ?? throw new NotFoundException("Nie znaleziono osiągnięcia.");
 
         Stage2TransitionValidator.EnsureCanReview(achievement.Stage2Status);
 
         if (!userManager.IsCurrentUserManager() && !userManager.IsCurrentUserAdmin())
-        {
             throw new ForbiddenException("Tylko przełożony lub administrator może edytować to osiągnięcie.");
-        }
 
         var reviewerId = userManager.GetCurrentUserId() ?? throw new UnauthorizedAccessException();
 
-        if (!string.IsNullOrWhiteSpace(request.Name))
-            achievement.Name = request.Name.Trim();
-
-        if (!string.IsNullOrWhiteSpace(request.Description))
-            achievement.Description = request.Description.Trim();
-
-        if (request.Category.HasValue)
-            achievement.Category = request.Category.Value;
-
-        if (!string.IsNullOrWhiteSpace(request.FinalScore))
-            achievement.FinalScore = request.FinalScore.Trim();
-
-        if (!string.IsNullOrWhiteSpace(request.AchievementsSummary))
-            achievement.AchievementsSummary = request.AchievementsSummary.Trim();
-
-        if (request.Stage2Comment != null)
-        {
-            achievement.Stage2Comment = string.IsNullOrWhiteSpace(request.Stage2Comment) ? null : request.Stage2Comment.Trim();
-        }
+        if (!string.IsNullOrWhiteSpace(request.Name)) achievement.Name = request.Name.Trim();
+        if (!string.IsNullOrWhiteSpace(request.Description)) achievement.Description = request.Description.Trim();
+        if (request.Category.HasValue) achievement.Category = request.Category.Value;
+        if (!string.IsNullOrWhiteSpace(request.FinalScore)) achievement.FinalScore = request.FinalScore.Trim();
+        if (!string.IsNullOrWhiteSpace(request.AchievementsSummary)) achievement.AchievementsSummary = request.AchievementsSummary.Trim();
+        if (request.Stage2Comment != null) achievement.Stage2Comment = string.IsNullOrWhiteSpace(request.Stage2Comment) ? null : request.Stage2Comment.Trim();
 
         achievement.Stage2ReviewedByUserId = reviewerId;
         achievement.Stage2ReviewedAtUtc = DateTime.UtcNow;
         achievement.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync();
-
-        return new BaseResponse<Stage2ReviewDetailsView>
-        {
-            Data = await BuildDetails(achievementId),
-            Message = "Osiągnięcie podwładnego zostało zaktualizowane i skomentowane."
-        };
+        return new BaseResponse<Stage2ReviewDetailsView> { Data = await BuildDetails(achievementId), Message = "Osiągnięcie podwładnego zostało zaktualizowane." };
     }
 }
