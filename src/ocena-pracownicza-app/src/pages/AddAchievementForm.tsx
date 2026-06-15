@@ -339,13 +339,13 @@ const AddAchievementForm: React.FC<Props> = ({ initialEmployeeId = "", onSuccess
                     fontWeight: '600' 
                 }}>
                     {detectedPeriod === "Pobieranie..." ? (
-                        <span>🔍 Sprawdzanie okresu...</span>
+                        <span>Sprawdzanie okresu...</span>
                     ) : isPeriodClosed ? (
-                        <span>⚠️ Okres: {detectedPeriod} (NIEAKTYWNY - brak możliwości rejestracji wniosków)</span>
+                        <span>Okres: {detectedPeriod} (NIEAKTYWNY - brak możliwości rejestracji wniosków)</span>
                     ) : detectedPeriod ? (
-                        <span>Okres: {detectedPeriod} (Aktywny)</span>
+                        <span>{detectedPeriod} (Aktywny)</span>
                     ) : (
-                        <span>⚠️ Nieznany okres - zmień datę!</span>
+                        <span>Nieznany okres - zmień datę!</span>
                     )}
                 </div>
             </div>

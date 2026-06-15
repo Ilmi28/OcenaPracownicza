@@ -84,6 +84,13 @@ export const evaluationService = {
         );
         return res.data.data;
     },
+returnForCorrection: async (achievementId: string, comment: string) => {
+        const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
+            `/achievement/${achievementId}/return-for-correction`, 
+            { comment },
+        );
+        return res.data.data;
+    },
     close: async (achievementId: string) => {
         const res = await axiosClient.post<ApiResponse<Stage2ReviewDetailsView>>(
             `/evaluation/stage2/${achievementId}/close`,

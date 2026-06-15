@@ -6,7 +6,7 @@ import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import { useAuth } from "../hooks/AuthProvider";
 
-const DRAWER_WIDTH = 240;
+const DRAWER_WIDTH = 300;
 
 const MainLayout = () => {
     const { user } = useAuth();

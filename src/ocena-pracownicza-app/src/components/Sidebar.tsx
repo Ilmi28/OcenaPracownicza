@@ -11,6 +11,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import AppRegistrationIcon from "@mui/icons-material/AppRegistration";
 import EventNoteIcon from "@mui/icons-material/EventNote";
+import AssessmentIcon from "@mui/icons-material/Assessment";                
 import { useAuth } from "../hooks/AuthProvider";
 
 
@@ -53,7 +54,6 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                         IconComponent={PersonIcon}
                     />
 
-                    {                        }
                     {user?.role === "Admin" && (
                         <SidebarItem
                             text="Użytkownicy"
@@ -75,6 +75,16 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
                             IconComponent={HistoryIcon}
                         />
                     )}
+
+                    {                        }
+                    {user && (
+                        <SidebarItem
+                            text="Raporty"
+                            to="/reports"
+                            IconComponent={AssessmentIcon}
+                        />
+                    )}
+
                     {user?.role === "Employee" && (
                         <SidebarItem
                             text="Dodaj osiągnięcie"
@@ -115,4 +125,5 @@ const Sidebar: React.FC<{ drawerWidth: number }> = ({ drawerWidth }) => {
         </Drawer>
     );
 };
+
 export default Sidebar;

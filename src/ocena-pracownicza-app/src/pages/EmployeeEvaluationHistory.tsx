@@ -28,6 +28,7 @@ const STATUS_LABELS: Record<number, string> = {
     3: "Odrzucona",
     4: "Zamknięta",
     5: "Zarchiwizowana",
+    6: "Oczekuje na poprawę",
 };
 
 interface EvaluationPeriod {
@@ -175,6 +176,7 @@ export default function EmployeeEvaluationHistory() {
                             {user?.role !== "Employee" && <TableCell sx={{ fontWeight: 700 }}>Pracownik</TableCell>}
                             {user?.role !== "Employee" && <TableCell sx={{ fontWeight: 700 }}>Stanowisko</TableCell>}
                             <TableCell sx={{ fontWeight: 700 }}>Osiągnięcie</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Opis</TableCell>
                             <TableCell sx={{ fontWeight: 700 }}>Okres</TableCell>
                             <TableCell sx={{ fontWeight: 700 }}>Wynik</TableCell>
                             <TableCell sx={{ fontWeight: 700 }}>Data</TableCell>
@@ -183,50 +185,56 @@ export default function EmployeeEvaluationHistory() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredData.map((item) => (
-                            <TableRow key={item.achievementId} hover>
-                                {user?.role !== "Employee" && <TableCell>{item.fullName}</TableCell>}
-                                {user?.role !== "Employee" && <TableCell>{item.position}</TableCell>}
-                                <TableCell sx={{ fontWeight: 500 }}>{item.achievementName}</TableCell>
-                                <TableCell>{item.period}</TableCell>
-                                <TableCell>{item.finalScore}</TableCell>
-                                <TableCell>
-                                    {new Date(item.date).toLocaleDateString("pl-PL")}
-                                </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        size="small"
-                                        label={STATUS_LABELS[item.stage2Status] ?? "Nieznany"}
-                                        color={
-                                            item.stage2Status === 2 ? "success" : 
-                                            item.stage2Status === 3 ? "error" : 
-                                            item.stage2Status >= 4 ? "default" : "warning"
-                                        }
-                                        variant="outlined"
-                                        sx={{ fontWeight: 600 }}
-                                    />
-                                </TableCell>
-                                <TableCell align="right">
-                                    <Button
-                                        size="small"
-                                        variant="contained"
-                                        onClick={() => navigate(`/evaluation/history/${item.achievementId}`)}
-                                    >
-                                        Szczegóły
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {filteredData.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={user?.role === "Employee" ? 6 : 8} align="center" sx={{ py: 3 }}>
-                                    {data.length === 0
-                                        ? "Brak rekordów historii ocen."
-                                        : "Brak rekordów spełniających kryteria filtrowania."}
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
+    {filteredData.map((item) => (
+        <TableRow key={item.achievementId} hover>
+            {user?.role !== "Employee" && <TableCell>{item.fullName}</TableCell>}
+            {user?.role !== "Employee" && <TableCell>{item.position}</TableCell>}
+            <TableCell sx={{ fontWeight: 500 }}>{item.achievementName}</TableCell>
+            
+            {                                          }
+            <TableCell sx={{ maxWidth: 250 }}>
+                <Typography variant="body2" noWrap title={item.description}>
+                    {item.description}
+                </Typography>
+            </TableCell>
+
+            <TableCell>{item.period}</TableCell>
+            <TableCell>{item.finalScore}</TableCell>
+            <TableCell>{new Date(item.date).toLocaleDateString("pl-PL")}</TableCell>
+            <TableCell>
+                <Chip
+                    size="small"
+                    label={STATUS_LABELS[item.stage2Status] ?? "Nieznany"}
+                    color={
+                        item.stage2Status === 2 ? "success" : 
+                        item.stage2Status === 3 ? "error" : 
+                        item.stage2Status === 6 ? "warning" :
+                        item.stage2Status >= 4 ? "default" : "warning"
+                    }
+                    variant="outlined"
+                    sx={{ fontWeight: 600 }}
+                />
+            </TableCell>
+            <TableCell align="right">
+                <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => navigate(`/evaluation/history/${item.achievementId}`)}
+                >
+                    Szczegóły
+                </Button>
+            </TableCell>
+        </TableRow>
+    ))}
+    {                           }
+    {filteredData.length === 0 && (
+        <TableRow>
+            <TableCell colSpan={user?.role === "Employee" ? 7 : 9} align="center" sx={{ py: 3 }}>
+                {data.length === 0 ? "Brak rekordów historii ocen." : "Brak rekordów spełniających kryteria filtrowania."}
+            </TableCell>
+        </TableRow>
+    )}
+</TableBody>
                 </Table>
             </Paper>
         </Box>
