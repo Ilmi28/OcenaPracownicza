@@ -1,4 +1,3 @@
-// import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
@@ -18,8 +17,8 @@ import EmployeeEvaluationHistoryDetails from "./pages/EmployeeEvaluationHistoryD
 import AddAchievementForm from "./pages/AddAchievementForm";
 import AchievementList from "./pages/AchievementList";
 import EvaluationPeriodManager from "./pages/EvaluationPeriodManager";
-// IPOROTOWANIE NOWEJ STRONY:
 import AchievementElementManager from "./pages/AchievementElementManager"; 
+import ReportsPage from "./pages/ReportsPage"; 
 
 function App() {
     return (
@@ -72,7 +71,12 @@ function App() {
                                 element={<AchievementList />}
                             />
                             
-                            {/* NOWA ŚCIEŻKA: Zarządzanie szablonami osiągnięć */}
+                            {               }
+                            <Route
+                                path="/reports"
+                                element={<ReportsPage />}
+                            />
+
                             <Route
                                 path="/achievement-elements"
                                 element={<AchievementElementManager />}

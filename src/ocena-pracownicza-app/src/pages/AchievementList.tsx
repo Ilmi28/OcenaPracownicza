@@ -50,6 +50,7 @@ const STATUS_BADGES: Record<number, { tekst: string; klasa: string }> = {
     3: { tekst: "ODRZUCONE", klasa: "badge-rejected" },
     4: { tekst: "ZAMKNIĘTE", klasa: "badge-closed" },
     5: { tekst: "ZARCHIWIZOWANE", klasa: "badge-archived" },
+    6: { tekst: "DO POPRAWY", klasa: "badge-correction" },
 };
 
 const AchievementList: React.FC = () => {
@@ -193,6 +194,7 @@ const AchievementList: React.FC = () => {
             case 3: return "row-rejected";    
             case 4: return "row-closed";      
             case 5: return "row-archived";    
+            case 6: return "row-correction";
             default: return "";
         }
     };
@@ -257,11 +259,11 @@ const AchievementList: React.FC = () => {
                     <tbody>
                         {filteredAndSortedAchievements.map((item) => {
                             const kat = KATEGORIE[item.category] || KATEGORIE[5];
-                            const isDraft = item.stage2Status === 0;
+                            const isDraft = item.stage2Status === 0 || item.stage2Status === 6;
                             const shouldStrike = item.stage2Status === 4 || item.stage2Status === 5;
                             const badgeInfo = STATUS_BADGES[item.stage2Status];
                             
-                            const showCommentStatus = [2, 3, 4, 5].includes(item.stage2Status);
+                            const showCommentStatus = [2, 3, 4, 5, 6].includes(item.stage2Status);
 
                             return (
                                 <tr key={item.id} className={getRowClass(item.stage2Status)}>
@@ -737,6 +739,19 @@ const AchievementList: React.FC = () => {
                     transition: 0.2s;
                 }
                 .btn-submit:hover { background: #d69e2e; color: white; }
+
+                .row-correction { 
+    background-color: #f3e5f5 !important; 
+}
+.row-correction:hover { 
+    background-color: #e1bee7 !important; 
+}
+
+/* Styl badge'a dla statusu 6 */
+.badge-correction { 
+    background-color: #9c27b0; 
+    color: #ffffff; 
+}
 
                 .confirmation-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 1.5rem; z-index: 1000; }
                 .confirmation-card { width: min(100%, 550px); max-height: 90vh; overflow-y: auto; background: #ffffff; border-radius: 16px; padding: 1.5rem; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2); display: grid; gap: 1rem; box-sizing: border-box; text-align: left; }

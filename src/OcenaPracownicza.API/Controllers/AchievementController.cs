@@ -18,7 +18,6 @@ public class AchievementController(
     IEvaluationPeriodService periodService) : ControllerBase
 {
     [HttpGet]
-    [HttpGet]
     public async Task<IActionResult> Get()
     {
         var identityUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -34,35 +33,32 @@ public class AchievementController(
         if (userRole != "Admin" && userRole != "Manager")
         {
             if (employee == null) return Ok(new List<Achievement>());
-
             query = query.Where(a => a.EmployeeId == employee.Id);
         }
 
         var achievements = await query
-        .OrderByDescending(a => a.Date)
-        .Select(a => new {
-            a.Id,
-            a.Name,
-            a.Description,
-            a.Date,
-            a.Category,
-            a.FinalScore,
-            a.AchievementsSummary,
-            a.EmployeeId,
-            a.Stage2Status,
-            Stage2Comment = a.Stage2Comment,
-            EvaluationPeriodName = a.EvaluationPeriod != null ? a.EvaluationPeriod.Name : "Brak okresu",
-            EvaluationPeriodId = a.EvaluationPeriodId,
-
-            AchievementElementId = a.AchievementElementId,
-            AchievementElementCode = a.AchievementElement != null ? a.AchievementElement.Code : "-",
-            AchievementElementBasePoints = a.AchievementElement != null ? a.AchievementElement.BasePoints : 0,
-
-            ActivityId = a.AchievementElement != null ? a.AchievementElement.ActivityId : 0,
-            DepartmentId = a.AchievementElement != null ? a.AchievementElement.DepartmentId : 0,
-            CategoryId = a.AchievementElement != null ? a.AchievementElement.CategoryId : 0
-        })
-        .ToListAsync();
+            .OrderByDescending(a => a.Date)
+            .Select(a => new {
+                a.Id,
+                a.Name,
+                a.Description,
+                a.Date,
+                a.Category,
+                a.FinalScore,
+                a.AchievementsSummary,
+                a.EmployeeId,
+                a.Stage2Status,
+                Stage2Comment = a.Stage2Comment,
+                EvaluationPeriodName = a.EvaluationPeriod != null ? a.EvaluationPeriod.Name : "Brak okresu",
+                EvaluationPeriodId = a.EvaluationPeriodId,
+                AchievementElementId = a.AchievementElementId,
+                AchievementElementCode = a.AchievementElement != null ? a.AchievementElement.Code : "-",
+                AchievementElementBasePoints = a.AchievementElement != null ? a.AchievementElement.BasePoints : 0,
+                ActivityId = a.AchievementElement != null ? a.AchievementElement.ActivityId : 0,
+                DepartmentId = a.AchievementElement != null ? a.AchievementElement.DepartmentId : 0,
+                CategoryId = a.AchievementElement != null ? a.AchievementElement.CategoryId : 0
+            })
+            .ToListAsync();
 
         return Ok(achievements);
     }
@@ -71,32 +67,17 @@ public class AchievementController(
     public async Task<IActionResult> Post([FromForm] AddAchievementRequest request, IFormFile? file)
     {
         var period = await periodService.GetPeriodByDateAsync(request.Date);
-
-        if (period == null)
-        {
-            return BadRequest("Data osiągnięcia nie mieści się w żadnym zdefiniowanym okresie ocen.");
-        }
-
-        if (period.IsClosed)
-        {
-            return BadRequest("Nie można dodawać osiągnięć do zamkniętego (zarchiwizowanego) okresu.");
-        }
+        if (period == null) return BadRequest("Data osiągnięcia nie mieści się w żadnym zdefiniowanym okresie ocen.");
+        if (period.IsClosed) return BadRequest("Nie można dodawać osiągnięć do zamkniętego okresu.");
 
         Attachment? attachment = null;
-
         if (file != null && file.Length > 0)
         {
             var fileName = $"{Guid.NewGuid()}_{file.FileName}";
             var folderPath = Path.Combine("Storage", "Attachments");
-
             Directory.CreateDirectory(folderPath);
-
             var fullPath = Path.Combine(folderPath, fileName);
-
-            using (var stream = new FileStream(fullPath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
+            using (var stream = new FileStream(fullPath, FileMode.Create)) await file.CopyToAsync(stream);
 
             attachment = new Attachment
             {
@@ -105,7 +86,6 @@ public class AchievementController(
                 FileSize = file.Length,
                 StoragePath = fullPath
             };
-
             await context.Attachments.AddAsync(attachment);
             await context.SaveChangesAsync();
         }
@@ -122,13 +102,11 @@ public class AchievementController(
             AchievementsSummary = request.AchievementsSummary,
             Stage2Status = request.IsDraft ? EvaluationStageStatus.Draft : EvaluationStageStatus.PendingStage2,
             AttachmentId = attachment?.Id,
-
             AchievementElementId = request.AchievementElementId
         };
 
         await context.Achievements.AddAsync(achievement);
         await context.SaveChangesAsync();
-
         return Ok(new { id = achievement.Id, message = "Osiągnięcie zostało zapisane." });
     }
 
@@ -136,13 +114,7 @@ public class AchievementController(
     [Authorize(Roles = "Manager,Admin")]
     public async Task<IActionResult> GetEmployeeDropdown()
     {
-        var employees = await context.Employees.Select(e => new
-        {
-            e.Id,
-            e.FirstName,
-            e.LastName
-        }).ToListAsync();
-
+        var employees = await context.Employees.Select(e => new { e.Id, e.FirstName, e.LastName }).ToListAsync();
         return Ok(employees);
     }
 
@@ -152,10 +124,7 @@ public class AchievementController(
     {
         var attachment = await context.Attachments.FirstOrDefaultAsync(a => a.Id == id);
         if (attachment == null) return NotFound("Nie znaleziono załącznika.");
-
-        if (!System.IO.File.Exists(attachment.StoragePath))
-            return NotFound("Plik fizyczny nie istnieje na serwerze.");
-
+        if (!System.IO.File.Exists(attachment.StoragePath)) return NotFound("Plik nie istnieje na serwerze.");
         var fileBytes = await System.IO.File.ReadAllBytesAsync(attachment.StoragePath);
         return File(fileBytes, attachment.ContentType, attachment.FileName);
     }
@@ -163,25 +132,12 @@ public class AchievementController(
     [HttpPut("{id}")]
     public async Task<IActionResult> Put(Guid id, [FromForm] AddAchievementRequest request)
     {
-        var achievement = await context.Achievements
-            .FirstOrDefaultAsync(a => a.Id == id);
-
-        if (achievement == null)
-        {
-            return NotFound("Nie znaleziono modyfikowanego osiągnięcia.");
-        }
+        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == id);
+        if (achievement == null) return NotFound("Nie znaleziono osiągnięcia.");
 
         var period = await periodService.GetPeriodByDateAsync(request.Date);
-
-        if (period == null)
-        {
-            return BadRequest("Data osiągnięcia nie mieści się w żadnym zdefiniowanym okresie ocen.");
-        }
-
-        if (period.IsClosed)
-        {
-            return BadRequest("Nie można edytować osiągnięć w zamkniętym (zarchiwizowanym) okresie.");
-        }
+        if (period == null) return BadRequest("Data nie mieści się w okresie ocen.");
+        if (period.IsClosed) return BadRequest("Nie można edytować w zamkniętym okresie.");
 
         achievement.Name = request.Name;
         achievement.Description = request.Description;
@@ -190,62 +146,44 @@ public class AchievementController(
         achievement.Category = request.Category;
         achievement.EvaluationPeriodId = period.Id;
         achievement.FinalScore = request.FinalScore;
-        achievement.AchievementsSummary = request.Description.Length > 100
-            ? request.Description.Substring(0, 100)
-            : request.Description;
-
-        achievement.Stage2Status = request.IsDraft
-            ? EvaluationStageStatus.Draft
-            : EvaluationStageStatus.PendingStage2;
+        achievement.AchievementsSummary = request.Description.Length > 100 ? request.Description.Substring(0, 100) : request.Description;
+        achievement.Stage2Status = request.IsDraft ? EvaluationStageStatus.Draft : EvaluationStageStatus.PendingStage2;
 
         context.Achievements.Update(achievement);
         await context.SaveChangesAsync();
-
-        return Ok(new { message = "Osiągnięcie zostało pomyślnie zaktualizowane." });
+        return Ok(new { message = "Osiągnięcie zostało zaktualizowane." });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == id);
-
-        if (achievement == null)
-        {
-            return NotFound("Nie znaleziono osiągnięcia o podanym ID.");
-        }
-
-        if (achievement.Stage2Status != EvaluationStageStatus.Draft)
-        {
-            return BadRequest("Można usuwać wyłącznie osiągnięcia o statusie Szkic (Draft).");
-        }
+        if (achievement == null) return NotFound("Nie znaleziono osiągnięcia.");
+        if (achievement.Stage2Status != EvaluationStageStatus.Draft) return BadRequest("Można usuwać wyłącznie szkice.");
 
         context.Achievements.Remove(achievement);
         await context.SaveChangesAsync();
-
-        return Ok(new { message = "Szkic został pomyślnie usunięty." });
+        return Ok(new { message = "Szkic został usunięty." });
     }
 
     [HttpGet("categories")]
     public IActionResult GetCategories()
     {
-        var categories = Enum.GetValues(typeof(AchievementCategory))
-            .Cast<AchievementCategory>()
-            .Select(c => new
+        var categories = Enum.GetValues(typeof(AchievementCategory)).Cast<AchievementCategory>().Select(c => new
+        {
+            Id = (int)c,
+            Name = c switch
             {
-                Id = (int)c,
-                Name = c switch
-                {
-                    AchievementCategory.ProjectDelivery => "Sukces projektowy (Project Delivery)",
-                    AchievementCategory.TechnicalGrowth => "Rozwój techniczny (Technical Growth)",
-                    AchievementCategory.ProcessImprovement => "Ulepszenie procesu (Process Improvement)",
-                    AchievementCategory.Mentorship => "Mentoring (Mentorship)",
-                    AchievementCategory.Innovation => "Innowacja (Innovation)",
-                    AchievementCategory.Leadership => "Liderowanie (Leadership)",
-                    AchievementCategory.CustomerSuccess => "Sukces klienta (Customer Success)",
-                    _ => c.ToString()
-                }
-            }).ToList();
-
+                AchievementCategory.ProjectDelivery => "Sukces projektowy",
+                AchievementCategory.TechnicalGrowth => "Rozwój techniczny",
+                AchievementCategory.ProcessImprovement => "Ulepszenie procesu",
+                AchievementCategory.Mentorship => "Mentoring",
+                AchievementCategory.Innovation => "Innowacja",
+                AchievementCategory.Leadership => "Liderowanie",
+                AchievementCategory.CustomerSuccess => "Sukces klienta",
+                _ => c.ToString()
+            }
+        }).ToList();
         return Ok(categories);
     }
 
@@ -253,42 +191,18 @@ public class AchievementController(
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CopyPackage([FromBody] CopyPackageRequest request)
     {
-        if (request.SourcePeriodId == request.TargetPeriodId)
-        {
-            return BadRequest("Okres źródłowy i docelowy nie mogą być takie same.");
-        }
+        if (request.SourcePeriodId == request.TargetPeriodId) return BadRequest("Okresy muszą być różne.");
 
-        var sourceElements = await context.AchievementElements
-            .Where(e => e.EvaluationPeriodId == request.SourcePeriodId)
-            .ToListAsync();
+        var sourceElements = await context.AchievementElements.Where(e => e.EvaluationPeriodId == request.SourcePeriodId).ToListAsync();
+        if (!sourceElements.Any()) return BadRequest("Brak szablonów.");
 
-        if (!sourceElements.Any())
-        {
-            return BadRequest("Wybrany okres źródłowy nie zawiera żadnych szablonów do skopiowania.");
-        }
-
-        var existingCodes = await context.AchievementElements
-            .Where(e => e.EvaluationPeriodId == request.TargetPeriodId)
-            .Select(e => e.Code)
-            .ToListAsync();
-
+        var existingCodes = await context.AchievementElements.Where(e => e.EvaluationPeriodId == request.TargetPeriodId).Select(e => e.Code).ToListAsync();
         var newElements = new List<AchievementElement>();
 
         foreach (var src in sourceElements)
         {
             if (existingCodes.Contains(src.Code)) continue;
-
-            newElements.Add(new AchievementElement
-            {
-                Code = src.Code,
-                Name = src.Name,
-                ActivityId = src.ActivityId,
-                DepartmentId = src.DepartmentId,
-                CategoryId = src.CategoryId,
-                BasePoints = src.BasePoints,
-                IsStackable = src.IsStackable,
-                EvaluationPeriodId = request.TargetPeriodId     
-            });
+            newElements.Add(new AchievementElement { Code = src.Code, Name = src.Name, ActivityId = src.ActivityId, DepartmentId = src.DepartmentId, CategoryId = src.CategoryId, BasePoints = src.BasePoints, IsStackable = src.IsStackable, EvaluationPeriodId = request.TargetPeriodId });
         }
 
         if (newElements.Any())
@@ -296,13 +210,25 @@ public class AchievementController(
             await context.AchievementElements.AddRangeAsync(newElements);
             await context.SaveChangesAsync();
         }
-
         return Ok(new { message = $"Pomyślnie skopiowano {newElements.Count} szablonów." });
     }
 
-    public class CopyPackageRequest
+    public class CopyPackageRequest { public Guid SourcePeriodId { get; set; } public Guid TargetPeriodId { get; set; } }
+
+    [HttpPost("{id}/return-for-correction")]
+    [Authorize(Roles = "Manager,Admin")]
+    public async Task<IActionResult> ReturnForCorrection(Guid id, [FromBody] CorrectionRequest request)
     {
-        public Guid SourcePeriodId { get; set; }
-        public Guid TargetPeriodId { get; set; }
+        var achievement = await context.Achievements.FirstOrDefaultAsync(a => a.Id == id);
+        if (achievement == null) return NotFound("Nie znaleziono osiągnięcia.");
+
+        achievement.Stage2Status = EvaluationStageStatus.PendingToCorrect;
+        achievement.Stage2Comment = request.Comment;
+
+        context.Achievements.Update(achievement);
+        await context.SaveChangesAsync();
+        return Ok(new { message = "Osiągnięcie zostało odesłane do poprawy." });
     }
+
+    public class CorrectionRequest { public string Comment { get; set; } = string.Empty; }
 }

@@ -10,6 +10,7 @@ public class Stage2HistoryItemView
     public string Period { get; set; } = null!;
     public string FinalScore { get; set; } = null!;
     public int Stage2Status { get; set; }
+    public string Description { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public DateTime? Stage2ReviewedAtUtc { get; set; }
 }

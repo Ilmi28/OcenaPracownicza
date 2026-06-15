@@ -28,15 +28,13 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
                 FinalScore = a.FinalScore,
                 Stage2Status = (int)a.Stage2Status,
                 Date = a.Date,
-                Stage2ReviewedAtUtc = a.Stage2ReviewedAtUtc
+                Stage2ReviewedAtUtc = a.Stage2ReviewedAtUtc,
+                Description = a.Description ?? ""
             })
             .OrderByDescending(a => a.Date)
             .ToListAsync();
 
-        return new BaseResponse<List<Stage2HistoryItemView>>
-        {
-            Data = items
-        };
+        return new BaseResponse<List<Stage2HistoryItemView>> { Data = items };
     }
 
     public async Task<BaseResponse<List<Stage2HistoryItemView>>> GetMyHistoryAsync()
@@ -49,23 +47,12 @@ public class Stage2ReviewService(ApplicationDbContext context, IUserManager user
             .Select(a => new Stage2HistoryItemView
             {
                 AchievementId = a.Id,
-                EmployeeId = a.EmployeeId,
-                FullName = $"{a.Employee.FirstName} {a.Employee.LastName}",
-                Position = a.Employee.Position,
-                AchievementName = a.Name,
-                Period = a.EvaluationPeriod.Name,
-                FinalScore = a.FinalScore,
-                Stage2Status = (int)a.Stage2Status,
-                Date = a.Date,
-                Stage2ReviewedAtUtc = a.Stage2ReviewedAtUtc
+                Description = a.Description ?? ""      
             })
             .OrderByDescending(a => a.Date)
             .ToListAsync();
 
-        return new BaseResponse<List<Stage2HistoryItemView>>
-        {
-            Data = items
-        };
+        return new BaseResponse<List<Stage2HistoryItemView>> { Data = items };
     }
 
     public async Task<BaseResponse<List<Stage2ReviewItemView>>> GetPendingAsync()

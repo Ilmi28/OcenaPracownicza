@@ -123,7 +123,7 @@ export default function EmployeeEvaluationHistoryDetails() {
                             Status
                         </Typography>
                         <Chip
-                            label={STATUS_LABELS[data.stage2Status] ?? "Nieznany"}
+                            label={STATUS_LABELS[data.stage2Status] ?? "Do poprawy"}
                             color={data.stage2Status === 2 ? "success" : data.stage2Status === 3 ? "error" : "warning"}
                             variant="outlined"
                             size="small"
